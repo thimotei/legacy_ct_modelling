@@ -2,11 +2,13 @@ library(data.table)
 library(lubridate)
 library(patchwork)
 library(rstan)
+library(cowplot)
 
-source("ct_dynamics/R/stan_data.R")
-source("ct_dynamics/R/stan_data.R")
+source("R/stan_data.R")
+# source("R/stan_data.R")
+source("R/custom_plot_theme.R")
 
-dt.ct <- fread("ct_dynamics/data/ct_values_updated.csv") %>% 
+dt.ct <- fread("data/ct_values_updated.csv") %>% 
   setnames(., c("Study number", "sample date", "barcode", 
                 "Ct", "swab type", "sample order", "Day post swab 1",
                 "VOC", "Symptom onset", "Days post symptom onset"), 
@@ -38,9 +40,9 @@ dt.ct <- fread("ct_dynamics/data/ct_values_updated.csv") %>%
 #   na.omit(.) %>% 
 #   setnames(., c("participant_id", "infection_number"), c("id", "infection_id"))
 
-dt.plot <- dt.all[, result := factor(result,
-                                     levels = c(1, 0), 
-                                     labels = c("Positive", "Negative"))]
+dt.plot <- dt.ct[, result := factor(result,
+                                    levels = c(1, 0), 
+                                    labels = c("Positive", "Negative"))]
 
 # dt.all[,`:=` (day_rel = day_rel + abs(symp_rel), symp_rel = symp_rel - symp_rel), 
 #        by = c("id", "infection_id")]
@@ -83,7 +85,7 @@ ggsave("ct_dynamics/outputs/ct_dynamics_pooled_by_variant.png",
        height = 4,
        bg = "white")
 
-p3 <- dt.plot[(voc == "delta" | is.na(voc) == TRUE) & is.na(ct_value) == FALSE] %>% 
+p3 <- dt.plot[(voc == "delta" | voc == "negative") & is.na(ct_value) == FALSE] %>% 
   .[, obs_total := .N, by = "id"] %>% 
   .[obs_total > 1] %>% 
   .[days_since_first_swab < 25] %>%  
@@ -100,7 +102,7 @@ p3 <- dt.plot[(voc == "delta" | is.na(voc) == TRUE) & is.na(ct_value) == FALSE] 
   labs(title = "Delta", x = "Days since first swab", y = "Ct value") +
   scale_color_manual(values = c("blue", "red"))
 
-p4 <- dt.plot[(voc == "omicron" | is.na(voc) == TRUE) & is.na(ct_value) == FALSE] %>% 
+p4 <- dt.plot[(voc == "omicron" | voc == "negative") & is.na(ct_value) == FALSE] %>% 
   .[, obs_total := .N, by = "id"] %>% 
   .[obs_total > 1] %>% 
   .[day_rel < 12] %>%  
@@ -119,7 +121,7 @@ p4 <- dt.plot[(voc == "omicron" | is.na(voc) == TRUE) & is.na(ct_value) == FALSE
 
 figure_2 <- p3 + p4 + plot_layout(guides = "collect")
 
-ggsave("ct_dynamics/outputs/ct_dynamics_individual_by_variant.png",
+ggsave("outputs/ct_values_individual_by_variant.png",
        figure_2,
        width = 12,
        height = 7,
@@ -148,20 +150,28 @@ dt.ct.delta <- dt.ct.delta[is.na(result) == FALSE] %>%
     any(day_rel[result == 1] < symp_rel[result == 1]),
     min(day_rel[result == 1 & day_rel < symp_rel]),
     symp_rel), by = id] %>% 
-  .[, te_upper_bound := unique(te_upper_bound), id]
+  .[, te_upper_bound := unique(te_upper_bound), id] %>% 
+  .[, symp_rel := symp_rel + 100]
 
 # Construct stan data
-stan_data_delta <- stan_data_fun(dt.ct.delta)
-# stan_data_omicron <- stan_data_fun(dt.ct.omicron)
-# stan_data_both <- stan_data_fun(dt.together_both)
-
+# stan_data_delta <- stan_data_fun(dt.ct.delta)
 options(mc.cores = parallel::detectCores()) 
-# rstan_options(auto_write = TRUE)
-mod <- rstan::stan_model("ct_dynamics/stan/ct_trajectory_model.stan")
+mod <- rstan::stan_model("stan/ct_trajectory_model.stan")
 
-fit_delta <- sampling(mod,
-                      data = stan_data_delta,
-                      iter = 2000)
+
+
+res <- extract(fit_delta)
+
+allsamp <- data.table::melt(as.data.table(res$T_e)[, iterations := 1:.N], 
+                            id.vars = c("iterations"), 
+                            value.name = "sample")[, .(iterations, num_id = variable, smp = sample)
+                            ][, num_id := as.numeric(num_id)]
+
+allsamp %>% 
+  ggplot() + 
+  geom_density(aes(x = smp)) +
+  facet_wrap(~num_id, scales = "free")
+
 
 fit_omicron <- sampling(mod,
                         data = stan_data_omicron,
@@ -175,7 +185,7 @@ res_both <- extract(fit_both)
 
 tmp <- stan_dens(fit_delta, pars = "T_e") 
 
-ggsave("ct_dynamics/outputs/all_Te.png", 
+ggsave("outputs/all_Te.png", 
        tmp,
        width = 10,
        height = 10,
