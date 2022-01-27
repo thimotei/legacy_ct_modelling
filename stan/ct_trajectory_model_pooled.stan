@@ -19,7 +19,7 @@ data {
 parameters {
   // Inferred time of infection
   // vector <lower = 0> [P] T_e;
-  real <lower = 0> T_e;
+  real T_e;
 
   // Timing of p and s
   real <lower = 0> t_p_mean;
@@ -36,12 +36,12 @@ parameters {
   // vector <lower = 0> [P] t_lod_raw;
 
   // Ct value of viral load p
-  real <lower = 0> c_p_mean;
+  real <lower = 0, upper = c_lod> c_p_mean;
   // real <lower = 0> c_p_var;
   // vector <lower = 0> [P] c_p_raw;
 
   // Ct value at s
-  real <lower = 0> c_s_mean;
+  real <lower = 0, upper = c_lod> c_s_mean;
   // real <lower = 0> c_s_var;
   // vector <lower = 0> [P] c_s_raw;
   
@@ -82,8 +82,8 @@ model {
   //   // time-window to centre the estimates properly (using 0.05 of a day).
   //   // Is there a better/less hacky way than this?
   //   target += log(
-  //     lognormal_cdf(symp_rel[j] - T_e[j], lmean, lsd) - 
-  //     lognormal_cdf(symp_rel[j] - 0.05 - T_e[j], lmean, lsd));
+  //     lognormal_cdf(symp_rel[j] - T_e[j], lmean, lsd) -
+  //     lognormal_cdf(symp_rel[j] - 1.0 - T_e[j], lmean, lsd));
   // }
   
   // Expected ct value given viral load parameters
@@ -106,45 +106,49 @@ model {
   }
 
   // Prior over possible infection times
-  T_e ~ cauchy(5, 1);
+  T_e ~ normal(0, 2);
 
   // // Viral load peak timing
-  t_p_mean ~ cauchy(log(20), 1);
+  t_p_mean ~ normal(5, 2);
   // t_p_var ~ cauchy(0, 1);
   // t_p_raw ~ normal(0, 1);
-  // 
-  t_s_mean ~ cauchy(log(30), 1);
+
+  t_s_mean ~ normal(8, 2);
   // t_s_var ~ cauchy(0, 1);
   // t_s_raw ~ normal(0, 1);
-  // 
+  
   // // // Time dropping below limit of detection
-  t_lod_mean ~ cauchy(log(40), 1);
+  t_lod_mean ~ normal(10, 2);
   // t_lod_var ~ cauchy(0, 1);
   // t_lod_raw ~ normal(0, 1);
-  // 
+  
   // // // Ct value at peak
-  c_p_mean ~ cauchy(log(0.3), 1);
+  c_p_mean ~  normal(-0.2, 2);
   // c_p_var ~ cauchy(0, 1);
   // c_p_raw ~ normal(0.3, 1);
-  // 
+  
   // // // Ct value at switch to long wane
-  c_s_mean ~ cauchy(log(0.7), 1);
+  c_s_mean ~ normal(0.3, 2);
   // c_s_var ~ cauchy(0, 1);
   // c_s_raw ~ normal(0, 1);
 
   // // Variation in observation model
-  sigma_obs ~ cauchy(0, 2);
+  sigma_obs ~ normal(0, 2);
 }
 
 generated quantities {
-  vector[20] ct;
+  // vector[20] ct;
   // matrix[P, 30] ct;
   // for(i in 1:P) {
   //   for(j in 1:30) {
   //     ct[i, j] = ct_hinge(j, c_0, c_p[i], c_s[i], c_lod, t_e, t_p[i], t_s[i], t_lod_abs[i]);
   //   }
-  // }
-    for(j in 1:20) {
-      ct[j] = ct_hinge(j, c_0, c_p_mean, c_s_mean, c_lod, t_e, t_p_mean, t_s_mean, t_lod_abs);
+  // }  
+  vector[201] ct;
+  real k;
+  for(j in 1:201) {
+    k = (j * 0.1) - 0.1;
+    // for(j in 1:20) {
+      ct[j] = ct_hinge(k, c_0, c_p_mean, c_s_mean, c_lod, t_e, t_p_mean, t_s_mean, t_lod_abs);
     }
 }
