@@ -19,4 +19,3 @@ stan_data_fun <- function(input_data) {
   return(stan_data)
 }
 
-

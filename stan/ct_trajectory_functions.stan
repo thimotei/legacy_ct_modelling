@@ -1,36 +1,65 @@
 functions {
-  real ct_hinge(real a, real c_zero, 
-  real c_peak, real c_switch, 
-  real c_LOD, real t_eclipse, 
-  real t_peak, real t_switch, real t_LOD) {
-    real out;
+
+real ct_hinge_long(real t, real c0, real cp, real cs, 
+                   real clod, real te, real tp, real ts,
+                   real tlod)
+  {
+    real y;
     
-    if(a <= t_eclipse){
-      out = c_zero;
-    }else if(a > t_eclipse){
-      if(a <= (t_eclipse + t_peak)){
-        out = c_zero + ((c_peak - c_zero) / t_peak) * (a - t_eclipse);
-      }else if(a > (t_eclipse + t_peak)){
-        if(a <= (t_eclipse + t_peak + t_switch)){
-          out = c_peak + ((c_switch - c_peak) / t_switch) * (a - t_eclipse - t_peak);
-        }else if(a > (t_eclipse + t_peak + t_switch)){
-            out = c_switch + ((c_LOD - c_switch) / (t_LOD - t_switch - t_peak - t_eclipse)) * (a - t_eclipse - t_peak - t_switch);
-        }
-      }
+    if(t <= te)
+    {
+      y = c0;
+    }
+    else if(t > te && t <= te + tp) 
+    {
+      y = ((t - te)*(cp - c0))/tp  + c0;
+    }
+    else if(t > te + tp && t <= te + tp + ts)
+    {
+      y = ((t - te - tp)*(cs - cp))/ts  + cp;
+    }
+    else if(t > te + tp + ts)
+    {
+      y = ((t - te - tp - ts)*(clod - cs))/tlod + cs;
     }
     
-    return(out);
+    return(y);
   }
   
-  vector ct_hinge_vec(vector a, real c_zero, vector c_peak, vector c_switch, real c_LOD, real t_eclipse, vector t_peak, vector t_switch, vector t_LOD, int [] patient_ID) {
+  real ct_hinge_single(real t, real c0, real cp,
+                       real clod, real te, real tp,
+                       real tlod)
+  {
+    real y;
     
-    int N = num_elements(a);
-    vector[N] ret;
-    
-    for(k in 1:N){
-      ret[k] = ct_hinge(a[k], c_zero, c_peak[patient_ID[k]], c_switch[patient_ID[k]], c_LOD, t_eclipse, t_peak[patient_ID[k]], t_switch[patient_ID[k]], t_LOD[patient_ID[k]]);
+    if(t <= te)
+    {
+      y = c0;
+    }
+    else if(t > te && t <= te + tp) 
+    {
+      y = ((t - te)*(cp - c0))/tp  + c0;
+    }
+    else if(t > te + tp)
+    {
+      y = ((t - te - tp)*(clod - cp))/tlod  + cp;
     }
     
+    return(y);
+  }
+  
+  vector ct_hinge_vec_new(vector t, real c0, vector cp, vector cs, real clod, 
+                          real te, vector tp, vector ts, vector tlod, int [] patient_ID)
+  {
+    int N = num_elements(t);
+    vector[N] ret;
+
+    for(k in 1:N){
+      ret[k] = ct_hinge_long(t[k], c0, 
+                             cp[patient_ID[k]], cs[patient_ID[k]],
+                             clod, te, tp[patient_ID[k]],
+                             ts[patient_ID[k]], tlod[patient_ID[k]]);
+    }
+
     return(ret);
   }
-}

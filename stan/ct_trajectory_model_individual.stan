@@ -1,4 +1,4 @@
-#include ct_trajectory_functions.stan
+#include ct_trajectory_functions_old.stan
 
 data {
   int <lower = 0> N; // number of tests
@@ -68,8 +68,8 @@ transformed parameters {
 }
 
 model {
-  // vector [N] diff = day_rel - T_e[id];
-  vector [N] diff = day_rel - T_e;
+  vector [N] diff = day_rel - T_e[id];
+  // vector [N] diff = day_rel - T_e;
   vector [N] exp_ct;
 
   // component of likelihood for time of exposure
@@ -100,29 +100,29 @@ model {
   }
 
   // Prior over possible infection times
-  T_e ~ cauchy(5, 1);
+  T_e ~ cauchy(0, 1);
 
   // Viral load peak timing
-  t_p_mean ~ cauchy(log(20), 1);
+  t_p_mean ~ cauchy(log(5), 1);
   t_p_var ~ cauchy(0, 1);
   t_p_raw ~ normal(0, 1);
 
-  t_s_mean ~ cauchy(log(30), 1);
+  t_s_mean ~ cauchy(log(8), 1);
   t_s_var ~ cauchy(0, 1);
   t_s_raw ~ normal(0, 1);
 
   // // Time dropping below limit of detection
-  t_lod_mean ~ cauchy(log(40), 1);
+  t_lod_mean ~ cauchy(log(12), 1);
   t_lod_var ~ cauchy(0, 1);
   t_lod_raw ~ normal(0, 1);
 
   // // Ct value at peak
-  c_p_mean ~ cauchy(log(0.3), 1);
+  c_p_mean ~ cauchy(log(0.1), 1);
   c_p_var ~ cauchy(0, 1);
   c_p_raw ~ normal(0.3, 1);
 
   // // Ct value at switch to long wane
-  c_s_mean ~ cauchy(log(0.7), 1);
+  c_s_mean ~ cauchy(log(0.3), 1);
   c_s_var ~ cauchy(0, 1);
   c_s_raw ~ normal(0, 1);
 

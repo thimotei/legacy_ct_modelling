@@ -61,8 +61,8 @@ dt.ct[, ct_scaled := (ct_adjusted - mn)/(mx - mn)]
 dt.delta.pooled <- dt.ct[VOC == "Delta" & 
                         days_since_first_test < 20 & 
                         days_since_first_test >= 0] %>% 
-  .[, ID := .GRP, by = ID]
-  # .[, days_since_first_test := days_since_first_test + 15, by = ID]
+  .[, ID := .GRP, by = ID] %>% 
+  .[, days_since_first_test := days_since_first_test + 5, by = ID]
  
 # dt.delta.pooled[, c("ID", "ct", "days_since_first_test", "result")] %>%
 #   .[(result == "Positive" | result == "Inconclusive") & is.na(ct) == FALSE,
@@ -77,8 +77,8 @@ dt.delta.pooled <- dt.ct[VOC == "Delta" &
 dt.omicron.pooled <- dt.ct[VOC == "Omicron" & 
                         days_since_first_test < 20 & 
                         days_since_first_test >= 0] %>% 
-  .[, ID := .GRP, by = ID]
-  # .[, days_since_first_test := days_since_first_test, by = ID]
+  .[, ID := .GRP, by = ID] %>% 
+  .[, days_since_first_test := days_since_first_test + 5, by = ID]
 
 options(mc.cores = parallel::detectCores()) 
 #--- choose here whether you want the individual-level fits 
@@ -93,8 +93,8 @@ fit_delta <- sampling(mod,
                       data = stan_data_delta,
                       iter = 2000)
 
-pairs(fit_delta, pars = c("t_p_mean", "t_s_mean", "t_lod_mean",
-                          "c_p_mean", "c_s_mean", "sigma_obs","t_lod_abs"))
+# pairs(fit_delta, pars = c("t_p_mean", "t_lod_mean",
+#                           "c_p_mean", "sigma_obs","t_lod_abs"))
 
 # stan_trace(fit_delta, pars = c("t_p_mean", "t_s_mean", "t_lod_mean",
 #                                "c_p_mean", "c_s_mean", "sigma_obs",
@@ -125,18 +125,17 @@ res_omicron <- extract(fit_omicron)
 
 #--- combining fits
 #--- delta fits
-dt.t.e.delta <- res_delta$T_e %>% 
-  reshape2::melt() %>% 
-  data.table()  %>% 
-  .[, voc := "Delta"]
+extract_posterior <- function(res, para, voc_arg) {
+  out.dt <- res$eval(para) %>% 
+    reshape2::melt() %>% 
+    data.table()  %>% 
+    .[, voc := voc]
+  
+  return(out.dt)
+  
+  }
 
-dt.c.peak.delta <- res_delta$c_p_mean %>% 
-  reshape2::melt() %>% 
-  data.table() %>% 
-  .[, smp := (mx - mn) * value + mn]  %>% 
-  .[, voc := "Delta"]
-
-dt.t.peak.delta <- res_delta$t_p_mean %>% 
+dt.t.e.delta <- res_delta$eval(T_e) %>% 
   reshape2::melt() %>% 
   data.table()  %>% 
   .[, voc := "Delta"]
@@ -146,15 +145,48 @@ dt.t.e.omicron <- res_omicron$T_e %>%
   data.table()  %>% 
   .[, voc := "Omicron"]
 
+dt.t.peak.delta <- res_delta$t_p_mean %>% 
+  reshape2::melt() %>% 
+  data.table()  %>% 
+  .[, voc := "Delta"]
+
+dt.t.peak.omicron <- res_omicron$t_p_mean %>% 
+  reshape2::melt() %>% 
+  data.table() %>% 
+  .[, voc := "Omicron"]
+
+dt.t.switch.delta <- res_omicron$t_s_mean %>% 
+  reshape2::melt() %>% 
+  data.table() %>% 
+  .[, voc := "Delta"]
+
+dt.t.switch.omicron <- res_omicron$t_s_mean %>% 
+  reshape2::melt() %>% 
+  data.table() %>% 
+  .[, voc := "Omicron"]
+
 dt.c.peak.omicron <- res_omicron$c_p_mean %>% 
   reshape2::melt() %>% 
   data.table() %>% 
   .[, smp := (mx - mn) * value + mn] %>%
   .[, voc := "Omicron"]
 
-dt.t.peak.omicron <- res_omicron$t_p_mean %>% 
+dt.c.peak.delta <- res_delta$c_p_mean %>% 
   reshape2::melt() %>% 
   data.table() %>% 
+  .[, smp := (mx - mn) * value + mn]  %>% 
+  .[, voc := "Delta"]
+
+dt.c.switch.delta <- res_omicron$c_s_mean %>% 
+  reshape2::melt() %>% 
+  data.table() %>% 
+  .[, smp := (mx - mn) * value + mn] %>%
+  .[, voc := "Delta"]
+
+dt.c.switch.omicron <- res_delta$c_p_mean %>% 
+  reshape2::melt() %>% 
+  data.table() %>% 
+  .[, smp := (mx - mn) * value + mn]  %>% 
   .[, voc := "Omicron"]
 
 T.e.posteriors <- rbind(dt.t.e.delta, dt.t.e.omicron) %>%
@@ -163,6 +195,24 @@ T.e.posteriors <- rbind(dt.t.e.delta, dt.t.e.omicron) %>%
   # xlim(0, 5) +
   labs(x = "Time", y = "Probability",
        title = "Posterior distribution for exposure time") +
+  custom_plot_theme() +
+  scale_fill_brewer(palette = "Set2")
+
+p.t.peak.posteriors <- rbind(dt.t.peak.delta, dt.t.peak.omicron) %>% 
+  ggplot() +
+  geom_density(aes(value, fill = voc), alpha = 0.3) + 
+  # xlim(0, 10) +
+  labs(x = "Time (days after exposure)", y = "Probability",
+       title = "Posterior distribution for timing of peak") +
+  custom_plot_theme() +
+  scale_fill_brewer(palette = "Set2")
+
+p.t.switch.posteriors <- rbind(dt.t.switch.delta, dt.t.switch.omicron) %>% 
+  ggplot() +
+  geom_density(aes(value, fill = voc), alpha = 0.3) + 
+  # xlim(0, 10) +
+  labs(x = "Time (days after exposure)", y = "Probability",
+       title = "Posterior distribution for timing of switch") +
   custom_plot_theme() +
   scale_fill_brewer(palette = "Set2")
 
@@ -175,16 +225,17 @@ p.c.peak.posteriors <- rbind(dt.c.peak.delta, dt.c.peak.omicron) %>%
   custom_plot_theme() +
   scale_fill_brewer(palette = "Set2")
 
-p.t.peak.posteriors <- rbind(dt.t.peak.delta, dt.t.peak.omicron) %>% 
+p.c.switch.posteriors <- rbind(dt.c.switch.delta, dt.c.switch.omicron) %>% 
   ggplot() +
-  geom_density(aes(value, fill = voc), alpha = 0.3) + 
-  xlim(0, 10) +
-  labs(x = "Time (days after exposure)", y = "Probability",
-       title = "Posterior distribution for timing of peak") +
+  geom_density(aes(smp, fill = voc), alpha = 0.3) + 
+  xlim(0, 45) +
+  labs(x = "Ct value", y = "Probability",
+       title = "Posterior distribution for switch Ct value") +
   custom_plot_theme() +
   scale_fill_brewer(palette = "Set2")
 
-p.all.posteriors <- p.c.peak.posteriors + p.t.peak.posteriors + plot_layout(guides = 'collect')
+p.all.posteriors <- p.t.peak.posteriors + p.t.switch.posteriors + 
+  p.c.peak.posteriors + p.c.switch.posteriors + plot_layout(guides = 'collect')
 
 #--- plotting posterior predictive
 fit_dt_delta_pooled <- as.data.frame(fit_delta, pars = "ct") %>%
@@ -224,27 +275,31 @@ fit_dt_omicron_pooled_summary <- fit_dt_omicron_pooled[, .(me = quantile(value, 
 # dt.ct.omicron.pooled.plot <- dt.ct.omicron.pooled[, ct_value_plot := ct_value_adjusted] %>% 
 #   .[is.na(ct_value_adjusted), ct_value_adjusted := 45]
 
+# p.predictive <- rbind(fit_dt_delta_pooled_summary, fit_dt_omicron_pooled_summary) %>% 
+#   ggplot() + 
+#   geom_line(aes(x = as.numeric(time), y = me, colour = voc)) + 
+#   geom_ribbon(aes(x = time, ymin = lo, ymax = hi, fill = voc), alpha = 0.2) +
+#   scale_y_reverse() +
+#   custom_plot_theme(flip = TRUE) + 
+#   scale_fill_brewer(palette = "Set1") + 
+#   labs(title = "Inferred Ct trajectory", 
+#        x = "Time (days since inferred exposure)", y = "Ct value")
+
+dt.data <- rbind(dt.delta.pooled[, voc := "Delta"],
+                 dt.omicron.pooled[, voc := "Omicron"])
+
+
 p.predictive <- rbind(fit_dt_delta_pooled_summary, fit_dt_omicron_pooled_summary) %>% 
   ggplot() + 
   geom_line(aes(x = as.numeric(time), y = me, colour = voc)) + 
   geom_ribbon(aes(x = time, ymin = lo, ymax = hi, fill = voc), alpha = 0.2) +
+  geom_point(data = dt.data, aes(x = days_since_first_test, y = ct_adjusted, colour = voc), alpha = 0.35) +
+  geom_line(stat = "smooth", data = dt.data, aes(x = days_since_first_test, y = ct_adjusted, colour = voc), alpha = 0.35) +
   scale_y_reverse() +
   custom_plot_theme(flip = TRUE) + 
   scale_fill_brewer(palette = "Set1") + 
   labs(title = "Inferred Ct trajectory", 
        x = "Time (days since inferred exposure)", y = "Ct value")
-
-
-p.predictive <- rbind(fit_dt_delta_pooled_summary, fit_dt_omicron_pooled_summary) %>% 
-  ggplot() + 
-  geom_line(aes(x = as.numeric(time), y = me, colour = voc)) + 
-  geom_ribbon(aes(x = time, ymin = lo, ymax = hi, fill = voc), alpha = 0.2) +
-  scale_y_reverse() +
-  custom_plot_theme(flip = TRUE) + 
-  scale_fill_brewer(palette = "Set1") + 
-  labs(title = "Inferred Ct trajectory", 
-       x = "Time (days since inferred exposure)", y = "Ct value")  + 
-  lims(y = c(45, 0))
 
 # fit_dt_omicron_pooled_summary %>% 
 #   ggplot() + 
@@ -255,6 +310,9 @@ p.predictive <- rbind(fit_dt_delta_pooled_summary, fit_dt_omicron_pooled_summary
 #   scale_fill_brewer(palette = "Set1") + 
 #   labs(title = "Inferred Ct trajectory", 
 #        x = "Time (days since inferred exposure)", y = "Ct value")
+
+
+
 
 p.all <- p.all.posteriors/p.predictive
 p.all

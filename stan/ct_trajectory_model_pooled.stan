@@ -67,6 +67,7 @@ transformed parameters {
   // c_p = c_s .* inv_logit(c_p_mean + c_p_var * c_p_raw);
   // t_lod_abs  = t_p + t_s + t_lod;
   t_lod_abs  = t_p_mean + t_s_mean + t_lod_mean;
+  // t_lod_abs  = t_p_mean + t_lod_mean;
 
 }
 
@@ -88,7 +89,8 @@ model {
   
   // Expected ct value given viral load parameters
   for(i in 1:N) {
-    exp_ct[i] = ct_hinge(diff[i], c_0, c_p_mean, c_s_mean, c_lod, t_e, t_p_mean, t_s_mean, t_lod_abs);
+    exp_ct[i] = ct_hinge_long(diff[i], c_0, c_p_mean, c_s_mean, c_lod, t_e, t_p_mean, t_s_mean, t_lod_abs);
+    // exp_ct[i] = ct_hinge_single(diff[i], c_0, c_p_mean, c_lod, t_e, t_p_mean, t_lod_abs);
   }
   // exp_ct = ct_hinge_vec(diff, c_0, c_p, c_s, c_lod, t_e, t_p, t_s, t_lod_abs, id);
 
@@ -100,35 +102,35 @@ model {
       target +=  normal_lcdf(c_lod | exp_ct[j], sigma_obs);
       }
     // if negative result: P(Ct not detected | expected ct)
-    else {
+    else if(pcr_res[j] == 0) {
       target += normal_lccdf(c_lod | exp_ct[j], sigma_obs);
     }
   }
 
   // Prior over possible infection times
-  T_e ~ normal(0, 2);
+  T_e ~ normal(0, 1);
 
   // // Viral load peak timing
-  t_p_mean ~ normal(5, 2);
+  t_p_mean ~ normal(10, 1);
   // t_p_var ~ cauchy(0, 1);
   // t_p_raw ~ normal(0, 1);
 
-  t_s_mean ~ normal(8, 2);
+  t_s_mean ~ normal(13, 2);
   // t_s_var ~ cauchy(0, 1);
   // t_s_raw ~ normal(0, 1);
   
   // // // Time dropping below limit of detection
-  t_lod_mean ~ normal(10, 2);
+  t_lod_mean ~ normal(15, 2);
   // t_lod_var ~ cauchy(0, 1);
   // t_lod_raw ~ normal(0, 1);
   
   // // // Ct value at peak
-  c_p_mean ~  normal(-0.2, 2);
+  c_p_mean ~  normal(-0.2, 1);
   // c_p_var ~ cauchy(0, 1);
   // c_p_raw ~ normal(0.3, 1);
   
   // // // Ct value at switch to long wane
-  c_s_mean ~ normal(0.3, 2);
+  c_s_mean ~ normal(0, 2);
   // c_s_var ~ cauchy(0, 1);
   // c_s_raw ~ normal(0, 1);
 
@@ -149,6 +151,6 @@ generated quantities {
   for(j in 1:201) {
     k = (j * 0.1) - 0.1;
     // for(j in 1:20) {
-      ct[j] = ct_hinge(k, c_0, c_p_mean, c_s_mean, c_lod, t_e, t_p_mean, t_s_mean, t_lod_abs);
+      ct[j] = ct_hinge_long(k, c_0, c_p_mean, c_s_mean, c_lod, t_e, t_p_mean, t_s_mean, t_lod_abs);
     }
 }
