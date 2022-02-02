@@ -1,35 +1,34 @@
 library(data.table)
+library(ggplot2)
 library(lubridate)
-library(patchwork)
-library(rstan)
 library(cowplot)
-library(stringr)
-library(purrr)
+library(patchwork)
 
-source("R/stan_data.R")
 source("R/custom_plot_theme.R")
-source("scripts/dry_vs_wet.R")
 
-dt.raw <- fread("data/ct_values_clean.csv") 
+#--- loading in adjustment factors and defining function for 
+#--- dry vs wet swab adjustment. We adjust the VTM swabs downwards
+adjustment.fun <- function(alpha, beta, x) {alpha + beta*x}
+adjustment.dt <- fread("data/adjustment_params.csv")
 
 dt.ct <- fread("data/ct_values_clean.csv") %>% 
   .[, swab_date := dmy(swab_date)] %>% 
   .[barcode %like% "49U", swab_date := swab_date - 1] %>% 
   .[symptom_onset_date == "unknown", symptom_onset_date := NA] %>% 
-  .[centre == "crick"] %>% 
   .[, symptom_onset_date := dmy(symptom_onset_date)] %>% 
   .[, date_dose_1 := dmy(date_dose_1)] %>% 
   .[, date_dose_2 := dmy(date_dose_2)] %>% 
   .[, date_dose_3 := dmy(date_dose_3)] %>% 
   .[, days_since_symptom_onset := as.numeric(swab_date - symptom_onset_date, units = "days"), by = "ID"] %>% 
-  .[, days_since_first_test := as.numeric(swab_date - min(swab_date), units = "days")] %>% 
+  .[, days_since_first_test := as.numeric(swab_date - min(swab_date), units = "days"), by = "ID"] %>% 
   .[ct != "unknown"] %>% 
   .[, ct := as.numeric(ct)] %>% 
   .[result == "Negative", ct := 40] %>% 
-  .[swab_type == "VTM" & result != "Negative", ct_adjusted := ct*adjustment.dt[, mi]] %>%
-  .[swab_type != "VTM", ct_adjusted := ct] %>% 
-  .[result == "Positive" | result == "Inconclusive", result_num := 1] %>% 
-  .[result == "Negative" | result == "Invalid" | result == "", result_num := 0]
+  .[swab_type == "VTM" & result == "Negative", ct_adjusted := 40] %>%
+  .[swab_type == "VTM" & result != "Negative", ct_adjusted := adjustment.fun(adjustment.dt[param == "alpha", me],
+                                                                             adjustment.dt[param == "beta", me],
+                                                                             ct)] %>%
+  .[swab_type != "VTM", ct_adjusted := ct]
 
 #--- removing duplicate VTM vs Dry swabs
 barcodes.to.remove <-  dt.ct[swab_type == "Dry" | swab_type == "VTM"] %>% 
@@ -40,7 +39,12 @@ barcodes.to.remove <-  dt.ct[swab_type == "Dry" | swab_type == "VTM"] %>%
 
 dt.ct <- dt.ct[!barcode %in% barcodes.to.remove] 
 
-no_pos_cts <- dt.ct[(result == "Positive" | result == "Inconclusive") & is.na(ct) == FALSE] %>% 
+#--- conditioning on only tests performed in the Crick, leaving out
+#--- UCLH swabs for now
+dt.ct <- dt.ct[centre == "crick"]
+
+#--- counting number of positive swabs by individual
+no_pos_cts <- dt.ct[(result == "Positive" | result == "Inconclusive") & is.na(ct_adjusted) == FALSE] %>% 
   .[, .N, by = c("ID", "infection_ID")]
 
 dt.ct <- merge.data.table(dt.ct, no_pos_cts, by = c("ID", "infection_ID")) %>%  
@@ -48,6 +52,7 @@ dt.ct <- merge.data.table(dt.ct, no_pos_cts, by = c("ID", "infection_ID")) %>%
            c("N", "number_vaccines (14 days pre ix)"), 
            c("no_pos_results", "no_vaccines"))
 
+dt.ct[result == "Inconclusive"]
 
 #--- conditioning on only tests performed in the Crick, leaving out
 #--- UCLH swabs for now
@@ -68,9 +73,9 @@ dt.delta <- dt.ct[VOC == "Delta"] %>%
   .[no_pos_results > 2] %>% 
   .[, ID := .GRP, by = ID]
   
-dt.delta %>%  
+p1 <- dt.delta %>%  
   ggplot(aes(x = t_first_test, y = ct_adjusted)) +
-  geom_point(aes(colour = factor(result_num))) +
+  geom_point(aes(colour = factor(result))) +
   geom_smooth() +
   facet_wrap(~ID, scales = "free")
 
@@ -80,11 +85,13 @@ dt.omicron <- dt.ct[VOC == "Omicron"] %>%
   .[no_pos_results > 2] %>% 
   .[, ID := .GRP, by = ID]
 
-dt.omicron %>%  
+p2 <- dt.omicron %>%  
   ggplot(aes(x = t_first_test, y = ct_adjusted)) +
-  geom_point(aes(colour = factor(result_num))) +
-  geom_smooth() +
-  facet_wrap(~ID, scales = "free")
+  geom_point(aes(colour = factor(result))) +
+  geom_smooth(se = FALSE) +
+  facet_wrap(~ID)
+
+p1 + p2
 
 options(mc.cores = parallel::detectCores()) 
 #--- choose here whether you want the individual-level fits 
@@ -99,8 +106,7 @@ fit_delta <- sampling(mod,
                       data = stan_data_delta,
                       iter = 2000)
 
-# pairs(fit_delta, pars = c("t_p_mean", "t_lod_mean",
-#                           "c_p_mean", "sigma_obs","t_lod_abs"))
+# pairs(fit_delta, pars = c("t_p_mean"))
 
 # stan_trace(fit_delta, pars = c("t_p_mean", "t_s_mean", "t_lod_mean",
 #                                "c_p_mean", "c_s_mean", "sigma_obs",
@@ -128,6 +134,8 @@ fit_omicron <- sampling(mod,
                         iter = 2000)
 
 res_omicron <- extract(fit_omicron)
+
+fit_omicron
 
 #--- combining fits
 #--- delta fits
@@ -334,7 +342,16 @@ ct_melt_fun <- function(id) {
   
   return(dt.out)
   
-  }
+}
+
+
+dt.tmp <- 1:stan_data_delta$P %>% 
+  map_df(~ct_melt_fun(.)) %>% 
+  setnames(., 
+           c("Var1", "Var2", "value"),
+           c("iteration", "time", "ct")) %>% 
+  summary()
+
 
 dt.delta.predictive <- 1:stan_data_delta$P %>% 
   map_df(~ct_melt_fun(.)) %>% 
@@ -353,8 +370,30 @@ dt.delta.predictive <- 1:stan_data_delta$P %>%
 dt.delta.predictive %>% 
   ggplot(aes(x = time)) + 
   geom_line(aes(y = me)) + 
-  # geom_ribbon(aes(ymin = lo, ymax = hi)) +
+  geom_ribbon(aes(ymin = lo, ymax = hi), alpha = 0.2) +
+  geom_point(data = dt.delta[, id := ID], aes(x = t_first_test, y = ct_scaled)) +
   facet_wrap(~id)
+
+dt.omicron.predictive <- 1:stan_data_omicron$P %>% 
+  map_df(~ct_melt_fun(.)) %>% 
+  setnames(., 
+           c("Var1", "Var2", "value"),
+           c("iteration", "time", "ct")) %>% 
+  .[, ct := (mx - mn) * ct + mn] %>% 
+  .[order(time)] %>%  
+  .[, id := 1:stan_data_omicron$P,
+    by = c("iteration", "time")] %>% 
+  .[, .(me = quantile(ct, 0.5), 
+        lo = quantile(ct, 0.025),
+        hi = quantile(ct, 0.975)),
+    by = c("id", "time")]
+
+dt.omicron.predictive %>% 
+  ggplot(aes(x = time)) + 
+  geom_line(aes(y = me)) + 
+  geom_ribbon(aes(ymin = lo, ymax = hi)) +
+  facet_wrap(~id)
+
 
 p.all <- p.all.posteriors/p.predictive
 p.all

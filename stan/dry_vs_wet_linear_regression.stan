@@ -16,5 +16,5 @@ model {
 
 generated quantities {
   real y_pred[N];
-  y_pred = normal_rng(alpha + x*beta, sigma);
+  y_pred = normal_rng(alpha + beta * x, sigma);
 }

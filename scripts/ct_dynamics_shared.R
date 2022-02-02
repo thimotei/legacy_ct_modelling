@@ -3,15 +3,42 @@ library(ggplot2)
 library(lubridate)
 library(cowplot)
 library(patchwork)
+library(encryptr)
 
-source("R/custom_plot_theme.R")
+#--- defining a custom plot theme for ggplot objects
+custom_plot_theme <- function(flip = FALSE, legend_arg = FALSE) {
+  
+  custom_plot_theme = list(
+    theme_cowplot(11),
+    theme(strip.placement = "outside",
+          strip.background = element_blank()),
+    geom_vline(aes(xintercept = -Inf)),
+    guides(color = guide_legend(override.aes = list(fill = NA))))
+  
+  if(flip == FALSE) { 
+    append(custom_plot_theme, geom_hline(aes(yintercept = -Inf)))
+  }
+  
+  if(legend_arg == FALSE) {
+    append(custom_plot_theme,
+           theme(legend.title = element_blank()))
+  }
+  
+  return(custom_plot_theme)
+}
 
-#--- loading in adjustment factors and defining function for 
-#--- dry vs wet swab adjustment. We adjust the VTM swabs downwards
+#--- defining function for dry vs wet swab adjustment 
+#--- we adjust the VTM swabs downwards
 adjustment.fun <- function(alpha, beta, x) {alpha + beta*x}
-adjustment.dt <- fread("data/adjustment_params.csv")
+adjustment.dt <- data.table(param = c("alpha", "beta"),
+                            me = c(0.949591208744795, 0.807592348470527),
+                            lo = c(-1.857339823018790, 0.685903357311594),
+                            hi = c(4.02657501060788, 0.919626934297874))
 
-dt.ct <- fread("data/ct_values_clean.csv") %>% 
+#--- loading in encrypted R object
+load("~/Dropbox/Legacy_LSHTM/ct_dynamics.Rdata") 
+
+dt.ct <- dt.ct %>% 
   .[, swab_date := dmy(swab_date)] %>% 
   .[barcode %like% "49U", swab_date := swab_date - 1] %>% 
   .[symptom_onset_date == "unknown", symptom_onset_date := NA] %>% 
@@ -52,7 +79,7 @@ dt.ct <- merge.data.table(dt.ct, no_pos_cts, by = c("ID", "infection_ID")) %>%
            c("N", "number_vaccines (14 days pre ix)"), 
            c("no_pos_results", "no_vaccines"))
 
-#--- pooled plots - with negative test results
+#--- Plotting results, first row - "with negative results"
 p1.all <- dt.ct %>% 
   .[days_since_first_test < 20 & (VOC == "Delta" | VOC == "Omicron") & result != "Invalid" & result != ""] %>% 
   ggplot(aes(x = days_since_first_test, y = ct, colour = interaction(factor(VOC)))) + 
@@ -88,7 +115,7 @@ p2.all <- dt.ct %>%
 
 p.all <- p1.all + p2.all
 
-#--- pooled plots - without negative test resulrs
+#--- Plotting results, second row - "without negative results"
 p1.no.neg <- dt.ct %>% 
   .[days_since_first_test < 20 & (VOC == "Delta" | VOC == "Omicron") & (result == "Positive" | result == "Inconclusive")] %>% 
   ggplot(aes(x = days_since_first_test, y = ct, colour = factor(VOC))) + 
@@ -120,22 +147,9 @@ p2.no.neg <- dt.ct %>%
   theme(plot.subtitle = element_text(hjust = 0.5))
 
 p.all.no.neg <- p1.no.neg + p2.no.neg 
-
 p.all.both <- p.all/p.all.no.neg + plot_layout(guides = "collect") 
 
-# ggsave("outputs/ct_dynamics_all.png",
-#        p.all.both,
-#        width = 9,
-#        height = 9,
-#        bg = "white")
-# 
-# ggsave("outputs/ct_dynamics_all.pdf",
-#        p.all.both,
-#        width = 9,
-#        height = 9,
-#        bg = "white")
-
-#--- looking at Omicron curves with different numbers of vaccines
+#--- Plotting results, third row - "stratifying omicron curves by numbers of vaccine"
 p1.vaccines <- dt.ct %>% 
   .[days_since_first_test < 20 & (VOC == "Omicron") & result != "Invalid" & result != ""] %>% 
   ggplot(aes(x = days_since_first_test, y = ct, colour = interaction(factor(no_vaccines)))) + 
@@ -172,38 +186,12 @@ p2.vaccines <- dt.ct %>%
   guides(color=guide_legend(override.aes=list(fill=NA)))
 
 p.vaccines <- p1.vaccines + p2.vaccines + plot_layout(guides = "collect")
-  
 p.all.vaccines <- p.all.both/p.vaccines
 
-ggsave("outputs/ct_dynamics_adjusted_vaccines.png",
-       p.all.vaccines,
-       width = 7,
-       height = 9,
-       bg = "white")
+#--- saving overall plot with all three rows
+# ggsave("outputs/ct_dynamics_adjusted_vaccines.png",
+#        p.all.vaccines,
+#        width = 7,
+#        height = 9,
+#        bg = "white")
 
-#--- individual level plots
-p.delta.individual <- dt.ct %>%
-  .[no_pos_results > 2] %>%
-  .[(VOC == "Delta") & result != "Invalid" & result != ""] %>%
-  ggplot(aes(x = days_since_first_test, y = ct_adjusted)) +
-  geom_point(aes(colour = factor(result))) +
-  #geom_line() +
-  geom_line(stat = "smooth", se = FALSE, colour = "black", alpha = 0.2) +
-  scale_y_reverse() +
-  # facet_wrap(~ID, scales = "free_x") +
-  custom_plot_theme()
-
-p.omicron.individual <- dt.ct %>%
-  .[no_pos_results > 2] %>%
-  .[(VOC == "Omicron") & result != "Invalid" & result != ""] %>%
-  ggplot(aes(x = days_since_first_test, y = ct_adjusted)) +
-  geom_point(aes(colour = factor(result))) +
-  #geom_line() +
-  geom_line(stat = "smooth", se = FALSE, colour = "black", alpha = 0.2) +
-  scale_y_reverse() +
-  # facet_wrap(~ID, scales = "free_x") +
-  custom_plot_theme()
-# 
-# dt.ct %>%
-#   .[no_pos_results > 2] %>%
-#   .[(VOC == "Omicron") & result != "Invalid" & result != "" & swab_type != "LFT" & ID == 928]

@@ -51,24 +51,21 @@ parameters {
 
 transformed parameters {
   
-  // vector [P] t_p;
-  // vector [P] t_s;
-  // vector [P] t_lod;
-  // vector [P] c_s;
-  // vector [P] c_p;
-  // vector [P] t_lod_abs;
+  vector [P] t_p;
+  vector [P] t_s;
+  vector [P] t_lod;
+  vector [P] c_s;
+  vector [P] c_p;
+  vector [P] t_lod_abs;
   real t_lod_abs;
 
   // non-centred, hierarchical parameterisation
-  // t_p = exp(t_p_mean + t_p_var * t_p_raw);
-  // t_s = exp(t_s_mean + t_s_var * t_s_raw);
-  // t_lod = exp(t_lod_mean + t_lod_var * t_lod_raw);
-  // c_s = c_lod * inv_logit(c_s_mean + c_s_var * c_s_raw);
-  // c_p = c_s .* inv_logit(c_p_mean + c_p_var * c_p_raw);
-  // t_lod_abs  = t_p + t_s + t_lod;
-  t_lod_abs  = t_p_mean + t_s_mean + t_lod_mean;
-  // t_lod_abs  = t_p_mean + t_lod_mean;
-
+  t_p = exp(t_p_mean + t_p_var * t_p_raw);
+  t_s = exp(t_s_mean + t_s_var * t_s_raw);
+  t_lod = exp(t_lod_mean + t_lod_var * t_lod_raw);
+  c_s = c_lod * inv_logit(c_s_mean + c_s_var * c_s_raw);
+  c_p = c_s .* inv_logit(c_p_mean + c_p_var * c_p_raw);
+  t_lod_abs = t_p_mean + t_s_mean + t_lod_mean;
 }
 
 model {

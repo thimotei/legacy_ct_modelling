@@ -201,7 +201,7 @@ T.e.posteriors <- rbind(dt.t.e.delta, dt.t.e.omicron) %>%
 p.t.peak.posteriors <- rbind(dt.t.peak.delta, dt.t.peak.omicron) %>% 
   ggplot() +
   geom_density(aes(value, fill = voc), alpha = 0.3) + 
-  # xlim(0, 10) +
+  xlim(0, 10) +
   labs(x = "Time (days after exposure)", y = "Probability",
        title = "Posterior distribution for timing of peak") +
   custom_plot_theme() +
@@ -210,7 +210,7 @@ p.t.peak.posteriors <- rbind(dt.t.peak.delta, dt.t.peak.omicron) %>%
 p.t.switch.posteriors <- rbind(dt.t.switch.delta, dt.t.switch.omicron) %>% 
   ggplot() +
   geom_density(aes(value, fill = voc), alpha = 0.3) + 
-  # xlim(0, 10) +
+  xlim(0, 10) +
   labs(x = "Time (days after exposure)", y = "Probability",
        title = "Posterior distribution for timing of switch") +
   custom_plot_theme() +
@@ -268,22 +268,21 @@ fit_dt_omicron_pooled_summary <- fit_dt_omicron_pooled[, .(me = quantile(value, 
   .[, voc := "Omicron"] %>% 
   .[, time := time/10 - 1]
 
-# 
-# dt.ct.delta.pooled.plot <- dt.ct.delta.pooled[, ct_value_plot := ct_value_adjusted] %>% 
-#   .[is.na(ct_value_adjusted), ct_value_adjusted := 45]
-# 
-# dt.ct.omicron.pooled.plot <- dt.ct.omicron.pooled[, ct_value_plot := ct_value_adjusted] %>% 
-#   .[is.na(ct_value_adjusted), ct_value_adjusted := 45]
+dt.ct.delta.pooled.plot <- dt.ct.delta.pooled[, ct_value_plot := ct_value_adjusted] %>%
+   .[is.na(ct_value_adjusted), ct_value_adjusted := 45]
 
-# p.predictive <- rbind(fit_dt_delta_pooled_summary, fit_dt_omicron_pooled_summary) %>% 
-#   ggplot() + 
-#   geom_line(aes(x = as.numeric(time), y = me, colour = voc)) + 
-#   geom_ribbon(aes(x = time, ymin = lo, ymax = hi, fill = voc), alpha = 0.2) +
-#   scale_y_reverse() +
-#   custom_plot_theme(flip = TRUE) + 
-#   scale_fill_brewer(palette = "Set1") + 
-#   labs(title = "Inferred Ct trajectory", 
-#        x = "Time (days since inferred exposure)", y = "Ct value")
+ dt.ct.omicron.pooled.plot <- dt.ct.omicron.pooled[, ct_value_plot := ct_value_adjusted] %>%
+   .[is.na(ct_value_adjusted), ct_value_adjusted := 45]
+
+p.predictive <- rbind(fit_dt_delta_pooled_summary, fit_dt_omicron_pooled_summary) %>%
+   ggplot() +
+   geom_line(aes(x = as.numeric(time), y = me, colour = voc)) +
+   geom_ribbon(aes(x = time, ymin = lo, ymax = hi, fill = voc), alpha = 0.2) +
+   scale_y_reverse() +
+   custom_plot_theme(flip = TRUE) +
+   scale_fill_brewer(palette = "Set1") +
+   labs(title = "Inferred Ct trajectory",
+        x = "Time (days since inferred exposure)", y = "Ct value")
 
 dt.data <- rbind(dt.delta.pooled[, voc := "Delta"],
                  dt.omicron.pooled[, voc := "Omicron"])

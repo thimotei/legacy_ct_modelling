@@ -3,7 +3,7 @@ stan_data_fun <- function(input_data) {
   stan_data <- list(N = input_data[, .N], 
                     P = input_data[, uniqueN(ID)],
                     id = input_data[, ID],
-                    day_rel = input_data[, days_since_first_test],
+                    day_rel = input_data[, t_first_test],
                     ct_value = ifelse(is.na(input_data$ct_adjusted), -99, input_data$ct_scaled),
                     # ct_value = ifelse(is.na(input_data$ct_adjusted), 40, input_data$ct_adjusted),
                     pcr_res = input_data[, as.numeric(result_num)], 

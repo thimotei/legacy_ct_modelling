@@ -58,17 +58,17 @@ transformed parameters {
   vector [P] t_lod_abs;
 
   // non-centred, hierarchical parameterisation
-  t_p = exp(t_p_mean + t_p_var * t_p_raw);
-  t_s = exp(t_s_mean + t_s_var * t_s_raw);
-  t_lod = exp(t_lod_mean + t_lod_var * t_lod_raw);
-  c_s = c_lod * inv_logit(c_s_mean + c_s_var * c_s_raw);
-  c_p = c_s .* inv_logit(c_p_mean + c_p_var * c_p_raw);
+  t_p = rep_vector(t_p_mean, P); // + t_p_var * t_p_raw);
+  t_s = rep_vector(t_s_mean, P); // + t_s_var * t_s_raw);
+  t_lod = rep_vector(t_lod_mean, P); // + t_lod_var * t_lod_raw);
+  c_s = rep_vector(c_lod * c_s_mean, P); //+ c_s_var * c_s_raw); // c_s <= c_lod
+  c_p = c_s * c_p_mean; //+ c_p_var * c_p_raw); // c_p <= c_s
   t_lod_abs  = t_p + t_s + t_lod;
 
 }
 
 model {
-  vector [N] diff = day_rel - T_e[id];
+  vector [N] diff = day_rel + T_e[id];
   // vector [N] diff = day_rel - T_e;
   vector [N] exp_ct;
 
@@ -91,7 +91,7 @@ model {
     // If positive result: P(observed ct | expected ct)*P(Ct detected | expected ct)
     if(pcr_res[j] == 1) {
       ct_value[j] ~ normal(exp_ct[j], sigma_obs) T[, c_lod];
-      target +=  normal_lcdf(c_lod | exp_ct[j], sigma_obs);
+      target += normal_lcdf(c_lod | exp_ct[j], sigma_obs);
       }
     // if negative result: P(Ct not detected | expected ct)
     else {
@@ -100,29 +100,29 @@ model {
   }
 
   // Prior over possible infection times
-  T_e ~ cauchy(0, 1);
+  T_e ~ normal(5, 2);
 
   // Viral load peak timing
-  t_p_mean ~ cauchy(log(5), 1);
+  t_p_mean ~ normal(5, 1);
   t_p_var ~ cauchy(0, 1);
   t_p_raw ~ normal(0, 1);
 
-  t_s_mean ~ cauchy(log(8), 1);
+  t_s_mean ~ normal(4, 1);
   t_s_var ~ cauchy(0, 1);
   t_s_raw ~ normal(0, 1);
 
   // // Time dropping below limit of detection
-  t_lod_mean ~ cauchy(log(12), 1);
-  t_lod_var ~ cauchy(0, 1);
+  t_lod_mean ~ normal(10, 1);
+  t_lod_var ~ normal(0, 1);
   t_lod_raw ~ normal(0, 1);
 
   // // Ct value at peak
-  c_p_mean ~ cauchy(log(0.1), 1);
-  c_p_var ~ cauchy(0, 1);
-  c_p_raw ~ normal(0.3, 1);
+  c_p_mean ~ beta(1, 1);
+  c_p_var ~ normal(0, 1);
+  c_p_raw ~ normal(0, 1);
 
   // // Ct value at switch to long wane
-  c_s_mean ~ cauchy(log(0.3), 1);
+  c_s_mean ~ beta(1, 1);
   c_s_var ~ cauchy(0, 1);
   c_s_raw ~ normal(0, 1);
 

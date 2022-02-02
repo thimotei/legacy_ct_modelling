@@ -63,3 +63,4 @@ real ct_hinge_long(real t, real c0, real cp, real cs,
 
     return(ret);
   }
+}

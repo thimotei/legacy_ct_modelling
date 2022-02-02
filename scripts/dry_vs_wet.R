@@ -1,79 +1,33 @@
 library(data.table)
-library(ggplot2)
+library(lubridate)
+library(patchwork)
 library(rstan)
+library(cowplot)
+library(stringr)
+library(purrr)
 
-dt.ct <- fread("data/ct_values_dry_vs_wet.csv") %>% 
-  setnames(.,
-           c("Study number", "sample date", "barcode",
-                "swab type", "Ct", "VOC"),
-           c("id", "date", "barcode", "swab_type", "ct_value",
-             "voc")) %>% 
-  .[, date := dmy(date)] %>% 
-  .[voc == "Alpha", voc := "alpha"] %>% 
-  .[voc == "Delta", voc := "delta"] %>% 
-  .[voc == "Omicron", voc := "omicron"] %>% 
-  .[voc == "OMicron", voc := "omicron"] %>% 
-  .[voc == "Omicron/SGTF", voc := "omicron"] %>% 
-  .[voc == "S gene present", voc := "omicron"] %>% 
-  .[voc == "omicron" | voc == "delta" |
-      voc == "Positive" | voc == "positive" |
-      voc == "alpha" | voc == "Positive SARS-CoV-2", result := 1] %>% 
-  .[voc == "negative" | voc == "SARS-CoV-2 Not Detected", result := 0] %>% 
-  .[voc == "SARS-CoV-2 Not Detected" | 
-      voc == "SARS-CoV-2 Inconclusive" | voc == "?SGTF" |
-      voc == "retest/inconsistent" | voc == "Positive" | voc == "positive" |
-      voc == "Positive SARS-CoV-2" | voc == "Inconclusive" |
-      voc == "inconclusive", voc := NA] %>% 
-  .[, ct_value := as.numeric(ct_value)] %>% 
-  .[is.na(ct_value), ct_value := NA] %>% 
-  .[result == 0, ct_value := 45]
+source("R/custom_plot_theme.R")
 
+dt.raw <- fread("data/ct_values_clean.csv") 
 
-t1 <- dt.ct %>% 
-  .[, obs := .N, by = c("id", "date")] %>%  
-  .[obs > 1] %>% 
-  .[, c("id", "date", "swab_type", "ct_value")]
+dt.ct <- fread("data/ct_values_clean.csv") %>% 
+  .[, swab_date := dmy(swab_date)] %>% 
+  .[barcode %like% "49U", swab_date := swab_date - 1] %>% 
+  .[, ct := as.numeric(ct)]
 
+dt.reduced <- dt.ct[,  c("ID", "barcode", "swab_date", "swab_type",
+                         "ct")]
 
-t2 <- t1[, .SD[swab_type != shift(swab_type)], by = id] %>% 
-  .[order(id, date)] %>% 
-  .[, obs:= .N, by = c("id", "date")] %>% 
-  .[obs > 1] %>% 
-  na.omit()
+dt.vtm <- dt.reduced[swab_type == "VTM"]
+dt.dry <- dt.reduced[swab_type == "Dry"]
 
-t3 <- t2[swab_type == "VTM"]
-t4 <- t2[swab_type == "Dry"]
-t5 <- t2[swab_type == "pipeline"][, swab_type := "Dry"]
-
-t6 <- rbind(t4, t5) 
-
-t7 <- merge.data.table(t3, t6, by = c("id", "date"))
-
-#--- frequentist linear regression fits
-
-p.vtm.vs.wet.frequentist <- t7[ct_value.x < 45] %>% 
-  ggplot(aes(x = ct_value.x, y = ct_value.y)) + 
-  geom_point() +
-  labs(x = "Ct value of VTM test", y = "Ct value of Dry swab",
-       title = "Frequentist fit") + 
-  geom_smooth(method = "lm") +
-  theme(legend.position = "none") +
-  ylim(13, 30)
-
-# ggsave("outputs/dry_vs_wet_scatter_plot.png",
-#        p1,
-#        width = 6,
-#        height = 6,
-#        bg = "white")
-
-cor.test(t7[ct_value.x < 45]$ct_value.x, t7[ct_value.x < 45]$ct_value.y, method = "pearson")
-
-#--- Bayesian linear regression fits
+dt.both <- merge.data.table(dt.vtm, dt.dry, by = c("ID", "swab_date")) %>% 
+  setnames(., c("ct.x", "ct.y"), c("ct.vtm", "ct.dry"))
 
 stan_data <- list(
-  N = t7[ct_value.x < 45, .N],
-  x = t7[ct_value.x < 45, ct_value.x],
-  y = t7[ct_value.x < 45, ct_value.y])
+  N = dt.both[ct.vtm < 45 & is.na(ct.vtm) == FALSE & is.na(ct.dry) == FALSE, .N],
+  x = dt.both[ct.vtm < 45 & is.na(ct.vtm) == FALSE & is.na(ct.dry) == FALSE, ct.vtm],
+  y = dt.both[ct.dry < 45 & is.na(ct.vtm) == FALSE & is.na(ct.dry) == FALSE, ct.dry])
 
 options(mc.cores = parallel::detectCores())
 mod <- stan_model("stan/dry_vs_wet_linear_regression.stan")
@@ -86,8 +40,14 @@ fit <- sampling(mod,
 
 res <- extract(fit)
 
-# a data.table summarising the sampled values into a median and 95% credible
-# intervals
+p.vtm.vs.wet.frequentist <- dt.both[ct.vtm < 45] %>% 
+  ggplot(aes(x = ct.vtm, y = ct.dry)) + 
+  geom_point() +
+  labs(x = "Ct value of VTM test", y = "Ct value of Dry swab",
+       title = "Frequentist fit") + 
+  geom_smooth(method = "lm") +
+  theme(legend.position = "none")
+
 y_pred_dt <- melt(data.table(res$y_pred),
                   measure = patterns("V"),
                   variable.name = "iteration") %>%
@@ -117,7 +77,7 @@ p.together <- p.vtm.vs.wet.frequentist + p.vtm.vs.wet.bayesian
 
 # ggsave("outputs/vtm_vs_dry.png",
 #        p.together,
-#        width = 8, 
+#        width = 8,
 #        height = 4,
 #        bg = "white")
 
@@ -125,17 +85,23 @@ p.together <- p.vtm.vs.wet.frequentist + p.vtm.vs.wet.bayesian
 # we can also look at the posterior predictive distributions, by looking at
 # y_pred, but there are 100 of them and we can equally investigate their
 # goodness of fit by looking at the fitted curve
-stan_dens(fit, pars = c("alpha", "beta", "sigma"))
+# stan_dens(fit, pars = c("alpha", "beta", "sigma"))
+alpha.dt <- data.table(reshape2::melt(res$alpha, 
+                                      measure = patterns("V"),
+                                      variable.name = "iteration")) %>% 
+  .[, .(param = "alpha", 
+        me = quantile(value, 0.5), 
+        lo = quantile(value, 0.025),
+        hi = quantile(value, 0.975))]
 
 beta.dt <- data.table(reshape2::melt(res$beta, 
                                      measure = patterns("V"),
-                                     variable.name = "iteration"))
+                                     variable.name = "iteration")) %>% 
+  .[, .(param = "beta",
+        me = quantile(value, 0.5), 
+        lo = quantile(value, 0.025),
+        hi = quantile(value, 0.975))]
 
+param.dt <- rbind(alpha.dt, beta.dt)
 
-adjustment.mi <- quantile(beta.dt[, value], 0.5)
-adjustment.lo <- quantile(beta.dt[, value], 0.025)
-adjustment.hi <- quantile(beta.dt[, value], 0.975)
-
-adjustment.dt <- data.table(mi = adjustment.mi, 
-                            lo = adjustment.lo,
-                            hi = adjustment.hi)
+fwrite(param.dt, "data/adjustment_params.csv")
