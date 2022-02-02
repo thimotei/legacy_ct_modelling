@@ -1,4 +1,4 @@
-#include ct_trajectory_functions_old.stan
+#include ct_trajectory_functions.stan
 
 data { 
   int <lower = 0> P;
@@ -112,6 +112,6 @@ generated quantities {
     k = (j * 0.1) - 0.1;
     // for(j in 1:20) {
       // ct[j] = ct_hinge(k, c_0, c_p_mean, c_s_mean, c_lod, t_e, t_p_mean, t_s_mean, t_lod_mean);
-      ct[j] = ct_hinge(k, c_0, ct_params[1], ct_params[2], c_lod, t_e, t_p_mean, t_s_mean, t_lod_mean);
+      ct[j] = ct_hinge_long(k, c_0, ct_params[1], ct_params[2], c_lod, t_e, t_p_mean, t_s_mean, t_lod_mean);
     }
 }

@@ -1,4 +1,4 @@
-#include ct_trajectory_functions_old.stan
+#include ct_trajectory_functions.stan
 
 data {
   int <lower = 0> N; // number of tests
@@ -58,33 +58,42 @@ transformed parameters {
   vector [P] t_lod_abs;
 
   // non-centred, hierarchical parameterisation
-  t_p = rep_vector(t_p_mean, P); // + t_p_var * t_p_raw);
-  t_s = rep_vector(t_s_mean, P); // + t_s_var * t_s_raw);
-  t_lod = rep_vector(t_lod_mean, P); // + t_lod_var * t_lod_raw);
-  c_s = rep_vector(c_lod * c_s_mean, P); //+ c_s_var * c_s_raw); // c_s <= c_lod
-  c_p = c_s * c_p_mean; //+ c_p_var * c_p_raw); // c_p <= c_s
+  t_p = exp(t_p_mean + t_p_var * t_p_raw);
+  t_s = exp(t_s_mean + t_s_var * t_s_raw);
+  t_lod = exp(t_lod_mean + t_lod_var * t_lod_raw);
+  // Parameterise c_switch as proportion of c_LOD
+  c_s = c_lod * inv_logit(c_s_mean + c_s_var * c_s_raw);
+  // Parameterise c_peak as proportion of c_switch
+  c_p = c_s .* inv_logit(c_p_mean + c_p_var * c_p_raw);
   t_lod_abs  = t_p + t_s + t_lod;
-
+  
 }
 
 model {
   vector [N] diff = day_rel + T_e[id];
-  // vector [N] diff = day_rel - T_e;
+  vector [N] c_p_n = c_p[id];
+  vector [N] c_s_n = c_s[id];
+  vector [N] t_p_n = t_p[id];
+  vector [N] t_s_n = t_s[id];
+  vector [N] t_lod_abs_n = t_lod_abs[id];
   vector [N] exp_ct;
 
-  // component of likelihood for time of exposure
+  // // component of likelihood for time of exposure
   // for(j in 1:P) {
   //   // likelihood for time of exposure using the CDF of the incubation period
   //   // and known symptom onset times. Need to form a tiny artificial
   //   // time-window to centre the estimates properly (using 0.05 of a day).
   //   // Is there a better/less hacky way than this?
   //   target += log(
-  //     lognormal_cdf(symp_rel[j] - T_e[j], lmean, lsd) - 
-  //     lognormal_cdf(symp_rel[j] - 0.05 - T_e[j], lmean, lsd));
+  //     lognormal_cdf(symp_rel[j] - T_e[j], lmean, lsd) -
+  //     lognormal_cdf(symp_rel[j] - 1 - T_e[j], lmean, lsd));
   // }
   
   // Expected ct value given viral load parameters
-  exp_ct = ct_hinge_vec(diff, c_0, c_p, c_s, c_lod, t_e, t_p, t_s, t_lod_abs, id);
+  for(j in 1:N) {
+      exp_ct[j] = ct_hinge_long(diff[j], c_0, c_p_n[j], c_s_n[j], c_lod, t_e, t_p_n[j], t_s_n[j], t_lod_abs_n[j]);
+  }
+  // exp_ct = ct_hinge_vec_new(diff, c_0, c_p, c_s, c_lod, t_e, t_p, t_s, t_lod_abs, id);
 
   // component of likelihood for expected ct values
   for(j in 1:N) {
@@ -100,41 +109,41 @@ model {
   }
 
   // Prior over possible infection times
-  T_e ~ normal(5, 2);
-
+  T_e ~ cauchy(log(5), 2);
+  
   // Viral load peak timing
-  t_p_mean ~ normal(5, 1);
-  t_p_var ~ cauchy(0, 1);
+  t_p_mean ~ cauchy(log(5), 1);
+  t_p_var ~ normal(0, 1);
   t_p_raw ~ normal(0, 1);
 
-  t_s_mean ~ normal(4, 1);
+  t_s_mean ~ cauchy(log(5), 1);
   t_s_var ~ cauchy(0, 1);
   t_s_raw ~ normal(0, 1);
 
   // // Time dropping below limit of detection
-  t_lod_mean ~ normal(10, 1);
-  t_lod_var ~ normal(0, 1);
+  t_lod_mean ~ cauchy(log(5), 1);
+  t_lod_var ~ cauchy(0, 1);
   t_lod_raw ~ normal(0, 1);
 
   // // Ct value at peak
-  c_p_mean ~ beta(1, 1);
-  c_p_var ~ normal(0, 1);
+  c_p_mean ~ cauchy(log(0.1), 1);
+  c_p_var ~ cauchy(0, 5);
   c_p_raw ~ normal(0, 1);
 
   // // Ct value at switch to long wane
-  c_s_mean ~ beta(1, 1);
-  c_s_var ~ cauchy(0, 1);
+  c_s_mean ~ cauchy(log(0.3), 1);
+  c_s_var ~ cauchy(0, 5);
   c_s_raw ~ normal(0, 1);
 
   // // Variation in observation model
-  sigma_obs ~ cauchy(0, 2);
+  sigma_obs ~ cauchy(0, 5);
 }
 
 generated quantities {
-  matrix[P, 30] ct;
+  matrix[P, 61] ct;
   for(i in 1:P) {
-    for(j in 1:30) {
-      ct[i, j] = ct_hinge(j, c_0, c_p[i], c_s[i], c_lod, t_e, t_p[i], t_s[i], t_lod_abs[i]);
+    for(j in 1:61) {
+      ct[i, j] = ct_hinge_long(j - 1, c_0, c_p[i], c_s[i], c_lod, t_e, t_p[i], t_s[i], t_lod_abs[i]);
     }
   }
 }
