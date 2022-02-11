@@ -19,7 +19,8 @@ Imports:
     reshape2,
     patchwork,
     posterior,
-    stringr
+    stringr,
+    truncnorm
 Additional_repositories: 
     https://mc-stan.org/r-packages/
 Encoding: UTF-8
