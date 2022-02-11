@@ -19,7 +19,7 @@
 		},
 		"terminal.integrated.profiles.linux": {
 			"radian": {
-				"path": "/usr/local/bin/radian",
+	dock			"path": "/usr/local/bin/radian",
 				"overrideName": true
 			}
 		}
@@ -40,5 +40,5 @@
 	// "forwardPorts": [],
 
 	// Use 'postCreateCommand' to run commands after the container is created.
-	"postCreateCommand": "Rscript -e 'cmdstanr::set_cmdstan_path(); precommit::use_precommit()'"
+	"postCreateCommand": "Rscript -e 'cmdstanr::set_cmdstan_path();"
 }

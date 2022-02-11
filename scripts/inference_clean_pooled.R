@@ -4,6 +4,7 @@ library(patchwork)
 library(rstan)
 library(cowplot)
 library(stringr)
+library(ggplot2)
 
 source("R/stan_data.R")
 source("R/custom_plot_theme.R")

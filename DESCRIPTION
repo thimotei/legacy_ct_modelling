@@ -16,6 +16,7 @@ Imports:
     rstan,
     data.table,
     ggplot2,
+    reshape2,
     patchwork,
     posterior,
     stringr
