@@ -1,0 +1,27 @@
+Package: ct.modelling
+Title: Viral Load Curve Estimation
+Version: 0.1.0
+Authors@R: 
+    c(person(given = "Tim",
+             family = "Russell",
+             role = c("aut", "cre"),
+             email = "tim.russell@lshtm.ac.uk"))
+Description: Viral load curve estimation
+License: MIT + file LICENSE
+Imports:
+    cmdstanr,
+    cowplot,
+    encryptr,
+    lubridate,
+    rstan,
+    data.table,
+    ggplot2,
+    patchwork,
+    posterior,
+    stringr
+Additional_repositories: 
+    https://mc-stan.org/r-packages/
+Encoding: UTF-8
+LazyData: true
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.1.1
