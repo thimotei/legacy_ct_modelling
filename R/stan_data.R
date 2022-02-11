@@ -1,7 +1,7 @@
 stan_data_fun <- function(input_data) {
   
   stan_data <- list(N = input_data[, .N], 
-                    P = input_data[, uniqueN(ID)],
+                    P = length(unique(input_data$ID)),
                     id = input_data[, ID],
                     day_rel = input_data[, t_first_test],
                     ct_value = ifelse(is.na(input_data$ct_adjusted), -99, input_data$ct_scaled),
