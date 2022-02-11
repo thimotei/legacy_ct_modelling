@@ -20,7 +20,8 @@ Imports:
     patchwork,
     posterior,
     stringr,
-    truncnorm
+    truncnorm,
+    magrittr
 Additional_repositories: 
     https://mc-stan.org/r-packages/
 Encoding: UTF-8

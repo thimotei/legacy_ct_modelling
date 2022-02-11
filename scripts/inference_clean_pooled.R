@@ -84,7 +84,7 @@ dt.omicron.pooled <- dt.ct[VOC == "Omicron" &
 options(mc.cores = parallel::detectCores()) 
 #--- choose here whether you want the individual-level fits 
 #--- or a pooled fit
-mod <- rstan::stan_model("stan/ct_trajectory_model_pooled.stan")
+mod <- rstan::stan_model("stan/ct_trajectory_model_individual.stan")
 
 #--- fitting for delta
 stan_data_delta <- stan_data_fun(dt.delta.pooled)

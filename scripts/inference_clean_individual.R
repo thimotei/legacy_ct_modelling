@@ -3,8 +3,9 @@ library(ggplot2)
 library(lubridate)
 library(cowplot)
 library(patchwork)
+library(magrittr)
 
-source("R/custom_plot_theme.R")
+devtools::load_all()
 
 #--- loading in adjustment factors and defining function for 
 #--- dry vs wet swab adjustment. We adjust the VTM swabs downwards

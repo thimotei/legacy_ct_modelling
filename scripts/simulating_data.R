@@ -5,6 +5,7 @@ library(stringr)
 library(purrr)
 
 source("R/stan_data_simulated.R")
+source("R/get_inc_period.R")
 
 ct.data <- fread("data/ct_values_clean.csv")
 
@@ -80,8 +81,9 @@ stan_data <- list(
   t_e = 0,
   c_0 = (40 - mn)/(mx - mn),
   c_lod = (40 - mn)/(mx - mn),
-  lmean = EpiNow2::incubation_periods[, mean],
-  lsd = EpiNow2::incubation_periods[, sd])
+  lmean = get_inc_period()$inc_mean_p[1],
+  lsd = get_inc_period()$inc_sd_p[2]
+)
 
 mod <- stan_model("stan/ct_trajectory_model_individual.stan")
 options(mc.cores = parallel::detectCores())
