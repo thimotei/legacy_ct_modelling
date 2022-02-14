@@ -1,13 +1,13 @@
 #simulating Ct trajectories, to test parameter recovery
-library(data.table)
-library(ggplot2)
-library(truncnorm)
-library(cmdstanr)
-library(cowplot)
-library(stringr)
+# library(data.table)
+# library(ggplot2)
+# library(truncnorm)
+# library(cmdstanr)
+# library(cowplot)
+# library(stringr)
 
 # loading all functions in package directory
-devtools::load_all()
+devtools::load_all(reset=FALSE)
 
 # example of a single trajectory
 t_max <- 30
