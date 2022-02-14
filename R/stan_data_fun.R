@@ -1,4 +1,4 @@
-stan_data_fun <- function(input_data) {
+stan_data_fun <- function(input_data, likelihood = TRUE) {
   
   stan_data <- list(N = input_data[, .N], 
                     P = length(unique(input_data$id)),
@@ -10,8 +10,8 @@ stan_data_fun <- function(input_data) {
                     c_0 = (40 - mn)/(mx - mn),
                     c_lod = (40 - mn)/(mx - mn),
                     lmean = get_inc_period()$inc_mean_p[1],
-                    lsd = get_inc_period()$inc_sd_p[2]
+                    lsd = get_inc_period()$inc_sd_p[2],
+                    likelihood = as.numeric(likelihood)
   )
-  
   return(stan_data)
 }

@@ -14,6 +14,7 @@ data {
   vector[N] ct_value; // Ct value of test
   // vector [P] symp_rel;
   // vector [P] te_upper_bound; // upper bound on infection time
+  int likelihood;
 }
 
 parameters {
@@ -121,19 +122,20 @@ model {
   exp_ct = ct_hinge_vec_new(diff, c_0, c_p, c_s, c_lod, t_e, t_p, t_s, 
                             t_lod_abs, id);
 
-  // component of likelihood for expected ct values
-  for(j in 1:N) {
-    // If positive result: P(observed ct | expected ct)*P(Ct detected | expected ct)
-    if(pcr_res[j] == 1) {
-      ct_value[j] ~ normal(exp_ct[j], sigma_obs) T[0, c_lod];
-      target += normal_lcdf(c_lod | exp_ct[j], sigma_obs);
+  if (likelihood) {
+    // component of likelihood for expected ct values
+    for(j in 1:N) {
+      // If positive result: P(observed ct | expected ct)*P(Ct detected | expected ct)
+      if(pcr_res[j] == 1) {
+        ct_value[j] ~ normal(exp_ct[j], sigma_obs) T[0, c_lod];
+        target += normal_lcdf(c_lod | exp_ct[j], sigma_obs);
+        }
+      // if negative result: P(Ct not detected | expected ct)
+      else if(pcr_res[j] == 0) {
+        target += normal_lccdf(c_lod | exp_ct[j], sigma_obs);
       }
-    // if negative result: P(Ct not detected | expected ct)
-    else if(pcr_res[j] == 0) {
-      target += normal_lccdf(c_lod | exp_ct[j], sigma_obs);
     }
   }
-
 }
 
 generated quantities {
