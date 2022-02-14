@@ -76,13 +76,12 @@ mod <- cmdstan_model("stan/ct_trajectory_model_individual.stan",
                      include_paths = "stan")
 
 #--- running inference
-stan_data_simulated <- stan_data_fun(ext_ct_dt)
+stan_data_simulated <- stan_data_fun(ext_ct_dt, likelihood = FALSE)
 
 # fitting the model - not very quick, as many iterations hit the
 # max_tree_depth at the moment
 fit_sim <- mod$sample(
   data = stan_data_simulated,
-  seed = 123,
   chains = 4,
   parallel_chains = 4,
   iter_warmup = 1000,
