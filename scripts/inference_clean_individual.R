@@ -91,7 +91,7 @@ p2 <- dt.omicron %>%
   geom_smooth(se = FALSE) +
   facet_wrap(~ID)
 
-p1 + p2
+#p1 + p2
 
 options(mc.cores = parallel::detectCores()) 
 #--- choose here whether you want the individual-level fits 
@@ -112,42 +112,10 @@ fit_delta <- sampling(mod,
 #                                "c_p_mean", "c_s_mean", "sigma_obs",
 #                                "t_lod_abs"))
 
+stan_trace(fit_delta, pars = c("c_p"))
+fit_delta@model_pars
+
 res_delta <- extract(fit_delta)
-
-# fit_dt_delta <- as.data.frame(fit_delta, pars = "ct") %>%
-#   data.table() %>%
-#   melt(., measure.vars = patterns("ct")) %>% 
-#   .[, c("id", "time") := tstrsplit(variable, ",")] %>% 
-#   .[, id := str_remove(id, "ct\\[")] %>% 
-#   .[, time := str_remove(time, "]")] %>%
-#   .[, iteration := 1:.N, by = "variable"] %>% 
-#   .[, variable := NULL] %>% 
-#   .[, time := as.numeric(time)] %>% 
-#   .[, value := (mx - mn) * value + mn]
-
-#--- fitting for omicron
-stan_data_omicron <- stan_data_fun(dt.omicron)
-
-fit_omicron <- sampling(mod,
-                        chains = 4,
-                        data = stan_data_omicron,
-                        iter = 2000)
-
-res_omicron <- extract(fit_omicron)
-
-fit_omicron
-
-#--- combining fits
-#--- delta fits
-# extract_posterior <- function(res, para, voc_arg) {
-#   out.dt <- res$eval(para) %>% 
-#     reshape2::melt() %>% 
-#     data.table()  %>% 
-#     .[, voc := voc]
-#   
-#   return(out.dt)
-#   
-# }
 
 dt.t.e.delta <- res_delta$T_e %>% 
   reshape2::melt() %>% 

@@ -7,8 +7,6 @@ data {
   vector [N] day_rel; // day of test (integer)
   real ct_value[N]; // Ct value of test
   int pcr_res[N]; // boolean test result
-  // vector [P] symp_rel;
-  // vector [P] te_upper_bound; // upper bound on infection time
   real c_0;
   real c_lod;
   real t_e;
@@ -17,79 +15,51 @@ data {
 }
 
 parameters {
+  
   // Inferred time of infection
-  // vector <lower = 0> [P] T_e;
   real T_e;
 
-  // Timing of p and s
+  // Timing of peak
   real <lower = 0> t_p_mean;
-  // real <lower = 0> t_p_var;
-  // vector <lower = 0> [P] t_p_raw;
 
+  // Timing of switch
   real <lower = 0> t_s_mean;
-  // real <lower = 0> t_s_var;
-  // vector <lower = 0> [P] t_s_raw;
 
   // Time viral load hits lower limit of detection
   real <lower = 0> t_lod_mean;
-  // real <lower = 0> t_lod_var;
-  // vector <lower = 0> [P] t_lod_raw;
 
   // Ct value of viral load p
   real <lower = 0, upper = c_lod> c_p_mean;
-  // real <lower = 0> c_p_var;
-  // vector <lower = 0> [P] c_p_raw;
 
   // Ct value at s
   real <lower = 0, upper = c_lod> c_s_mean;
-  // real <lower = 0> c_s_var;
-  // vector <lower = 0> [P] c_s_raw;
   
   // Variance parameter for oobservation model
   real <lower = 0> sigma_obs;
 }
 
 transformed parameters {
-  
-  vector [P] t_p;
-  vector [P] t_s;
-  vector [P] t_lod;
-  vector [P] c_s;
-  vector [P] c_p;
-  vector [P] t_lod_abs;
-  real t_lod_abs;
-
-  // non-centred, hierarchical parameterisation
-  t_p = exp(t_p_mean + t_p_var * t_p_raw);
-  t_s = exp(t_s_mean + t_s_var * t_s_raw);
-  t_lod = exp(t_lod_mean + t_lod_var * t_lod_raw);
-  c_s = c_lod * inv_logit(c_s_mean + c_s_var * c_s_raw);
-  c_p = c_s .* inv_logit(c_p_mean + c_p_var * c_p_raw);
+  real  t_lod_abs;
   t_lod_abs = t_p_mean + t_s_mean + t_lod_mean;
 }
 
 model {
-  // vector [N] diff = day_rel - T_e[id];
+  
   vector [N] diff = day_rel - T_e;
   vector [N] exp_ct;
-
-  // component of likelihood for time of exposure
+  
+  // likelihood for time of exposure using the CDF of the incubation period
+  // and known symptom onset times
   // for(j in 1:P) {
-  //   // likelihood for time of exposure using the CDF of the incubation period
-  //   // and known symptom onset times. Need to form a tiny artificial
-  //   // time-window to centre the estimates properly (using 0.05 of a day).
-  //   // Is there a better/less hacky way than this?
   //   target += log(
   //     lognormal_cdf(symp_rel[j] - T_e[j], lmean, lsd) -
   //     lognormal_cdf(symp_rel[j] - 1.0 - T_e[j], lmean, lsd));
   // }
-  
+  // 
   // Expected ct value given viral load parameters
   for(i in 1:N) {
     exp_ct[i] = ct_hinge_long(diff[i], c_0, c_p_mean, c_s_mean, c_lod, t_e, t_p_mean, t_s_mean, t_lod_abs);
-    // exp_ct[i] = ct_hinge_single(diff[i], c_0, c_p_mean, c_lod, t_e, t_p_mean, t_lod_abs);
   }
-  // exp_ct = ct_hinge_vec(diff, c_0, c_p, c_s, c_lod, t_e, t_p, t_s, t_lod_abs, id);
 
   // component of likelihood for expected ct values
   for(j in 1:N) {
@@ -104,50 +74,37 @@ model {
     }
   }
 
-  // Prior over possible infection times
-  T_e ~ normal(0, 1);
-
-  // // Viral load peak timing
-  t_p_mean ~ normal(10, 1);
-  // t_p_var ~ cauchy(0, 1);
-  // t_p_raw ~ normal(0, 1);
-
-  t_s_mean ~ normal(13, 2);
-  // t_s_var ~ cauchy(0, 1);
-  // t_s_raw ~ normal(0, 1);
+  // latent infection time prior
+  // T_e ~ cauchy(log(5), 5);
+  // 
+  // // semi-mechanistic Ct trajectory model priors
+  // t_p_mean ~ cauchy(log(10), 5);
+  // t_s_mean ~ cauchy(log(10), 5);
+  // t_lod_mean ~ cauchy(log(20), 5);
+  // c_p_mean ~ cauchy(0.4, 5);
+  // c_s_mean ~ cauchy(0.6, 5);
   
-  // // // Time dropping below limit of detection
-  t_lod_mean ~ normal(15, 2);
-  // t_lod_var ~ cauchy(0, 1);
-  // t_lod_raw ~ normal(0, 1);
-  
-  // // // Ct value at peak
-  c_p_mean ~  normal(-0.2, 1);
-  // c_p_var ~ cauchy(0, 1);
-  // c_p_raw ~ normal(0.3, 1);
-  
-  // // // Ct value at switch to long wane
-  c_s_mean ~ normal(0, 2);
-  // c_s_var ~ cauchy(0, 1);
-  // c_s_raw ~ normal(0, 1);
+  // latent infection time prior
+  T_e ~ normal(0, 5);
 
-  // // Variation in observation model
+  // semi-mechanistic Ct trajectory model priors
+  t_p_mean ~ normal(5, 2);
+  t_s_mean ~ normal(15, 2);
+  t_lod_mean ~ normal(20, 2);
+  c_p_mean ~ normal(0.1, 2);
+  c_s_mean ~ normal(0.4, 2);
+  
+  // observation error
   sigma_obs ~ normal(0, 2);
 }
 
 generated quantities {
-  // vector[20] ct;
-  // matrix[P, 30] ct;
-  // for(i in 1:P) {
-  //   for(j in 1:30) {
-  //     ct[i, j] = ct_hinge(j, c_0, c_p[i], c_s[i], c_lod, t_e, t_p[i], t_s[i], t_lod_abs[i]);
-  //   }
-  // }  
-  vector[201] ct;
+
+  vector[601] ct;
   real k;
-  for(j in 1:201) {
+  
+  for(j in 1:601) {
     k = (j * 0.1) - 0.1;
-    // for(j in 1:20) {
       ct[j] = ct_hinge_long(k, c_0, c_p_mean, c_s_mean, c_lod, t_e, t_p_mean, t_s_mean, t_lod_abs);
     }
 }

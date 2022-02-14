@@ -81,7 +81,8 @@ dt.ct <- merge.data.table(dt.ct, no_pos_cts, by = c("ID", "infection_ID")) %>%
 
 #--- Plotting results, first row - "with negative results"
 p1.all <- dt.ct %>% 
-  .[days_since_first_test < 20 & (VOC == "Delta" | VOC == "Omicron") & result != "Invalid" & result != ""] %>% 
+  .[days_since_first_test < 20 & (VOC == "Delta" | VOC == "Omicron") & result != "Invalid" & result != ""] %>%
+  .[, .SD[any(result == "Negative")], by = ID] %>%
   ggplot(aes(x = days_since_first_test, y = ct, colour = interaction(factor(VOC)))) + 
   geom_jitter(width = 0, height = 0.5, alpha = 0.2) + 
   geom_smooth(se = FALSE) + 
@@ -152,6 +153,7 @@ p.all.both <- p.all/p.all.no.neg + plot_layout(guides = "collect")
 #--- Plotting results, third row - "stratifying omicron curves by numbers of vaccine"
 p1.vaccines <- dt.ct %>% 
   .[days_since_first_test < 20 & (VOC == "Omicron") & result != "Invalid" & result != ""] %>% 
+  .[, .SD[any(result == "Negative")], by = ID] %>%
   ggplot(aes(x = days_since_first_test, y = ct, colour = interaction(factor(no_vaccines)))) + 
   geom_jitter(width = 0, height = 0.5, alpha = 0.2) + 
   geom_smooth(se = FALSE) + 

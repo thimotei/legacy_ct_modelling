@@ -1,4 +1,4 @@
-#include ct_trajectory_functions.stan
+#include "ct_trajectory_functions.stan"
 
 data { 
   int <lower = 0> P; // number of patients
