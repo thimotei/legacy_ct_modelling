@@ -28,3 +28,12 @@ init_fun <- function(chain_id) {
   
   return(out)
 }
+
+stan_inits <- function(data) {
+  inits <- function() {
+    list(
+      
+    )
+  }
+  return(inits)
+}
