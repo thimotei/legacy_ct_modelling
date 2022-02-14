@@ -36,20 +36,20 @@ n <- 10 # total number of individuals being simulated
 # simulating trajectories. all parameters are sampled from uniform distributions
 # where the minimum and maximum of each are arguments of the simulating
 # function
-ext_ct_dt <- simulate_ct_trajectories(t_max = 30, t_stepsize = 1, 
+ext_ct_dt <- simulate_ct_trajectories(t_max = 30, t_stepsize = 1,
                                       cp_min = 10, cp_max = 20,
                                       cs_min = 20, cs_max = 30,
-                                      te_min = 1, te_max = 7, 
-                                      tp_min = 1, tp_max =7,
-                                      ts_min = 1, ts_max = 7, 
+                                      te_min = 1, te_max = 7,
+                                      tp_min = 1, tp_max = 7,
+                                      ts_min = 1, ts_max = 7,
                                       tlod_min = 5, tlod_max = 10,
                                       sigma_obs = 1)
 
 # quick plot of simulated data
-ext_ct_dt %>% 
-  ggplot() + 
+ext_ct_dt %>%
+  ggplot() +
   geom_point(aes(x = t, y = ct_value, colour = pcr_res)) +
-  facet_wrap(vars(id)) + 
+  facet_wrap(vars(id)) +
   custom_plot_theme()
 
 # setting minimum and maximum values globally, as used multiple times
@@ -57,7 +57,7 @@ mn <- ext_ct_dt[, min(ct_value_noisey, na.rm = TRUE)]
 mx <- ext_ct_dt[, max(ct_value_noisey, na.rm = TRUE)]
 
 # saving the true parameters for comparison to estimated values
-true_params <- ext_ct_dt[, .(id = unique(id), 
+true_params <- ext_ct_dt[, .(id = unique(id),
                              cs = unique(cs),
                              cp = unique(cp),
                              te = unique(te),
@@ -65,26 +65,26 @@ true_params <- ext_ct_dt[, .(id = unique(id),
                              ts = unique(ts),
                              tlod = unique(tlod))]
 
-# sampling a "realistic size" subset of the data. I.e. between 3 and 8 samples 
+# sampling a "realistic size" subset of the data. I.e. between 3 and 8 samples
 # at random times per person
 ext_ct_dt_sample <- ext_ct_dt[, .SD[t %in% sample(.N, sample(3:8, 1))],
                               by = "id"]
 
 # quick plot of subset of data
-ext_ct_dt_sample %>% 
-  ggplot(aes(x = t, y = ct_value)) + 
+ext_ct_dt_sample %>%
+  ggplot(aes(x = t, y = ct_value)) +
   geom_point() +
-  facet_wrap(vars(id)) + 
+  facet_wrap(vars(id)) +
   custom_plot_theme()
 
 # compiling model to test inference
 mod <- cmdstan_model("stan/ct_trajectory_model_individual.stan",
-                     include_paths = "~/lshtm/legacy_ct_modelling/stan")
+                     include_paths = "stan")
 
 #--- running inference
 n.chains <- 4
 stan_data_simulated <- stan_data_fun(ext_ct_dt)
-options(mc.cores = 8)
+options(mc.cores = 4)
 
 # fitting the model - not very quick, as many iterations hit the
 # max_tree_depth at the moment
