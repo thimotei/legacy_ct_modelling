@@ -1,7 +1,7 @@
 stan_data_fun <- function(input_data) {
   
   stan_data <- list(N = input_data[, .N], 
-                    P = input_data[, uniqueN(ID)],
+                    P = length(unique(input_data$ID)),
                     id = input_data[, ID],
                     day_rel = input_data[, t_first_test],
                     ct_value = ifelse(is.na(input_data$ct_adjusted), -99, input_data$ct_scaled),
@@ -13,8 +13,9 @@ stan_data_fun <- function(input_data) {
                     t_e = 0,
                     c_0 = (40 - mn)/(mx - mn),
                     c_lod = (40 - mn)/(mx - mn),
-                    lmean = EpiNow2::incubation_periods[, mean],
-                    lsd = EpiNow2::incubation_periods[, sd])
+                    lmean = get_inc_period()$inc_mean_p[1],
+                    lsd = get_inc_period()$inc_sd_p[2]
+)
   
   return(stan_data)
 }
