@@ -65,7 +65,7 @@ transformed parameters {
 
 model {
   // Prior over possible infection times
-  T_e ~ cauchy(0, 5);
+  T_e = cauchy_rng(0, 5);
 
   // // Viral load peak timing
   t_p_mean ~ cauchy(log(5), 1);
