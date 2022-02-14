@@ -18,35 +18,9 @@ data {
 
 parameters {
   // Inferred time of infection
-<<<<<<< Updated upstream
-  vector <lower = 0> [P] T_e;
-
-  // Timing of p and s
-  real t_p_mean;
-  real <lower = 0> t_p_var;
-  vector [P] t_p_raw;
-
-=======
   vector[P] T_e;
   
   // Hyperparameters
-  // Timing of peak
-  real t_p_mean;
-  real<lower=0> t_p_var;
-  vector[P] t_p_raw;
-
-  // Timing of switch
->>>>>>> Stashed changes
-  real t_s_mean;
-  real <lower = 0> t_s_var;
-  vector [P] t_s_raw;
-
-  // Time viral load hits lower limit of detection
-  real t_lod_mean;
-<<<<<<< Updated upstream
-  real <lower = 0> t_lod_var;
-  vector [P] t_lod_raw;
-
   // Ct value of viral load p
   real c_p_mean;
   real <lower = 0> c_p_var;
@@ -56,21 +30,22 @@ parameters {
   real c_s_mean;
   real <lower = 0> c_s_var;
   vector [P] c_s_raw;
-=======
-  real<lower=0> t_lod_var;
-  vector[P] t_lod_raw;
-
-  // Ct value of viral load peak
-  real c_p_mean;
-  real<lower=0> c_p_var;
-  vector[P] c_p_raw;
-
-  // Ct value at switch
-  real c_s_mean;
-  real<lower=0> c_s_var;
-  vector[P] c_s_raw;
->>>>>>> Stashed changes
   
+  // Timing of peak
+  real t_p_mean;
+  real<lower=0> t_p_var;
+  vector[P] t_p_raw;
+
+  // Timing of switch
+  real t_s_mean;
+  real <lower = 0> t_s_var;
+  vector [P] t_s_raw;
+
+  // Time viral load hits lower limit of detection
+  real t_lod_mean;
+  real <lower = 0> t_lod_var;
+  vector [P] t_lod_raw;
+
   // Variance parameter for oobservation model
   real<lower=0> sigma_obs;
 }
@@ -131,44 +106,6 @@ model {
   // Prior over possible infection times
   T_e ~ cauchy(0, 5);
   
-  t_p_mean ~ cauchy(log(5), 5);
-  t_p_var ~ normal(0, 3);
-  t_p_raw ~ normal(0, 3);
-  
-  t_s_mean ~ cauchy(log(5), 5);
-  t_s_var ~ normal(0, 3);
-  t_s_raw ~ normal(0, 3);
-  
-<<<<<<< Updated upstream
-  // Viral load peak timing
-  t_p_mean ~ cauchy(log(5), 1);
-  t_p_var ~ cauchy(0, 1);
-  t_p_raw ~ normal(0, 1);
-
-  t_s_mean ~ cauchy(log(5), 1);
-  t_s_var ~ cauchy(0, 1);
-  t_s_raw ~ normal(0, 1);
-
-  // // Time dropping below limit of detection
-  t_lod_mean ~ cauchy(log(5), 1);
-  t_lod_var ~ cauchy(0, 1);
-  t_lod_raw ~ normal(0, 1);
-
-  // // Ct value at peak
-  c_p_mean ~ cauchy(log(0.1), 1);
-  c_p_var ~ cauchy(0, 5);
-  c_p_raw ~ std_normal();
-
-  // // Ct value at switch to long wane
-  c_s_mean ~ cauchy(log(0.3), 1);
-  c_s_var ~ cauchy(0, 5);
-  c_s_raw ~ std_normal();
-=======
-  // Time dropping below limit of detection
-  t_lod_mean ~ cauchy(log(10), 5);
-  t_lod_var ~ normal(0, 3);
-  t_lod_raw ~ normal(0, 3);
-
   // Ct value at peak
   c_p_mean ~ cauchy(log(0.2), 5);
   c_p_var ~ normal(0, 3);
@@ -178,7 +115,28 @@ model {
   c_s_mean ~ cauchy(log(0.7), 5);
   c_s_var ~ normal(0, 3);
   c_s_raw ~ normal(0, 3);
->>>>>>> Stashed changes
+  
+  t_p_mean ~ cauchy(log(5), 5);
+  t_p_var ~ normal(0, 3);
+  t_p_raw ~ normal(0, 3);
+  
+  t_s_mean ~ cauchy(log(5), 5);
+  t_s_var ~ normal(0, 3);
+  t_s_raw ~ normal(0, 3);
+
+  // Viral load peak timing
+  t_p_mean ~ cauchy(log(5), 1);
+  t_p_var ~ cauchy(0, 1);
+  t_p_raw ~ normal(0, 1);
+
+  t_s_mean ~ cauchy(log(5), 1);
+  t_s_var ~ cauchy(0, 1);
+  t_s_raw ~ normal(0, 1);
+
+  // Time dropping below limit of detection
+  t_lod_mean ~ cauchy(log(10), 5);
+  t_lod_var ~ normal(0, 3);
+  t_lod_raw ~ normal(0, 3);
 
   // // Variation in observation model
   sigma_obs ~ cauchy(0, 5);
