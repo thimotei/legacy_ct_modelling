@@ -7,7 +7,7 @@
 # library(stringr)
 
 # loading all functions in package directory
-devtools::load_all("./", reset = TRUE)
+devtools::load_all()
 
 # example of a single trajectory
 t_max <- 30
@@ -59,7 +59,7 @@ ext_ct_dt_sample <- ext_ct_dt[, .SD[t %in% sample(.N, sample(3:8, 1))],
 
 # quick plot of subset of data
 ext_ct_dt_sample %>% 
-  ggplot(aes(x = t, y = exp_ct_std)) + 
+  ggplot(aes(x = t, y = ct_value_std)) + 
   geom_point() +
   facet_wrap(vars(id)) + 
   custom_plot_theme()
