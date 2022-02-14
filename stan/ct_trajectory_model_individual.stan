@@ -18,7 +18,7 @@ data {
 
 parameters {
   // Inferred time of infection
-  vector<lower = 0>[P] T_e;
+  vector[P] T_e;
   
   // Hyperparameters
   // Ct value of viral load p
