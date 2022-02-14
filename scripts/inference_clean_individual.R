@@ -3,8 +3,9 @@ library(ggplot2)
 library(lubridate)
 library(cowplot)
 library(patchwork)
+library(magrittr)
 
-source("R/custom_plot_theme.R")
+devtools::load_all()
 
 #--- loading in adjustment factors and defining function for 
 #--- dry vs wet swab adjustment. We adjust the VTM swabs downwards
@@ -26,8 +27,7 @@ dt.ct <- fread("data/ct_values_clean.csv") %>%
   .[result == "Negative", ct := 40] %>% 
   .[swab_type == "VTM" & result == "Negative", ct_adjusted := 40] %>%
   .[swab_type == "VTM" & result != "Negative", ct_adjusted := adjustment.fun(adjustment.dt[param == "alpha", me],
-                                                                             adjustment.dt[param == "beta", me],
-                                                                             ct)] %>%
+   adjustment.dt[param == "beta", me], ct)] %>%
   .[swab_type != "VTM", ct_adjusted := ct]
 
 #--- removing duplicate VTM vs Dry swabs
