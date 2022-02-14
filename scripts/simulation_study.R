@@ -7,7 +7,7 @@
 # library(stringr)
 
 # loading all functions in package directory
-devtools::load_all(reset=FALSE)
+devtools::load_all("./", reset = TRUE)
 
 # example of a single trajectory
 t_max <- 30
