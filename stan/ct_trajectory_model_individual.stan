@@ -18,17 +18,17 @@ data {
 
 parameters {
   // Inferred time of infection
-  vector[P] T_e;
+  vector<lower=0>[P] T_e;
   
   // Hyperparameters
   // Ct value of viral load p
   real c_p_mean;
-  real <lower = 0> c_p_var;
+  real<lower=0>c_p_var;
   vector [P] c_p_raw;
 
   // Ct value at s
   real c_s_mean;
-  real <lower = 0> c_s_var;
+  real<lower=0> c_s_var;
   vector [P] c_s_raw;
   
   // Timing of peak
@@ -38,12 +38,12 @@ parameters {
 
   // Timing of switch
   real t_s_mean;
-  real <lower = 0> t_s_var;
+  real<lower=0> t_s_var;
   vector [P] t_s_raw;
 
   // Time viral load hits lower limit of detection
   real t_lod_mean;
-  real <lower = 0> t_lod_var;
+  real<lower=0> t_lod_var;
   vector [P] t_lod_raw;
 
   // Variance parameter for oobservation model
@@ -73,7 +73,7 @@ transformed parameters {
 }
 
 model {
-  vector[N] diff = day_rel - T_e[id];
+  vector[N] diff = day_rel + T_e[id];
   vector[N] exp_ct;
 
   // // component of likelihood for time of exposure
@@ -108,21 +108,21 @@ model {
   
   // Ct value at peak
   c_p_mean ~ cauchy(log(0.2), 5);
-  c_p_var ~ normal(0, 3);
-  c_p_raw ~ normal(0, 3);
+  c_p_var ~ normal(0, 1);
+  c_p_raw ~ normal(0, 1);
 
   // Ct value at switch to long wane
   c_s_mean ~ cauchy(log(0.7), 5);
-  c_s_var ~ normal(0, 3);
-  c_s_raw ~ normal(0, 3);
+  c_s_var ~ normal(0, 1);
+  c_s_raw ~ normal(0, 1);
   
   t_p_mean ~ cauchy(log(5), 5);
-  t_p_var ~ normal(0, 3);
-  t_p_raw ~ normal(0, 3);
+  t_p_var ~ normal(0, 1);
+  t_p_raw ~ normal(0, 1);
   
   t_s_mean ~ cauchy(log(5), 5);
-  t_s_var ~ normal(0, 3);
-  t_s_raw ~ normal(0, 3);
+  t_s_var ~ cauchy(0, 1);
+  t_s_raw ~ normal(0, 1);
 
   // Viral load peak timing
   t_p_mean ~ cauchy(log(5), 1);
@@ -135,8 +135,8 @@ model {
 
   // Time dropping below limit of detection
   t_lod_mean ~ cauchy(log(10), 5);
-  t_lod_var ~ normal(0, 3);
-  t_lod_raw ~ normal(0, 3);
+  t_lod_var ~ cauchy(0, 1);
+  t_lod_raw ~ normal(0, 1);
 
   // // Variation in observation model
   sigma_obs ~ cauchy(0, 5);
