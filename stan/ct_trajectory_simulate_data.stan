@@ -1,4 +1,4 @@
-#include ct_trajectory_functions.stan
+#include ~/lshtm/legacy_ct_modelling_stan_ct_trajectory_functions.stan
 
 data { 
   int <lower = 0> P;
@@ -11,30 +11,30 @@ data {
 
 parameters {
   // Inferred time of infection
-  vector <lower = 0> [P] T_e;
+  vector [P] T_e;
   // real T_e;
 
   // Timing of p and s
-  real <lower = 0> t_p_mean;
+  real  t_p_mean;
   real <lower = 0> t_p_var;
-  vector <lower = 0> [P] t_p_raw;
+  vector  [P] t_p_raw;
 
-  real <lower = 0> t_s_mean;
+  real t_s_mean;
   real <lower = 0> t_s_var;
-  vector <lower = 0> [P] t_s_raw;
+  vector [P] t_s_raw;
 
   // Time viral load hits lower limit of detection
-  real <lower = 0> t_lod_mean;
+  real t_lod_mean;
   real <lower = 0> t_lod_var;
-  vector <lower = 0> [P] t_lod_raw;
+  vector [P] t_lod_raw;
 
   // Ct value of viral load p
-  // real <lower = 0, upper = c_lod> c_p_mean;
+  real c_p_mean;
   real <lower = 0> c_p_var;
   vector <lower = 0> [P] c_p_raw;
 
   // Ct value at s
-  // real <lower = 0, upper = c_lod> c_s_mean;
+  real <lower = 0, upper = c_lod> c_s_mean;
   real <lower = 0> c_s_var;
   vector <lower = 0> [P] c_s_raw;
 

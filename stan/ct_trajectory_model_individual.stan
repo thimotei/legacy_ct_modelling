@@ -1,23 +1,24 @@
 #include ct_trajectory_functions.stan
 
 data {
-  int <lower = 0> N; // number of tests
-  int <lower = 0> P; // number of patients
+  int P; // number of patients
+  int N; // number of tests
+  real c_0; // Ct value before detection
+  real c_lod; // Ct value at limit of detection 
+  real t_e; 
+  real lmean; // mean of incubation period used
+  real lsd; // standard deviation of incubation period used
   int id[N]; // id of person
-  vector [N] day_rel; // day of test (integer)
-  real ct_value[N]; // Ct value of test
   int pcr_res[N]; // boolean test result
+  vector[N] day_rel; // day of test (integer)
+  vector[N] ct_value; // Ct value of test
   // vector [P] symp_rel;
   // vector [P] te_upper_bound; // upper bound on infection time
-  real c_0;
-  real c_lod;
-  real t_e;
-  real <lower = 0> lmean;
-  real <lower = 0> lsd;
 }
 
 parameters {
   // Inferred time of infection
+<<<<<<< Updated upstream
   vector <lower = 0> [P] T_e;
 
   // Timing of p and s
@@ -25,12 +26,24 @@ parameters {
   real <lower = 0> t_p_var;
   vector [P] t_p_raw;
 
+=======
+  vector[P] T_e;
+  
+  // Hyperparameters
+  // Timing of peak
+  real t_p_mean;
+  real<lower=0> t_p_var;
+  vector[P] t_p_raw;
+
+  // Timing of switch
+>>>>>>> Stashed changes
   real t_s_mean;
   real <lower = 0> t_s_var;
   vector [P] t_s_raw;
 
   // Time viral load hits lower limit of detection
   real t_lod_mean;
+<<<<<<< Updated upstream
   real <lower = 0> t_lod_var;
   vector [P] t_lod_raw;
 
@@ -43,20 +56,35 @@ parameters {
   real c_s_mean;
   real <lower = 0> c_s_var;
   vector [P] c_s_raw;
+=======
+  real<lower=0> t_lod_var;
+  vector[P] t_lod_raw;
+
+  // Ct value of viral load peak
+  real c_p_mean;
+  real<lower=0> c_p_var;
+  vector[P] c_p_raw;
+
+  // Ct value at switch
+  real c_s_mean;
+  real<lower=0> c_s_var;
+  vector[P] c_s_raw;
+>>>>>>> Stashed changes
   
   // Variance parameter for oobservation model
-  real <lower = 0> sigma_obs;
+  real<lower=0> sigma_obs;
 }
 
 transformed parameters {
-  
-  vector [P] t_p;
-  vector [P] t_s;
-  vector [P] t_lod;
-  vector [P] c_s;
-  vector [P] c_p;
-  vector [P] t_lod_abs;
 
+  vector[P] t_p;
+  vector[P] t_s;
+  vector[P] t_lod;
+  vector[P] c_p;
+  vector[P] c_s;
+  vector[P] t_lod_abs;
+
+  // individual-level parameters
   // non-centred, hierarchical parameterisation
   t_p = exp(t_p_mean + t_p_var * t_p_raw);
   t_s = exp(t_s_mean + t_s_var * t_s_raw);
@@ -65,18 +93,13 @@ transformed parameters {
   c_s = c_lod * inv_logit(c_s_mean + c_s_var * c_s_raw);
   // Parameterise c_peak as proportion of c_switch
   c_p = c_s .* inv_logit(c_p_mean + c_p_var * c_p_raw);
-  t_lod_abs  = t_p + t_s + t_lod;
+  t_lod_abs = t_p + t_s + t_lod;
   
 }
 
 model {
-  vector [N] diff = day_rel + T_e[id];
-  vector [N] c_p_n = c_p[id];
-  vector [N] c_s_n = c_s[id];
-  vector [N] t_p_n = t_p[id];
-  vector [N] t_s_n = t_s[id];
-  vector [N] t_lod_abs_n = t_lod_abs[id];
-  vector [N] exp_ct;
+  vector[N] diff = day_rel - T_e[id];
+  vector[N] exp_ct;
 
   // // component of likelihood for time of exposure
   // for(j in 1:P) {
@@ -88,12 +111,9 @@ model {
   //     lognormal_cdf(symp_rel[j] - T_e[j], lmean, lsd) -
   //     lognormal_cdf(symp_rel[j] - 1 - T_e[j], lmean, lsd));
   // }
-  
+
   // Expected ct value given viral load parameters
-  for(j in 1:N) {
-      exp_ct[j] = ct_hinge_long(diff[j], c_0, c_p_n[j], c_s_n[j], c_lod, t_e, t_p_n[j], t_s_n[j], t_lod_abs_n[j]);
-  }
-  // exp_ct = ct_hinge_vec_new(diff, c_0, c_p, c_s, c_lod, t_e, t_p, t_s, t_lod_abs, id);
+  exp_ct = ct_hinge_vec_new(diff, c_0, c_p, c_s, c_lod, t_e, t_p, t_s, t_lod_abs, id);
 
   // component of likelihood for expected ct values
   for(j in 1:N) {
@@ -103,14 +123,23 @@ model {
       target += normal_lcdf(c_lod | exp_ct[j], sigma_obs);
       }
     // if negative result: P(Ct not detected | expected ct)
-    else {
+    else if(pcr_res[j] == 0) {
       target += normal_lccdf(c_lod | exp_ct[j], sigma_obs);
     }
   }
 
   // Prior over possible infection times
-  T_e ~ cauchy(log(5), 2);
+  T_e ~ cauchy(0, 5);
   
+  t_p_mean ~ cauchy(log(5), 5);
+  t_p_var ~ normal(0, 3);
+  t_p_raw ~ normal(0, 3);
+  
+  t_s_mean ~ cauchy(log(5), 5);
+  t_s_var ~ normal(0, 3);
+  t_s_raw ~ normal(0, 3);
+  
+<<<<<<< Updated upstream
   // Viral load peak timing
   t_p_mean ~ cauchy(log(5), 1);
   t_p_var ~ cauchy(0, 1);
@@ -134,6 +163,22 @@ model {
   c_s_mean ~ cauchy(log(0.3), 1);
   c_s_var ~ cauchy(0, 5);
   c_s_raw ~ std_normal();
+=======
+  // Time dropping below limit of detection
+  t_lod_mean ~ cauchy(log(10), 5);
+  t_lod_var ~ normal(0, 3);
+  t_lod_raw ~ normal(0, 3);
+
+  // Ct value at peak
+  c_p_mean ~ cauchy(log(0.2), 5);
+  c_p_var ~ normal(0, 3);
+  c_p_raw ~ normal(0, 3);
+
+  // Ct value at switch to long wane
+  c_s_mean ~ cauchy(log(0.7), 5);
+  c_s_var ~ normal(0, 3);
+  c_s_raw ~ normal(0, 3);
+>>>>>>> Stashed changes
 
   // // Variation in observation model
   sigma_obs ~ cauchy(0, 5);

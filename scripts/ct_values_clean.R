@@ -11,7 +11,7 @@ source("R/custom_plot_theme.R")
 adjustment.fun <- function(alpha, beta, x) {alpha + beta*x}
 adjustment.dt <- fread("data/adjustment_params.csv")
 
-dt.ct <- fread("data/ct_values_clean.csv") %>% 
+dt.ct <- fread("data/ct_values_updated.csv") %>% 
   .[, swab_date := dmy(swab_date)] %>% 
   .[barcode %like% "49U", swab_date := swab_date - 1] %>% 
   .[symptom_onset_date == "unknown", symptom_onset_date := NA] %>% 
@@ -53,21 +53,22 @@ dt.ct <- merge.data.table(dt.ct, no_pos_cts, by = c("ID", "infection_ID")) %>%
            c("no_pos_results", "no_vaccines"))
 
 #--- pooled plots - with negative test results
-p1.all <- dt.ct %>% 
-  .[days_since_first_test < 20 & (VOC == "Delta" | VOC == "Omicron") & result != "Invalid" & result != ""] %>% 
-  ggplot(aes(x = days_since_first_test, y = ct, colour = interaction(factor(VOC)))) + 
-  geom_jitter(width = 0, height = 0.5, alpha = 0.2) + 
-  geom_smooth(se = FALSE) + 
-  stat_smooth(alpha = 0.15) + 
-  scale_y_reverse() + 
-  custom_plot_theme() + 
+p1.all <- dt.ct %>%
+  .[days_since_first_test < 20 & (VOC == "Delta" | VOC == "Omicron") & result != "Invalid" & result != ""] %>%
+  .[, .SD[any(result == "Negative")], by = ID] %>%
+  ggplot(aes(x = days_since_first_test, y = ct, colour = interaction(factor(VOC)))) +
+  geom_jitter(width = 0, height = 0.5, alpha = 0.2) +
+  geom_smooth(se = FALSE) +
+  stat_smooth(alpha = 0.15) +
+  scale_y_reverse() +
+  custom_plot_theme() +
   labs(x = "Time (days)",
        y = "Ct value",
        title = "With negative test results",
        subtitle = "Since first test",
-       colour = "VOC") + 
+       colour = "VOC") +
   scale_colour_brewer(palette = "Set1") +
-  theme(plot.subtitle = element_text(hjust = 0.5)) + 
+  theme(plot.subtitle = element_text(hjust = 0.5)) +
   lims(x = c(-5, 20), y = c(42, 10))
 
 p2.all <- dt.ct %>% 
@@ -138,6 +139,7 @@ p.all.both <- p.all/p.all.no.neg + plot_layout(guides = "collect")
 #--- looking at Omicron curves with different numbers of vaccines
 p1.vaccines <- dt.ct %>% 
   .[days_since_first_test < 20 & (VOC == "Omicron") & result != "Invalid" & result != ""] %>% 
+  .[, .SD[any(result == "Negative")], by = ID] %>%
   ggplot(aes(x = days_since_first_test, y = ct, colour = interaction(factor(no_vaccines)))) + 
   geom_jitter(width = 0, height = 0.5, alpha = 0.2) + 
   geom_smooth(se = FALSE) + 
@@ -175,35 +177,31 @@ p.vaccines <- p1.vaccines + p2.vaccines + plot_layout(guides = "collect")
   
 p.all.vaccines <- p.all.both/p.vaccines
 
-ggsave("outputs/ct_dynamics_adjusted_vaccines.png",
+ggsave("outputs/ct_dynamics_negative_anchor.png",
        p.all.vaccines,
        width = 7,
        height = 9,
        bg = "white")
 
 #--- individual level plots
-p.delta.individual <- dt.ct %>%
-  .[no_pos_results > 2] %>%
-  .[(VOC == "Delta") & result != "Invalid" & result != ""] %>%
-  ggplot(aes(x = days_since_first_test, y = ct_adjusted)) +
-  geom_point(aes(colour = factor(result))) +
-  #geom_line() +
-  geom_line(stat = "smooth", se = FALSE, colour = "black", alpha = 0.2) +
-  scale_y_reverse() +
-  # facet_wrap(~ID, scales = "free_x") +
-  custom_plot_theme()
-
-p.omicron.individual <- dt.ct %>%
-  .[no_pos_results > 2] %>%
-  .[(VOC == "Omicron") & result != "Invalid" & result != ""] %>%
-  ggplot(aes(x = days_since_first_test, y = ct_adjusted)) +
-  geom_point(aes(colour = factor(result))) +
-  #geom_line() +
-  geom_line(stat = "smooth", se = FALSE, colour = "black", alpha = 0.2) +
-  scale_y_reverse() +
-  # facet_wrap(~ID, scales = "free_x") +
-  custom_plot_theme()
-# 
-# dt.ct %>%
+# p.delta.individual <- dt.ct %>%
 #   .[no_pos_results > 2] %>%
-#   .[(VOC == "Omicron") & result != "Invalid" & result != "" & swab_type != "LFT" & ID == 928]
+#   .[(VOC == "Delta") & result != "Invalid" & result != ""] %>%
+#   ggplot(aes(x = days_since_first_test, y = ct_adjusted)) +
+#   geom_point(aes(colour = factor(result))) +
+#   #geom_line() +
+#   geom_line(se = FALSE, colour = "black", alpha = 0.2) +
+#   scale_y_reverse() +
+#   facet_wrap(~ID, scales = "free_x") +
+#   custom_plot_theme()
+# 
+# p.omicron.individual <- dt.ct %>%
+#   .[no_pos_results > 2] %>%
+#   .[(VOC == "Omicron") & result != "Invalid" & result != ""] %>%
+#   ggplot(aes(x = days_since_first_test, y = ct_adjusted)) +
+#   geom_point(aes(colour = factor(result))) +
+#   geom_line() +
+#   geom_line(se = FALSE, colour = "black", alpha = 0.2) +
+#   scale_y_reverse() +
+#   facet_wrap(~ID, scales = "free_x") +
+#   custom_plot_theme()
