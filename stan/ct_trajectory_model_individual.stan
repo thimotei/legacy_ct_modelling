@@ -59,7 +59,8 @@ transformed parameters {
   vector[P] c_p;
   vector[P] c_s;
   vector[P] t_lod_abs;
-
+  vector[N] diff;
+  vector[N] exp_ct;
   // individual-level parameters
   // non-centred, hierarchical parameterisation
   t_p = exp(t_p_mean + t_p_var * t_p_raw);
@@ -70,13 +71,15 @@ transformed parameters {
   // Parameterise c_peak as proportion of c_switch
   c_p = c_s .* inv_logit(c_p_mean + c_p_var * c_p_raw);
   t_lod_abs = t_p + t_s + t_lod;
-  
+
+  diff = day_rel + T_e[id];
+
+  // Expected ct value given viral load parameters
+  exp_ct = ct_hinge_vec_new(diff, c_0, c_p, c_s, c_lod, t_e, t_p, t_s, 
+                            t_lod_abs, id);
 }
 
 model {
-  vector[N] diff = day_rel + T_e[id];
-  vector[N] exp_ct;
-
   // Prior over possible infection times relative to first
   // positive test or symtom onset.
   // Assumes that the first positive test is not a false positive.
@@ -123,10 +126,6 @@ model {
   //     lognormal_cdf(symp_rel[j] - 1 - T_e[j], lmean, lsd));
   // }
 
-  // Expected ct value given viral load parameters
-  exp_ct = ct_hinge_vec_new(diff, c_0, c_p, c_s, c_lod, t_e, t_p, t_s, 
-                            t_lod_abs, id);
-
   if (likelihood) {
     // component of likelihood for expected ct values
     for(j in 1:N) {
@@ -145,8 +144,10 @@ model {
 
 generated quantities {
   matrix[P, 61] ct;
-  vector[N] sim_ct];
-  sim_ct = normal_rng(exp_ct, sigma_obs);
+  vector[N] sim_ct;
+  for (i in 1:N) {
+    sim_ct[i] = normal_rng(exp_ct[i], sigma_obs);
+  }
   for(i in 1:P) {
     for(j in 1:61) {
       ct[i, j] = ct_hinge_long(j - 1, c_0, c_p[i], c_s[i], c_lod, t_e, t_p[i], t_s[i], t_lod_abs[i]);
