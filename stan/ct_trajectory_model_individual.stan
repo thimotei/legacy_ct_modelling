@@ -21,28 +21,28 @@ parameters {
   vector <lower = 0> [P] T_e;
 
   // Timing of p and s
-  real <lower = 0> t_p_mean;
+  real t_p_mean;
   real <lower = 0> t_p_var;
-  vector <lower = 0> [P] t_p_raw;
+  vector [P] t_p_raw;
 
-  real <lower = 0> t_s_mean;
+  real t_s_mean;
   real <lower = 0> t_s_var;
-  vector <lower = 0> [P] t_s_raw;
+  vector [P] t_s_raw;
 
   // Time viral load hits lower limit of detection
-  real <lower = 0> t_lod_mean;
+  real t_lod_mean;
   real <lower = 0> t_lod_var;
-  vector <lower = 0> [P] t_lod_raw;
+  vector [P] t_lod_raw;
 
   // Ct value of viral load p
-  real <lower = 0> c_p_mean;
+  real c_p_mean;
   real <lower = 0> c_p_var;
-  vector <lower = 0> [P] c_p_raw;
+  vector [P] c_p_raw;
 
   // Ct value at s
-  real <lower = 0> c_s_mean;
+  real c_s_mean;
   real <lower = 0> c_s_var;
-  vector <lower = 0> [P] c_s_raw;
+  vector [P] c_s_raw;
   
   // Variance parameter for oobservation model
   real <lower = 0> sigma_obs;
@@ -113,7 +113,7 @@ model {
   
   // Viral load peak timing
   t_p_mean ~ cauchy(log(5), 1);
-  t_p_var ~ normal(0, 1);
+  t_p_var ~ cauchy(0, 1);
   t_p_raw ~ normal(0, 1);
 
   t_s_mean ~ cauchy(log(5), 1);
@@ -128,12 +128,12 @@ model {
   // // Ct value at peak
   c_p_mean ~ cauchy(log(0.1), 1);
   c_p_var ~ cauchy(0, 5);
-  c_p_raw ~ normal(0, 1);
+  c_p_raw ~ std_normal();
 
   // // Ct value at switch to long wane
   c_s_mean ~ cauchy(log(0.3), 1);
   c_s_var ~ cauchy(0, 5);
-  c_s_raw ~ normal(0, 1);
+  c_s_raw ~ std_normal();
 
   // // Variation in observation model
   sigma_obs ~ cauchy(0, 5);
