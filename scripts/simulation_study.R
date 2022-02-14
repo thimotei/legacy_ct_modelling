@@ -64,6 +64,14 @@ true_params <- ext_ct_dt[, .(id = unique(id),
 ext_ct_dt_sample <- ext_ct_dt[, .SD[t %in% sample(.N, sample(3:8, 1))],
                               by = "id"]
 
+# get time for first positive test per person
+pos_test <- ext_ct_dt_sample[
+  pcr_res == 1, .SD[t == min(t)], by = "id"][,
+  .(id, t_first_pos = t)
+]
+ext_ct_dt_sample <- ext_ct_dt_sample[pos_test, on = "id"]
+ext_ct_dt_sample[, t := t - t_first_pos]
+
 # quick plot of subset of data
 ext_ct_dt_sample %>%
   ggplot(aes(x = t, y = ct_value)) +
@@ -92,10 +100,17 @@ fit_sim <- mod$sample(
 draws_dt <- as.data.table(fit_sim$draws())
 
 # extracting Ct fits. Bit slow as it is at the moment
-ct_dt_draws <- extract_ct_fits(draws_dt[variable %like% "ct"])
+ct_dt_draws <- extract_ct_fits(draws_dt)
+
+# round time first positive to the nearest day
+ct_dt_draws <- ct_dt_draws[,
+ time_since_first_pos := as.integer(time_since_first_pos)
+]
 
 # summarising trajectories using median and 95% CrI
-ct_dt_draws_summary <- ct_trajectory_summarise(ct_dt_draws)
+ct_dt_draws_summary <- ct_trajectory_summarise(
+  ct_dt_draws, by = c("id", "time_since_first_pos")
+)
 
 # plotting summaries of fitted trajectories against simulated data
-plot_ct_trajectories(ct_dt_draws_summary, ext_ct_dt)
+plot_ct_trajectories(ct_dt_draws_summary, ext_ct_dt_sample)

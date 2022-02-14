@@ -5,7 +5,7 @@
 plot_ct_trajectories <- function(ct_dt_draws, ct_dt) {
   
   p_out <- ct_dt_draws %>% 
-    ggplot(aes(x = time)) +
+    ggplot(aes(x = time_since_first_pos)) +
     geom_line(aes(y = me)) +
     geom_ribbon(aes(ymin = lo, ymax = hi), alpha = 0.2) +
     geom_point(data = ct_dt, aes(x = t, y = ct_value, colour = factor(pcr_res))) + 

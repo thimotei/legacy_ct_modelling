@@ -19,7 +19,7 @@ data {
 
 parameters {
   // Inferred time of infection
-  vector[P] T_e;
+  vector<lower = 0>[P] T_e;
   
   // Hyperparameters
   // Ct value of viral load p
@@ -77,8 +77,13 @@ model {
   vector[N] diff = day_rel + T_e[id];
   vector[N] exp_ct;
 
-  // Prior over possible infection times
-  T_e ~ normal(3, 2);
+  // Prior over possible infection times relative to first
+  // positive test or symtom onset.
+  // Assumes that the first positive test is not a false positive.
+  for (i in 1:P) {
+    T_e[i] ~ normal(5, 5) T[0,];
+  }
+  
   
   // Ct value at peak
   c_p_mean ~ normal(0, 1); //mean at 50% of switch value
@@ -140,6 +145,8 @@ model {
 
 generated quantities {
   matrix[P, 61] ct;
+  vector[N] sim_ct];
+  sim_ct = normal_rng(exp_ct, sigma_obs);
   for(i in 1:P) {
     for(j in 1:61) {
       ct[i, j] = ct_hinge_long(j - 1, c_0, c_p[i], c_s[i], c_lod, t_e, t_p[i], t_s[i], t_lod_abs[i]);
