@@ -1,13 +1,22 @@
-#simulating Ct trajectories, to test parameter recovery
-# library(data.table)
-# library(ggplot2)
-# library(truncnorm)
-# library(cmdstanr)
-# library(cowplot)
-# library(stringr)
+#--- simulating Ct trajectories, to test parameter recovery
+library(data.table)
+library(ggplot2)
+library(truncnorm)
+library(cmdstanr)
+library(cowplot)
+library(stringr)
 
 # loading all functions in package directory
-devtools::load_all()
+devtools::load_all("./")
+
+# don't know why (as load_all seems to be sort of working) but these functions
+# don't work at the moment unless they're sourced directly
+source("R/ct_trajectory_functions.R") 
+source("R/simulate_ct_trajectories.R") 
+source("R/stan_data_fun.R") 
+source("R/extract_ct_fits.R")
+source("R/ct_trajectory_summarise.R")
+source("R/init_fun.R")
 
 # example of a single trajectory
 t_max <- 30
@@ -28,8 +37,8 @@ n <- 10 # total number of individuals being simulated
 # where the minimum and maximum of each are arguments of the simulating
 # function
 ext_ct_dt <- simulate_ct_trajectories(t_max = 30, t_stepsize = 1, 
-                                      cp_min = 0.3, cp_max = 0.7,
-                                      cs_min = 0.2, cs_max = 0.8,
+                                      cp_min = 10, cp_max = 20,
+                                      cs_min = 20, cs_max = 30,
                                       te_min = 1, te_max = 7, 
                                       tp_min = 1, tp_max =7,
                                       ts_min = 1, ts_max = 7, 
@@ -39,9 +48,13 @@ ext_ct_dt <- simulate_ct_trajectories(t_max = 30, t_stepsize = 1,
 # quick plot of simulated data
 ext_ct_dt %>% 
   ggplot() + 
-  geom_point(aes(x = t, y = ct_value_std, colour = pcr_res)) +
+  geom_point(aes(x = t, y = ct_value, colour = pcr_res)) +
   facet_wrap(vars(id)) + 
   custom_plot_theme()
+
+# setting minimum and maximum values globally, as used multiple times
+mn <- ext_ct_dt[, min(ct_value_noisey, na.rm = TRUE)]
+mx <- ext_ct_dt[, max(ct_value_noisey, na.rm = TRUE)]
 
 # saving the true parameters for comparison to estimated values
 true_params <- ext_ct_dt[, .(id = unique(id), 
@@ -59,7 +72,7 @@ ext_ct_dt_sample <- ext_ct_dt[, .SD[t %in% sample(.N, sample(3:8, 1))],
 
 # quick plot of subset of data
 ext_ct_dt_sample %>% 
-  ggplot(aes(x = t, y = ct_value_std)) + 
+  ggplot(aes(x = t, y = ct_value)) + 
   geom_point() +
   facet_wrap(vars(id)) + 
   custom_plot_theme()
@@ -70,7 +83,7 @@ mod <- cmdstan_model("stan/ct_trajectory_model_individual.stan",
 
 #--- running inference
 n.chains <- 4
-stan_data_simulated <- stan_data_fun(ext_ct_dt, simulated = TRUE)
+stan_data_simulated <- stan_data_fun(ext_ct_dt)
 options(mc.cores = 8)
 
 # fitting the model - not very quick, as many iterations hit the
@@ -81,7 +94,7 @@ fit_sim <- mod$sample(
   chains = 4,
   iter_warmup = 1000,
   iter_sampling = 2000,
-  init = 0.1
+  init = init_fun
 )
 
 # extracting draws and putting them nicely into a data.table
