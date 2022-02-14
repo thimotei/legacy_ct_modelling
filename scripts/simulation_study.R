@@ -5,18 +5,11 @@ library(truncnorm)
 library(cmdstanr)
 library(cowplot)
 library(stringr)
+library(purrr)
 
 # loading all functions in package directory
-devtools::load_all("./")
-
-# don't know why (as load_all seems to be sort of working) but these functions
-# don't work at the moment unless they're sourced directly
-source("R/ct_trajectory_functions.R") 
-source("R/simulate_ct_trajectories.R") 
-source("R/stan_data_fun.R") 
-source("R/extract_ct_fits.R")
-source("R/ct_trajectory_summarise.R")
-source("R/init_fun.R")
+files <- list.files("R", "*.R", full.names = TRUE)
+walk(files, source)
 
 # example of a single trajectory
 t_max <- 30
@@ -43,6 +36,7 @@ ext_ct_dt <- simulate_ct_trajectories(t_max = 30, t_stepsize = 1,
                                       tp_min = 1, tp_max = 7,
                                       ts_min = 1, ts_max = 7,
                                       tlod_min = 5, tlod_max = 10,
+                                      c0 = c0, clod = clod, n = n,
                                       sigma_obs = 1)
 
 # quick plot of simulated data
@@ -82,9 +76,7 @@ mod <- cmdstan_model("stan/ct_trajectory_model_individual.stan",
                      include_paths = "stan")
 
 #--- running inference
-n.chains <- 4
 stan_data_simulated <- stan_data_fun(ext_ct_dt)
-options(mc.cores = 4)
 
 # fitting the model - not very quick, as many iterations hit the
 # max_tree_depth at the moment
@@ -92,9 +84,9 @@ fit_sim <- mod$sample(
   data = stan_data_simulated,
   seed = 123,
   chains = 4,
+  parallel_chains = 4,
   iter_warmup = 1000,
-  iter_sampling = 2000,
-  init = init_fun
+  iter_sampling = 1000
 )
 
 # extracting draws and putting them nicely into a data.table
@@ -108,5 +100,3 @@ ct_dt_draws_summary <- ct_trajectory_summarise(ct_dt_draws)
 
 # plotting summaries of fitted trajectories against simulated data
 plot_ct_trajectories(ct_dt_draws_summary, ext_ct_dt)
-
-
