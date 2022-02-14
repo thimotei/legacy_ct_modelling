@@ -125,7 +125,7 @@ model {
   for(j in 1:N) {
     // If positive result: P(observed ct | expected ct)*P(Ct detected | expected ct)
     if(pcr_res[j] == 1) {
-      ct_value[j] ~ normal(exp_ct[j], sigma_obs) T[, c_lod];
+      ct_value[j] ~ normal(exp_ct[j], sigma_obs) T[0, c_lod];
       target += normal_lcdf(c_lod | exp_ct[j], sigma_obs);
       }
     // if negative result: P(Ct not detected | expected ct)
