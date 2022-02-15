@@ -93,7 +93,7 @@ p2 <- dt.omicron %>%
 
 #p1 + p2
 
-options(mc.cores = parallel::detectCores()) 
+options(mc.cores = 4) 
 #--- choose here whether you want the individual-level fits 
 #--- or a pooled fit
 mod <- rstan::stan_model("stan/ct_trajectory_model_individual.stan")
