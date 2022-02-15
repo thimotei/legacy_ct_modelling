@@ -2,7 +2,6 @@ data/
 .Rproj.user
 .DS_Store
 .Rhistory
-stan
-!stan/*.stan
-!stan/functions
+stan/ct_trajectory_model
+stan/dry_vs_wet_linear_regression
 outputs/figures
