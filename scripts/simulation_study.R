@@ -11,24 +11,7 @@ library(purrr)
 files <- list.files("R", "*.R", full.names = TRUE)
 walk(files, source)
 
-# example of a single trajectory
-t_max <- 30
-t_step <- 1
-t_input <- seq(1, t_max, t_step)
-
-# free parameters in the model cp, cs, te, tp, ts, tlod
-# fixed parameters in mechanistic model are c0 and clod, both fixed at 40
-c0 <- 40
-clod <- 40
-
-# fixed parameters in statistical model are sigma_obs
-sigma_obs_known <- 1
-
-n <- 10 # total number of individuals being simulated
-
-# simulating trajectories. all parameters are sampled from uniform distributions
-# where the minimum and maximum of each are arguments of the simulating
-# function
+# Simulate trajectories for 10 individuals with a test per day
 ext_ct_dt <- simulate_ct_trajectories(t_max = 30, t_stepsize = 1,
                                       cp_min = 10, cp_max = 20,
                                       cs_min = 20, cs_max = 30,
@@ -36,15 +19,11 @@ ext_ct_dt <- simulate_ct_trajectories(t_max = 30, t_stepsize = 1,
                                       tp_min = 1, tp_max = 7,
                                       ts_min = 1, ts_max = 7,
                                       tlod_min = 5, tlod_max = 10,
-                                      c0 = c0, clod = clod, n = n,
+                                      c0 = 40, clod = 40, n = 10,
                                       sigma_obs = 1)
 
-# quick plot of simulated data
-ext_ct_dt %>%
-  ggplot() +
-  geom_point(aes(x = t, y = ct_value, colour = pcr_res)) +
-  facet_wrap(vars(id)) +
-  custom_plot_theme()
+# plot simulated data
+
 
 # setting minimum and maximum values globally, as used multiple times
 mn <- ext_ct_dt[, min(ct_value_noisey, na.rm = TRUE)]
@@ -84,6 +63,7 @@ ext_ct_dt_sample %>%
 mod <- cmdstan_model("stan/ct_trajectory_model.stan", include_paths = "stan")
 
 stan_data_simulated <- data_to_stan(ext_ct_dt_sample, likelihood = FALSE)
+
 # fitting the model - not very quick, as many iterations hit the
 # max_tree_depth at the moment
 fit_sim <- mod$sample(
