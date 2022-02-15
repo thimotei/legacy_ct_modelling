@@ -1,6 +1,6 @@
 data_to_stan <- function(input_data, likelihood = TRUE, clod = 40) {
-  
-  stan_data <- list(N = input_data[, .N], 
+
+  stan_data <- list(N = input_data[, .N],
                     P = length(unique(input_data$id)),
                     id = input_data[, id],
                     day_rel = input_data[, t],
