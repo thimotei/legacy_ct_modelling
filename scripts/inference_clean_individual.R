@@ -49,15 +49,19 @@ p1_raw <- plot_empiricial_data_ind(dt_delta, dt_omicron)
 options(mc.cores = parallel::detectCores()) 
 #--- choose here whether you want the individual-level fits 
 #--- or a pooled fit
-mod <- cmdstanr::stan_model("stan/ct_trajectory_model_individual.stan")
+mod <- cmdstan_model("stan/ct_trajectory_model_individual.stan",
+                     include_paths = "stan")
 
 #--- fitting for delta
 stan_data_delta <- stan_data_fun(dt_delta)
 
-fit_delta <- sampling(mod,
-                      chains = 4,
-                      data = stan_data_delta,
-                      iter = 2000)
+fit_delta <- mod$sample(
+  data = stan_data_delta,
+  chains = 4,
+  parallel_chains = 4,
+  iter_warmup = 1000,
+  iter_sampling = 1000
+)
 
 # extracting draws and putting them nicely into a data.table
 draws_delta_dt <- as.data.table(fit_delta$draws())

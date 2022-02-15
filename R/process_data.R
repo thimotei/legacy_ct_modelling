@@ -50,6 +50,22 @@ process_data <- function(data_raw) {
   
   #--- conditioning out observations with NA Ct values (how can we use these?)
   data_out_no_dups <- data_out_no_dups[is.na(ct_unadjusted) == FALSE]
+  
+  #--- adding time since first positive test by individual
+  first_pos_test_date_dt <- data_out_no_dups[result == "Positive",
+                                     .(first_pos_test_date = min(swab_date)),
+                                     by = c("id", "infection_id")]
+
+  data_out_no_dups <- merge.data.table(data_out_no_dups,
+                   first_pos_test_date_dt,
+                   by = c("id", "infection_id"))
+
+  data_out_no_dups[, time_since_first_pos := as.numeric(swab_date - first_pos_test_date, units = "days"),
+                   by = c("id", "infection_id")]
+  
+  # naming time since first positive test, also t, just so the same Stan data
+  # function works as the simulation study
+  data_out_no_dups[, t := time_since_first_pos]
     
   return(data_out_no_dups)
 }
