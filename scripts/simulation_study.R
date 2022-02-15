@@ -72,6 +72,22 @@ pos_test <- ext_ct_dt_sample[
 ext_ct_dt_sample <- ext_ct_dt_sample[pos_test, on = "id"]
 ext_ct_dt_sample[, t := t - t_first_pos]
 
+# compiling model
+mod <- cmdstan_model("stan/ct_trajectory_model_individual.stan",
+                     include_paths = "stan")
+
+#--- format simulated data into stan format
+stan_data_simulated <- stan_data_fun(ext_ct_dt, likelihood = FALSE)
+
+# approximately draw from the prior
+prior_fit <- mod$sample(
+  data = stan_data_simulated, chains  = 1
+)
+
+extract_ct_by_sample <- function(fit, variable = "sim_ct", clod = 40) {
+  
+}
+
 # quick plot of subset of data
 ext_ct_dt_sample %>%
   ggplot(aes(x = t, y = ct_value)) +
@@ -79,12 +95,7 @@ ext_ct_dt_sample %>%
   facet_wrap(vars(id)) +
   custom_plot_theme()
 
-# compiling model to test inference
-mod <- cmdstan_model("stan/ct_trajectory_model_individual.stan",
-                     include_paths = "stan")
 
-#--- running inference
-stan_data_simulated <- stan_data_fun(ext_ct_dt, likelihood = FALSE)
 
 # fitting the model - not very quick, as many iterations hit the
 # max_tree_depth at the moment

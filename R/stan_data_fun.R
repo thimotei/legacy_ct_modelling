@@ -1,4 +1,4 @@
-stan_data_fun <- function(input_data, likelihood = TRUE) {
+stan_data_fun <- function(input_data, likelihood = TRUE, clod = 40) {
   
   stan_data <- list(N = input_data[, .N], 
                     P = length(unique(input_data$id)),
@@ -7,8 +7,8 @@ stan_data_fun <- function(input_data, likelihood = TRUE) {
                     ct_value = ifelse(is.na(input_data$ct_value), -99, input_data$ct_value_std),
                     pcr_res = input_data[, pcr_res], 
                     t_e = 0,
-                    c_0 = (40 - mn)/(mx - mn),
-                    c_lod = (40 - mn)/(mx - mn),
+                    c_0 = (clod - mn)/(mx - mn),
+                    c_lod = (clod - mn)/(mx - mn),
                     lmean = get_inc_period()$inc_mean_p[1],
                     lsd = get_inc_period()$inc_sd_p[2],
                     likelihood = as.numeric(likelihood)
