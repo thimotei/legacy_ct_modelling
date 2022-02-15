@@ -72,22 +72,6 @@ pos_test <- ext_ct_dt_sample[
 ext_ct_dt_sample <- ext_ct_dt_sample[pos_test, on = "id"]
 ext_ct_dt_sample[, t := t - t_first_pos]
 
-# compiling model
-mod <- cmdstan_model("stan/ct_trajectory_model_individual.stan",
-                     include_paths = "stan")
-
-#--- format simulated data into stan format
-stan_data_simulated <- stan_data_fun(ext_ct_dt, likelihood = FALSE)
-
-# approximately draw from the prior
-prior_fit <- mod$sample(
-  data = stan_data_simulated, chains  = 1
-)
-
-extract_ct_by_sample <- function(fit, variable = "sim_ct", clod = 40) {
-
-}
-
 # quick plot of subset of data
 ext_ct_dt_sample %>%
   ggplot(aes(x = t, y = ct_value)) +
@@ -96,7 +80,10 @@ ext_ct_dt_sample %>%
   custom_plot_theme()
 
 
+# compiling model
+mod <- cmdstan_model("stan/ct_trajectory_model.stan", include_paths = "stan")
 
+stan_data_simulated <- data_to_stan(ext_ct_dt_sample, likelihood = FALSE)
 # fitting the model - not very quick, as many iterations hit the
 # max_tree_depth at the moment
 fit_sim <- mod$sample(
@@ -108,11 +95,11 @@ fit_sim <- mod$sample(
 )
 
 # extracting draws and putting them nicely into a data.table
-draws_dt <- fit_sim$draws(format = "dt") 
+draws_dt <- fit_sim$draws(format = "dt")
 draws_dt <- as.data.table(draws_dt)
 
 # extracting Ct fits. Bit slow as it is at the moment
-ct_dt_draws <- extract_ct_fits(draws_dt)
+ct_dt_draws <- extract_ct_trajectories(draws_dt)
 
 # round time first positive to the nearest day
 ct_dt_draws <- ct_dt_draws[,
@@ -120,7 +107,7 @@ ct_dt_draws <- ct_dt_draws[,
 ]
 
 # summarising trajectories using median and 95% CrI
-ct_dt_draws_summary <- ct_trajectory_summarise(
+ct_dt_draws_summary <- summarise_ct_trajectories(
   ct_dt_draws, by = c("id", "time_since_first_pos")
 )
 

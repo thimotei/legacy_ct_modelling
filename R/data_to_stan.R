@@ -1,4 +1,4 @@
-stan_data_fun <- function(input_data, likelihood = TRUE, clod = 40) {
+data_to_stan <- function(input_data, likelihood = TRUE, clod = 40) {
   
   stan_data <- list(N = input_data[, .N], 
                     P = length(unique(input_data$id)),
