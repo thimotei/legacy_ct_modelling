@@ -4,3 +4,5 @@ data/
 .Rhistory
 stan
 !stan/*.stan
+!stan/functions
+outputs/figures

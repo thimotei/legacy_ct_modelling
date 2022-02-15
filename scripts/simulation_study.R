@@ -43,12 +43,12 @@ plot_obs_ct(ct_sample)
 # compiling model
 mod <- cmdstan_model("stan/ct_trajectory_model.stan", include_paths = "stan")
 
-stan_data_simulated <- data_to_stan(ext_ct_dt_sample, likelihood = FALSE)
+sim_stan_data <- data_to_stan(ct_sample, likelihood = FALSE)
 
 # fitting the model - not very quick, as many iterations hit the
 # max_tree_depth at the moment
 fit_sim <- mod$sample(
-  data = stan_data_simulated,
+  data = sim_stan_data,
   chains = 4,
   parallel_chains = 4,
   iter_warmup = 1000,
@@ -67,4 +67,5 @@ ct_summary <- summarise_draws(
 )
 
 # plotting summaries of fitted trajectories against simulated data
-plot_obs_ct(ct_sample, ct_draws[iteration <= 25], traj_alpha = 0.01)
+pp_plot <- plot_obs_ct(ct_sample, ct_draws[iteration <= 25], traj_alpha = 0.01)
+ggsave("outputs/figures/pp.png", pp_plot, height = 10, width = 10)
