@@ -12,52 +12,33 @@ files <- list.files("R", "*.R", full.names = TRUE)
 walk(files, source)
 
 # Simulate trajectories for 10 individuals with a test per day
-ext_ct_dt <- simulate_ct_trajectories(t_max = 30, t_stepsize = 1,
-                                      cp_min = 10, cp_max = 20,
-                                      cs_min = 20, cs_max = 30,
-                                      te_min = 1, te_max = 7,
-                                      tp_min = 1, tp_max = 7,
-                                      ts_min = 1, ts_max = 7,
-                                      tlod_min = 5, tlod_max = 10,
-                                      c0 = 40, clod = 40, n = 10,
-                                      sigma_obs = 1)
+sim_ct <- simulate_ct_trajectories(
+  t_max = 30, t_stepsize = 1, cp_min = 10, cp_max = 20,
+  cs_min = 20, cs_max = 30, te_min = 1, te_max = 7,
+  tp_min = 1, tp_max = 7, ts_min = 1, ts_max = 7,
+  tlod_min = 5, tlod_max = 10, c0 = 40, clod = 40, n = 10,
+  sigma_obs = 1
+)
 
-# plot simulated data
-
-
-# setting minimum and maximum values globally, as used multiple times
-mn <- ext_ct_dt[, min(ct_value_noisey, na.rm = TRUE)]
-mx <- ext_ct_dt[, max(ct_value_noisey, na.rm = TRUE)]
+plot_obs_ct(sim_ct)
 
 # saving the true parameters for comparison to estimated values
-true_params <- ext_ct_dt[, .(id = unique(id),
-                             cs = unique(cs),
-                             cp = unique(cp),
-                             te = unique(te),
-                             tp = unique(tp),
-                             ts = unique(ts),
-                             tlod = unique(tlod))]
+true_params <- sim_ct[,
+  .(id = unique(id), cs = unique(cs), cp = unique(cp),
+    te = unique(te), tp = unique(tp), ts = unique(ts),
+    tlod = unique(tlod)
+  )
+]
 
 # sampling a "realistic size" subset of the data. I.e. between 3 and 8 samples
 # at random times per person
-ext_ct_dt_sample <- ext_ct_dt[, .SD[t %in% sample(.N, sample(3:8, 1))],
-                              by = "id"]
+ct_sample <- sim_ct[, .SD[t %in% sample(.N, sample(3:8, 1))], by = "id"]
 
 # get time for first positive test per person
-pos_test <- ext_ct_dt_sample[
-  pcr_res == 1, .SD[t == min(t)], by = "id"][,
-  .(id, t_first_pos = t)
-]
-ext_ct_dt_sample <- ext_ct_dt_sample[pos_test, on = "id"]
-ext_ct_dt_sample[, t := t - t_first_pos]
+ct_sample <- index_by_first_positive(ct_sample)
 
 # quick plot of subset of data
-ext_ct_dt_sample %>%
-  ggplot(aes(x = t, y = ct_value)) +
-  geom_point() +
-  facet_wrap(vars(id)) +
-  custom_plot_theme()
-
+plot_obs_ct(ct_sample)
 
 # compiling model
 mod <- cmdstan_model("stan/ct_trajectory_model.stan", include_paths = "stan")
@@ -74,22 +55,16 @@ fit_sim <- mod$sample(
   iter_sampling = 1000
 )
 
-# extracting draws and putting them nicely into a data.table
-draws_dt <- fit_sim$draws(format = "dt")
-draws_dt <- as.data.table(draws_dt)
-
 # extracting Ct fits. Bit slow as it is at the moment
-ct_dt_draws <- extract_ct_trajectories(draws_dt)
-
-# round time first positive to the nearest day
-ct_dt_draws <- ct_dt_draws[,
- time_since_first_pos := as.integer(time_since_first_pos)
-]
+ct_draws <- extract_ct_trajectories(fit_sim)
 
 # summarising trajectories using median and 95% CrI
-ct_dt_draws_summary <- summarise_ct_trajectories(
-  ct_dt_draws, by = c("id", "time_since_first_pos")
+ct_summary <- summarise_draws(
+  copy(ct_draws)[,
+    time_since_first_pos := as.integer(time_since_first_pos)
+    ],
+  by = c("id", "time_since_first_pos")
 )
 
 # plotting summaries of fitted trajectories against simulated data
-plot_ct_trajectories(ct_dt_draws_summary, ext_ct_dt_sample)
+plot_obs_ct(ct_sample, ct_draws[iteration <= 25], traj_alpha = 0.01)

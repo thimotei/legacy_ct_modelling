@@ -7,6 +7,10 @@ simulate_ct_trajectories <- function(t_max, t_stepsize,
                                      tlod_min, tlod_max,
                                      c0, clod, n,
                                      sigma_obs) {
+
+
+  t_input <- seq(1, t_max, t_stepsize)
+
   out_dt <- data.table(
     id = sort(rep(1:n, t_max / t_stepsize)),
     t = rep(t_input / t_stepsize, n),

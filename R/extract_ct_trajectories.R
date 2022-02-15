@@ -1,4 +1,6 @@
-extract_ct_trajectories <- function(dt_draws) {
+extract_ct_trajectories <- function(fit) {
+  dt_draws <- fit$draws()
+  dt_draws <- data.table::as.data.table(dt_draws)
 
   ct_dt_out <- dt_draws[variable %like% "ct"][,
    c("id", "time") := tstrsplit(variable, ",")
@@ -10,7 +12,7 @@ extract_ct_trajectories <- function(dt_draws) {
    c("time", "iteration", "chain", "id", "value")][
    order(id, time)]
 
-  inf_time_draws <- dt_draws[variable  %like% "T_e"][,
+  inf_time_draws <- dt_draws[variable  %like% "T_e\\["][,
     id := str_remove(variable, "T_e\\[")][,
     id := str_remove(id, "\\]")][,
     .(id, inf_time = value, iteration, chain)]
