@@ -85,7 +85,7 @@ prior_fit <- mod$sample(
 )
 
 extract_ct_by_sample <- function(fit, variable = "sim_ct", clod = 40) {
-  
+
 }
 
 # quick plot of subset of data
@@ -108,7 +108,8 @@ fit_sim <- mod$sample(
 )
 
 # extracting draws and putting them nicely into a data.table
-draws_dt <- as.data.table(fit_sim$draws())
+draws_dt <- fit_sim$draws(format = "dt") 
+draws_dt <- as.data.table(draws_dt)
 
 # extracting Ct fits. Bit slow as it is at the moment
 ct_dt_draws <- extract_ct_fits(draws_dt)

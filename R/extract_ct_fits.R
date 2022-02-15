@@ -8,9 +8,7 @@ extract_ct_fits <- function(dt_draws) {
    time := as.numeric(time)][,
    id := factor(id)][,
    c("time", "iteration", "chain", "id", "value")][
-   order(id, time)][,
-   value_unscaled := (mx - mn) * value + mn
-  ]
+   order(id, time)]
 
   inf_time_draws <- dt_draws[variable  %like% "T_e"][,
     id := str_remove(variable, "T_e\\[")][,
