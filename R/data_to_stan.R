@@ -15,5 +15,11 @@ data_to_stan <- function(input_data, likelihood = TRUE, clod = 40) {
                     lsd = get_inc_period()$inc_sd_p[2],
                     likelihood = as.numeric(likelihood)
   )
+
+ stan_data <- c(stan_data, list(
+        any_onsets = 0,
+        onset_avail = rep(0, stan_data$P),
+        onset_time = rep(0, stan_data$P)
+      ))
   return(stan_data)
 }
