@@ -1,4 +1,4 @@
-ct_trajectory_summarise <- function(draws, by = c("id", "time")) {
+summarise_ct_trajectories <- function(draws, by = c("id", "time")) {
 
 out <- draws[,
     .(me = quantile(value, c(0.5)), lo = quantile(value, c(0.025)), 

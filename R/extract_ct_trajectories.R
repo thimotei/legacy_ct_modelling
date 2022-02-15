@@ -1,4 +1,4 @@
-extract_ct_fits <- function(dt_draws) {
+extract_ct_trajectories <- function(dt_draws) {
 
   ct_dt_out <- dt_draws[variable %like% "ct"][,
    c("id", "time") := tstrsplit(variable, ",")
