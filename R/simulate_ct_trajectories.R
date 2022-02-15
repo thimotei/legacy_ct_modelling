@@ -30,9 +30,7 @@ simulate_ct_trajectories <- function(t_max, t_stepsize,
       t := as.numeric(t)][
         (t < te + 1 | t > te + tp + ts + tlod + 1), pcr_res := 0][
         t > te & t < te + tp + ts + tlod + 1, pcr_res := 1][,
-        pcr_res := factor(pcr_res)][,
-      ct_value_std := (ct_value_noisey - min(ct_value_noisey)) /
-        (max(ct_value_noisey) - min(ct_value_noisey))
+        pcr_res := factor(pcr_res)
     ]
 
   return(out_dt[])

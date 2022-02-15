@@ -21,7 +21,6 @@ parameters {
   // Inferred time of infection
   vector<lower=0>[P] T_e;
 
-  
   // Hyperparameters
   // Ct value of viral load p
   real c_p_mean;
@@ -88,7 +87,6 @@ model {
     T_e[i] ~ normal(5, 5) T[0,];
   }
   
-  
   // Ct value at peak
   c_p_mean ~ normal(0, 1); //mean at 50% of switch value
   c_p_var ~ normal(0, 0.1) T[0,];
@@ -114,7 +112,7 @@ model {
   t_lod_raw ~ std_normal();
 
   // // Variation in observation model (% scale of C_lod)
-  sigma_obs ~ normal(0, 0.025) T[0,];
+  sigma_obs ~ normal(0, 2) T[0,];
 
   // // component of likelihood for time of exposure
   // for(j in 1:P) {
