@@ -67,5 +67,7 @@ ct_summary <- summarise_draws(
 )
 
 # plotting summaries of fitted trajectories against simulated data
-pp_plot <- plot_obs_ct(ct_sample, ct_draws[iteration <= 25], traj_alpha = 0.01)
-ggsave("outputs/figures/pp.png", pp_plot, height = 10, width = 10)
+sim_pp_plot <- plot_obs_ct(
+  ct_sample, ct_draws[iteration <= 10], traj_alpha = 0.05
+)
+ggsave("outputs/figures/sim_pp.png", sim_pp_plot, height = 10, width = 10)
