@@ -23,7 +23,7 @@ stan_inits <- function(dt) {
       t_lod_mean = rnorm(1, 2.3, 0.5),
       t_lod_var = abs(rnorm(1, 0, 0.1)),
       t_lod_raw = rnorm(dt$P, 0, 1),
-      sigma = truncnorm::rtruncnorm(1, a = 0, mean = 5, sd = 1)
+      sigma = truncnorm::rtruncnorm(1, a = 0, mean = 3, sd = 0.1)
     )
 
     if (dt$any_onsets == 1) {
