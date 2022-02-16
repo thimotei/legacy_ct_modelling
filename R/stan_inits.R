@@ -1,6 +1,6 @@
 stan_inits <- function(dt) {
   function() {
-    list(
+    inits <- list(
       T_e = purrr::map_dbl(
         1:dt$P,
         ~ truncnorm::rtruncnorm(
@@ -25,5 +25,12 @@ stan_inits <- function(dt) {
       t_lod_raw = rnorm(dt$P, 0, 1),
       sigma = truncnorm::rtruncnorm(1, a = 0, mean = 5, sd = 1)
     )
+
+    if (dt$any_onsets == 1) {
+      inits$inc_mean <- rnorm(1, dt$lmean[1], dt$lmean[2])
+      inits$inc_sd <- truncnorm::rtruncnorm(
+        1, a = 0, mean = dt$lsd[1], sd = dt$lsd[2]
+      )
+    }
   }
 }

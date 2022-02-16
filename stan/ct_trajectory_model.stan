@@ -6,8 +6,8 @@ data {
   real c_0; // Ct value before detection
   real c_lod; // Ct value at limit of detection 
   real t_e; 
-  real lmean; // mean of incubation period used
-  real lsd; // standard deviation of incubation period used
+  real lmean[2]; // mean of incubation period used (+ sd)
+  real lsd[2]; // standard deviation of incubation period used (+ sd)
   int id[N]; // id of person
   int pcr_res[N]; // boolean test result
   vector[N] day_rel; // day of test (integer)
@@ -28,6 +28,10 @@ transformed data {
 parameters {
   // Inferred time of infection
   vector<lower = T_e_bound>[P] T_e;
+  
+  //Incubation period
+  real inc_mean[any_onsets];
+  real<lower = 0> inc_sd[any_onsets];
   
   // Hyperparameters
   // Ct value of viral load p
@@ -123,6 +127,9 @@ model {
   sigma ~ normal(5, 5) T[0,];
 
   if (any_onsets && likelihood) {
+    // Priors on the incubation period
+    inc_mean[1] ~ normal(lmean[1], lmean[2]);
+    inc_sd[1] ~ normal(lsd[1], lsd[2]) T[0, ];
    // component of likelihood for time of exposure
    for(j in 1:P) {
    // likelihood for time of exposure using the CDF of the incubation period
@@ -132,8 +139,8 @@ model {
       real onset_from_inf = onset_time[j] + T_e[j];
       real onset_window = max({0, onset_from_inf - 1});
         target += log_diff_exp(
-          lognormal_lcdf(onset_from_inf | lmean, lsd),
-          lognormal_lcdf(onset_window | lmean, lsd)
+          lognormal_lcdf(onset_from_inf | inc_mean[1], inc_sd[1]),
+          lognormal_lcdf(onset_window | inc_mean[1], inc_sd[1])
         );
      }
     }
