@@ -129,7 +129,6 @@ model {
     }
   }
 
-
   if (likelihood) {
     // component of likelihood for expected ct values
     for(j in 1:N) {
