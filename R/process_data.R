@@ -1,5 +1,10 @@
-process_data <- function(data_raw) {
-  
+process_data <- function(data_raw, adj_params) {
+    
+  #--- dry vs wet swab adjustment. We adjust the VTM swabs downwards
+  adjustment <- function(alpha, beta, x) {
+    alpha + beta * x
+  }
+
   data_out <- data_raw[, swab_date := dmy(swab_date)] %>% 
     .[barcode %like% "49U", swab_date := swab_date - 1] %>% 
     .[symptom_onset_date == "unknown", symptom_onset_date := NA] %>% 
@@ -11,9 +16,11 @@ process_data <- function(data_raw) {
     .[, ct := as.numeric(ct)] %>% 
     .[result == "Negative", ct := 40] %>% 
     .[swab_type == "VTM" & result == "Negative", ct_adjusted := 40] %>%
-    .[swab_type == "VTM" & result != "Negative", 
-      ct_adjusted := adjustment.fun(adjustment.dt[param == "alpha", me],
-                                    adjustment.dt[param == "beta", me], ct)] %>%
+    .[swab_type == "VTM" & result != "Negative",
+      ct_adjusted := adjustment(
+        adj_params[param == "alpha", me], adj_params[param == "beta", me], ct
+      )
+    ] %>%
     .[swab_type != "VTM", ct_adjusted := ct]
   
   #--- removing duplicate VTM vs Dry swabs

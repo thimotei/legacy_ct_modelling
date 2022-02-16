@@ -2,9 +2,8 @@
 custom_plot_theme <- function(flip = FALSE, legend_arg = FALSE) {
   
   custom_plot_theme = list(
-    theme_cowplot(11),
-    theme(strip.placement = "outside",
-          strip.background = element_blank()),
+    theme_bw(11),
+    theme(strip.placement = "outside"),
     geom_vline(aes(xintercept = -Inf)),
     guides(color = guide_legend(override.aes = list(fill = NA))))
   
