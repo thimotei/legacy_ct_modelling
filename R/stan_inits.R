@@ -32,5 +32,6 @@ stan_inits <- function(dt) {
         1, a = 0, mean = dt$lsd[1], sd = dt$lsd[2]
       )
     }
+    return(inits)
   }
 }
