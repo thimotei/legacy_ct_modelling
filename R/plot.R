@@ -1,6 +1,13 @@
-plot_obs_ct <- function(ct_dt, ct_traj, traj_alpha = 0.01) {
+plot_obs_ct <- function(ct_dt, ct_traj, traj_alpha = 0.01, onsets = TRUE) {
   plot <- ggplot(ct_dt) +
-    aes(x = t, y = ct_value, colour = factor(pcr_res)) +
+    aes(x = t, y = ct_value, colour = factor(pcr_res))
+
+  if (!is.null(ct_dt$onset_time) & onsets) {
+    plot <- plot +
+      geom_vline(aes(xintercept = onset_time), linetype = 2, alpha = 0.8)
+  }
+
+  plot <- plot +
     geom_point()
 
    if (!missing(ct_traj)) {
