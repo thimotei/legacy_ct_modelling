@@ -73,6 +73,10 @@ process_data <- function(data_raw, adj_params) {
   # naming time since first positive test, also t, just so the same Stan data
   # function works as the simulation study
   data_out_no_dups[, t := time_since_first_pos]
-    
-  return(data_out_no_dups)
+  
+  # add time at onset
+  data_out_no_dups[,
+   onset_time := as.numeric(symptom_onset_date - first_pos_test_date)
+  ]
+  return(data_out_no_dups[])
 }

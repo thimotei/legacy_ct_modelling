@@ -21,6 +21,7 @@ Imports:
     posterior,
     stringr,
     truncnorm,
+    tidyr,
     magrittr
 Additional_repositories: 
     https://mc-stan.org/r-packages/

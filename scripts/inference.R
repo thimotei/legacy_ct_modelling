@@ -8,6 +8,7 @@ library(stringr)
 library(purrr)
 library(lubridate)
 library(patchwork)
+library(tidyr)
 
 # loading all functions in package directory
 files <- list.files("R", "*.R", full.names = TRUE)
@@ -47,10 +48,11 @@ p1_raw <- plot_empiricial_data_ind(dt_delta, dt_omicron)
 mod <- cmdstan_model("stan/ct_trajectory_model.stan", include_paths = "stan")
 
 #--- fit
-stan_data <- data_to_stan(dt_2_tests)
+stan_data <- data_to_stan(dt_2_tests, likelihood = TRUE, onsets = TRUE)
 
 fit <- mod$sample(
   data = stan_data,
+  init = stan_inits(stan_data),
   chains = 4,
   parallel_chains = 4,
   iter_warmup = 1000,

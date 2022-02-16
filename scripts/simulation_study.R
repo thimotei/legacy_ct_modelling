@@ -49,6 +49,7 @@ sim_stan_data <- data_to_stan(ct_sample, likelihood = FALSE)
 # max_tree_depth at the moment
 fit_sim <- mod$sample(
   data = sim_stan_data,
+  init = stan_inits(sim_stan_data),
   chains = 4,
   parallel_chains = 4,
   iter_warmup = 1000,
