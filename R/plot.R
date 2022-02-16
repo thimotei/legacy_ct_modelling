@@ -1,11 +1,19 @@
-plot_obs_ct <- function(ct_dt, ct_traj, traj_alpha = 0.01, onsets = TRUE) {
+plot_obs_ct <- function(ct_dt, ct_traj, pp, traj_alpha = 0.02, onsets = TRUE) {
   plot <- ggplot(ct_dt) +
-    aes(x = t, y = ct_value, colour = factor(pcr_res))
+    aes(x = t, y = ct_value, colour = factor(pcr_res)) +
+    scale_colour_brewer(palette = "Dark2")
 
   if (!is.null(ct_dt$onset_time) & onsets) {
     plot <- plot +
       geom_vline(aes(xintercept = onset_time), linetype = 2, alpha = 0.8)
   }
+
+   if (!missing(pp)) {
+     plot <- plot +
+      geom_linerange(
+        data = pp, aes(ymin = lo, ymax = hi, y = NULL), size = 1.1, alpha = 0.2
+      )
+   }
 
   plot <- plot +
     geom_point()
