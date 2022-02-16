@@ -23,11 +23,16 @@ data_to_stan <- function(input_data, likelihood = TRUE, clod = 40,
           onset_time = rep(0, stan_data$P)
         ))
  }else{
-  onset_dt <- input_data[, .(id, onset_time)] %>%
-    unique()
+  onset_dt <- suppressWarnings(
+    input_data[,
+    .(onset_time = min(onset_time, na.rm = TRUE)), by = "id"
+    ][
+      is.infinite(onset_time), onset_time := NA
+    ]
+  )
   stan_data <- c(stan_data, list(
           any_onsets = 1,
-          onset_avail = !is.na(onset_dt$onset_time),
+          onset_avail = as.numeric(!is.na(onset_dt$onset_time)),
           onset_time = onset_dt$onset_time %>%
             replace_na(0)
         ))
