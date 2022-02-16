@@ -1,4 +1,4 @@
-#include ct_trajectory_functions.stan
+#include functions/ct_trajectory.stan
 
 data {
   int P; // number of patients
@@ -12,14 +12,15 @@ data {
   int pcr_res[N]; // boolean test result
   vector[N] day_rel; // day of test (integer)
   vector[N] ct_value; // Ct value of test
-  // vector [P] symp_rel;
-  // vector [P] te_upper_bound; // upper bound on infection time
+  int any_onsets;
+  vector [P] onset_avail;
+  vector [P] onset_time;
   int likelihood;
 }
 
 parameters {
   // Inferred time of infection
-  vector<lower=0>[P] T_e;
+  vector<lower = 0>[P] T_e;
   
   // Hyperparameters
   // Ct value of viral load p
@@ -80,7 +81,6 @@ transformed parameters {
 }
 
 model {
-  
   // Prior over possible infection times relative to first
   // positive test or symtom onset.
   // Assumes that the first positive test is not a false positive.
@@ -113,18 +113,21 @@ model {
   t_lod_raw ~ std_normal();
 
   // // Variation in observation model (% scale of C_lod)
-  sigma_obs ~ normal(0, 0.025) T[0,];
+  sigma_obs ~ normal(0, 2) T[0,];
 
-  // // component of likelihood for time of exposure
-  // for(j in 1:P) {
-  //   // likelihood for time of exposure using the CDF of the incubation period
-  //   // and known symptom onset times. Need to form a tiny artificial
-  //   // time-window to centre the estimates properly (using 0.05 of a day).
-  //   // Is there a better/less hacky way than this?
-  //   target += log(
-  //     lognormal_cdf(symp_rel[j] - T_e[j], lmean, lsd) -
-  //     lognormal_cdf(symp_rel[j] - 1 - T_e[j], lmean, lsd));
-  // }
+  if (any_onsets) {
+   // component of likelihood for time of exposure
+   for(j in 1:P) {
+   // likelihood for time of exposure using the CDF of the incubation period
+   // and known symptom onset day
+   // What is the probability onsets on observed day
+    if (onset_avail[j]) {
+        target += log(
+               lognormal_cdf(onset_time[j] + T_e[j] | lmean, lsd) -
+               lognormal_cdf(onset_time[j] + T_e[j] - 1 | lmean, lsd));
+     }
+    }
+  }
 
   if (likelihood) {
     // component of likelihood for expected ct values
