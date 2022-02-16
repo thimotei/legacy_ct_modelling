@@ -42,6 +42,7 @@ ids_spurious_gaps <- dt_clean[,
 ids_spurious_gaps[spurious == TRUE][]
 dt_clean <- dt_clean[ids_spurious_gaps, on = "id"]
 dt_clean <- dt_clean[spurious == FALSE | is.na(spurious)]
+dt_clean <- dt_clean[id != 978]
 
 #--- quick plots of the raw data, stratified by variant
 dt_2_tests <- subset_data(
