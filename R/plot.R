@@ -1,4 +1,5 @@
-plot_obs_ct <- function(ct_dt, ct_traj, pp, traj_alpha = 0.02, onsets = TRUE) {
+plot_obs_ct <- function(ct_dt, ct_traj, pp, traj_alpha = 0.02, onsets = TRUE,
+                        clod = 40) {
   plot <- ggplot(ct_dt) +
     aes(x = t, y = ct_value, colour = factor(pcr_res)) +
     scale_colour_brewer(palette = "Dark2")
@@ -6,6 +7,11 @@ plot_obs_ct <- function(ct_dt, ct_traj, pp, traj_alpha = 0.02, onsets = TRUE) {
   if (!is.null(ct_dt$onset_time) & onsets) {
     plot <- plot +
       geom_vline(aes(xintercept = onset_time), linetype = 2, alpha = 0.8)
+  }
+
+  if (!is.null(clod)) {
+    plot <- plot +
+      geom_hline(yintercept = clod, linetype = 3, alpha = 0.8)
   }
 
    if (!missing(pp)) {
