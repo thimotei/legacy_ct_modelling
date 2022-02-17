@@ -101,30 +101,30 @@ model {
   
   // Ct value at peak
   c_p_mean ~ normal(0, 1); //mean at 50% of switch value
-  c_p_var ~ normal(0, 0.1) T[0,];
+  c_p_var ~ normal(0, 0.25) T[0,];
   c_p_raw ~ std_normal();
 
   // Ct value at switch to long wane
   c_s_mean ~ normal(0, 1); //mean at 50% of maximum ct
-  c_s_var ~ normal(0, 0.1) T[0,];
+  c_s_var ~ normal(0, 0.25) T[0,];
   c_s_raw ~ std_normal();
 
   // Viral load peak timing
   t_p_mean ~ normal(1.61, 0.5); //mean at log(5)
-  t_p_var ~ normal(0, 0.1) T[0,];
-  t_p_raw ~ normal(0, 1);
+  t_p_var ~ normal(0, 0.25) T[0,];
+  t_p_raw ~ std_normal();
 
   t_s_mean ~ normal(1.61, 0.5); //mean at log(5) + peak timing
-  t_s_var ~ normal(0, 0.1) T[0,];
+  t_s_var ~ normal(0, 0.25) T[0,];
   t_s_raw ~ std_normal();
 
   // Time dropping below limit of detection
   t_lod_mean ~ normal(2.3, 0.5); //mean at log(10) + peak + scale timing 
-  t_lod_var ~ normal(0, 0.1) T[0,];
+  t_lod_var ~ normal(0, 0.25) T[0,];
   t_lod_raw ~ std_normal();
 
   // // Variation in observation model (% scale of C_lod)
-  sigma ~ normal(5, 5) T[0,];
+  sigma ~ normal(0, 2) T[0,];
 
   if (any_onsets && likelihood) {
     // Priors on the incubation period
