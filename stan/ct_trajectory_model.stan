@@ -83,8 +83,8 @@ transformed parameters {
   t_p = exp(t_p_mean + t_p_var * t_p_raw);
   t_s = exp(t_s_mean + t_s_var * t_s_raw);
   t_lod = exp(t_lod_mean + t_lod_var * t_lod_raw);
-  // Parameterise c_switch as proportion of c_LOD
-  c_s = c_lod * inv_logit(c_s_mean + c_s_var * c_s_raw);
+  // Parameterise c_switch as proportion of c_0
+  c_s = c_0 * inv_logit(c_s_mean + c_s_var * c_s_raw);
   // Parameterise c_peak as proportion of c_switch
   c_p = c_s .* inv_logit(c_p_mean + c_p_var * c_p_raw);
   t_lod_abs = t_p + t_s + t_lod;
@@ -103,7 +103,7 @@ model {
   for (i in 1:P) {
     T_e[i] ~ normal(T_e_bound[i] + 5, 5) T[T_e_bound[i],];
   }
-  // CT value prior to detection
+  // CT value prior/post detection
   c_0 ~ normal(c_lod + 5, 5) T[c_lod, ];
   
   // Ct value at peak
