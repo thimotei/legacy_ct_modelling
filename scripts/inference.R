@@ -57,7 +57,7 @@ p1_raw <- plot_obs_ct(dt_2_tests)
 mod <- cmdstan_model("stan/ct_trajectory_model.stan", include_paths = "stan")
 
 #--- fit
-stan_data <- data_to_stan(dt_2_tests, likelihood = TRUE, onsets = TRUE)
+stan_data <- data_to_stan(dt_2_tests, likelihood = TRUE, onsets = FALSE)
 
 fit <- mod$sample(
   data = stan_data,
