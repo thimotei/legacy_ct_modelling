@@ -1,4 +1,7 @@
+functions{ 
 #include functions/ct_trajectory.stan
+#include functions/truncated_normal_rng.stan
+}
 
 data {
   int P; // number of patients
@@ -152,7 +155,6 @@ model {
       // If positive result: P(observed ct | expected ct)*P(Ct detected | expected ct)
       if(pcr_res[j]) {
         ct_value[j] ~ normal(exp_ct[j], sigma) T[0, c_lod];
-        target += normal_lcdf(c_lod | exp_ct[j], sigma);
       } else{
       // if negative result: P(Ct not detected | expected ct)
         target += normal_lccdf(c_lod | exp_ct[j], sigma);
@@ -165,7 +167,7 @@ generated quantities {
   matrix[P, 61] ct;
   vector[N] sim_ct;
   for (i in 1:N) {
-    sim_ct[i] = normal_rng(exp_ct[i], sigma);
+    sim_ct[i] = truncated_normal_rng(exp_ct[i], sigma, 0, c_lod);
   }
   for(i in 1:P) {
     for(j in 1:61) {
