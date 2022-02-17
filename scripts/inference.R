@@ -34,6 +34,15 @@ dt_clean[result == "Inconclusive", result := "Positive"]
 dt_clean[result == "Negative", pcr_res := 0]
 dt_clean[result == "Positive", pcr_res := 1]
 
+#--- Drop patients with gaps between positive tests of more than 60 days
+ids_spurious_gaps <- dt_clean[,
+  .(spurious = any(abs(time_since_first_pos) > 60) || any(abs(onset_time) > 60)
+   ), by = "id"
+]
+ids_spurious_gaps[spurious == TRUE][]
+dt_clean <- dt_clean[ids_spurious_gaps, on = "id"]
+dt_clean <- dt_clean[spurious == FALSE | is.na(spurious)]
+dt_clean <- dt_clean[id != 978]
 
 #--- quick plots of the raw data, stratified by variant
 dt_2_tests <- subset_data(
@@ -42,7 +51,7 @@ dt_2_tests <- subset_data(
 dt_delta <- subset_data(dt_clean, voc = c("Delta"), no_pos_swabs = 2)
 dt_omicron <- subset_data(dt_clean, voc = "Omicron", no_pos_swabs = 2)
 
-p1_raw <- plot_empiricial_data_ind(dt_delta, dt_omicron)
+p1_raw <- plot_obs_ct(dt_2_tests)
 
 #--- compile models
 mod <- cmdstan_model("stan/ct_trajectory_model.stan", include_paths = "stan")
@@ -70,6 +79,12 @@ ct_summary <- summarise_draws(
   by = c("id", "time_since_first_pos")
 )
 
+# extract posterior CT predictons and  summarise
+ct_pp <- extract_posterior_predictions(fit, dt_2_tests)
+ct_pp <- summarise_draws(ct_pp[, value := sim_ct], by = c("id", "t", "pcr_res"))
+
 # plotting summaries of fitted trajectories against simulated data
-pp_plot <- plot_obs_ct(dt_2_tests, ct_draws[iteration <= 10], traj_alpha = 0.05)
+pp_plot <- plot_obs_ct(
+  dt_2_tests, ct_draws[iteration <= 10], ct_pp, traj_alpha = 0.05
+)
 ggsave("outputs/figures/pp.png", pp_plot, height = 10, width = 10)
