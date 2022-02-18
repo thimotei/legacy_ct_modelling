@@ -1,5 +1,3 @@
-functions {
-
   real ct_hinge_single(real t, real c0, real cp,
                        real clod, real te, real tp,
                        real tlod) {
@@ -70,4 +68,3 @@ functions {
 
     return(ret);
   }
-}
