@@ -86,4 +86,4 @@ ct_pp <- summarise_draws(ct_pp[, value := sim_ct], by = c("id", "t", "pcr_res"))
 pp_plot <- plot_obs_ct(
   dt_2_tests, ct_draws[iteration <= 10], ct_pp, traj_alpha = 0.05
 )
-ggsave("outputs/figures/pp.png", pp_plot, height = 10, width = 10)
+ggsave("outputs/figures/pp.png", pp_plot, height = 16, width = 16)

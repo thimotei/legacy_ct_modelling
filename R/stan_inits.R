@@ -35,6 +35,12 @@ stan_inits <- function(dt) {
         1, a = 0, mean = dt$lsd[1], sd = dt$lsd[2]
       )
     }
+
+    if (dt$swab_types > 0) {
+      inits$swab_type_int <- rnorm(1, 0, 0.1)
+      inits$swab_type_grad <- rnorm(1, 1, 0.1)
+    }
+
     return(inits)
   }
 }

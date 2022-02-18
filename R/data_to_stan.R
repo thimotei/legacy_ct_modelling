@@ -5,7 +5,7 @@ data_to_stan <- function(input_data, likelihood = TRUE, clod = 40,
                     P = length(unique(input_data$id)),
                     id = input_data[, id],
                     day_rel = input_data[, t],
-                    swab_types = length((input_data[, swab_type]) - 1),
+                    swab_types = length(unique(input_data[, swab_type])) - 1,
                     swab_type = input_data[, swab_type] + 1,
                     ct_value = ifelse(
                       is.na(input_data$ct_value), -99, input_data$ct_value

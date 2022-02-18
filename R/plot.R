@@ -17,12 +17,17 @@ plot_obs_ct <- function(ct_dt, ct_traj, pp, traj_alpha = 0.02, onsets = TRUE,
    if (!missing(pp)) {
      plot <- plot +
       geom_linerange(
-        data = pp, aes(ymin = lo, ymax = hi, y = NULL), size = 1.1, alpha = 0.2
+        data = pp,
+        aes(ymin = lo90, ymax = h90, y = NULL), size = 1.1, alpha = 0.1
+      ) +
+      geom_linerange(
+        data = pp,
+        aes(ymin = lo60, ymax = hi60, y = NULL), size = 1.1, alpha = 0.1
       )
    }
 
   plot <- plot +
-    geom_point()
+    geom_point(alpha = 0.6)
 
    if (!missing(ct_traj)) {
      plot <- plot +
