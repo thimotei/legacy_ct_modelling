@@ -14,6 +14,8 @@ data {
   int pcr_res[N]; // boolean test result
   vector[N] day_rel; // day of test (integer)
   vector[N] ct_value; // Ct value of test
+  int swab_types; // Number of swab types used
+  int swab_type[N]; // Swab type per sample
   int any_onsets;
   vector[P] onset_avail;
   vector[P] onset_time;
@@ -63,6 +65,10 @@ parameters {
   real t_lod_mean;
   real<lower = 0> t_lod_var;
   vector[P] t_lod_raw;
+  
+  // Swab type intercept and gradient
+  vector[swab_types] swab_type_int;
+  vector[swab_types] swab_type_grad;
 
   // Variance parameter for oobservation model
   real<lower = 0> sigma;
@@ -78,6 +84,9 @@ transformed parameters {
   vector[P] t_lod_abs;
   vector[N] diff;
   vector[N] exp_ct;
+  vector[swab_types + 1] st_int;
+  vector[swab_types + 1] st_grad;
+  vector[N] adj_exp_ct;
   // individual-level parameters
   // non-centred, hierarchical parameterisation
   t_p = exp(t_p_mean + t_p_var * t_p_raw);
@@ -94,6 +103,15 @@ transformed parameters {
   // Expected ct value given viral load parameters
   exp_ct = ct_hinge_vec_new(diff, c_0, c_p, c_s, c_0, t_e, t_p, t_s, 
                             t_lod_abs, id);
+
+  // Adjust Swab types
+  st_int[1] = 0;
+  st_grad[1] = 1;
+  if (swab_types) {
+    st_int[2:(swab_types + 1)] = swab_type_int;
+    st_grad[2:(swab_types + 1)] = swab_type_grad;
+  }
+  adj_exp_ct = st_int[swab_type] + st_grad[swab_type] .* exp_ct;
 }
 
 model {
@@ -104,7 +122,7 @@ model {
     T_e[i] ~ normal(T_e_bound[i] + 5, 5) T[T_e_bound[i],];
   }
   // CT value prior/post detection
-  c_0 ~ normal(c_lod + 5, 5) T[c_lod, ];
+  c_0 ~ normal(c_lod + 10, 5) T[c_lod, ];
   
   // Ct value at peak
   c_p_mean ~ normal(0, 1); //mean at 50% of switch value
@@ -130,7 +148,13 @@ model {
   t_lod_var ~ normal(0, 0.25) T[0,];
   t_lod_raw ~ std_normal();
 
-  // // Variation in observation model (% scale of C_lod)
+  // If multiple swab types make linear adjustments
+  if (swab_types) {
+    swab_type_int ~ std_normal();
+    swab_type_grad ~ normal(1, 1);
+  }
+
+  // Variation in observation model (% scale of C_lod)
   sigma ~ normal(0, 2) T[0,];
 
   if (any_onsets && likelihood) {
@@ -159,10 +183,10 @@ model {
       // If positive result: P(observed ct | expected ct)
       // Truncated above 0 and below latent limit of detection
       if(pcr_res[j]) {
-        ct_value[j] ~ normal(exp_ct[j], sigma) T[0, c_0];
+        ct_value[j] ~ normal(adj_exp_ct[j], sigma) T[0, c_0];
       } else{
       // if negative result: P(Ct not detected | expected ct)
-        target += normal_lccdf(c_lod | exp_ct[j], sigma);
+        target += normal_lccdf(c_lod | adj_exp_ct[j], sigma);
       }
     }
   }
@@ -172,7 +196,7 @@ generated quantities {
   matrix[P, 61] ct;
   vector[N] sim_ct;
   for (i in 1:N) {
-    sim_ct[i] = truncated_normal_rng(exp_ct[i], sigma, 0, c_lod);
+    sim_ct[i] = truncated_normal_rng(adj_exp_ct[i], sigma, 0, c_lod);
   }
   for(i in 1:P) {
     for(j in 1:61) {

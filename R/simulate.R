@@ -3,6 +3,7 @@ obs <- list(
   any_onsets = 1,
   onset_time = rep(0, 20),
   c_lod = 40,
+  swab_types = 0,
   lmean = get_inc_period()$inc_mean_p,
   lsd = get_inc_period()$inc_sd_p
 )
@@ -15,6 +16,7 @@ simulate_obs <- function(obs = obs,
   params <- with(parameters,
     data.table::data.table(
       id = 1:obs$P,
+      swab_type = 1,
       onset_time = rlnorm(obs$P, inc_mean, inc_sd),
       T_e = T_e,
       t_p = exp(t_p_mean + t_p_var * t_p_raw),
