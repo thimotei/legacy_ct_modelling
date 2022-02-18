@@ -6,7 +6,6 @@ functions{
 data {
   int P; // number of patients
   int N; // number of tests
-  real c_0; // Ct value before detection
   real c_lod; // Ct value at limit of detection 
   real t_e; 
   real lmean[2]; // mean of incubation period used (+ sd)
@@ -36,6 +35,9 @@ parameters {
   real inc_mean[any_onsets];
   real<lower = 0> inc_sd[any_onsets];
   
+  // Ct value before detection
+  real<lower = c_lod> c_0; 
+
   // Hyperparameters
   // Ct value of viral load p
   real c_p_mean;
@@ -81,8 +83,8 @@ transformed parameters {
   t_p = exp(t_p_mean + t_p_var * t_p_raw);
   t_s = exp(t_s_mean + t_s_var * t_s_raw);
   t_lod = exp(t_lod_mean + t_lod_var * t_lod_raw);
-  // Parameterise c_switch as proportion of c_LOD
-  c_s = c_lod * inv_logit(c_s_mean + c_s_var * c_s_raw);
+  // Parameterise c_switch as proportion of c_0
+  c_s = c_0 * inv_logit(c_s_mean + c_s_var * c_s_raw);
   // Parameterise c_peak as proportion of c_switch
   c_p = c_s .* inv_logit(c_p_mean + c_p_var * c_p_raw);
   t_lod_abs = t_p + t_s + t_lod;
@@ -90,7 +92,7 @@ transformed parameters {
   diff = day_rel + T_e[id];
 
   // Expected ct value given viral load parameters
-  exp_ct = ct_hinge_vec_new(diff, c_0, c_p, c_s, c_lod, t_e, t_p, t_s, 
+  exp_ct = ct_hinge_vec_new(diff, c_0, c_p, c_s, c_0, t_e, t_p, t_s, 
                             t_lod_abs, id);
 }
 
@@ -101,6 +103,8 @@ model {
   for (i in 1:P) {
     T_e[i] ~ normal(T_e_bound[i] + 5, 5) T[T_e_bound[i],];
   }
+  // CT value prior/post detection
+  c_0 ~ normal(c_lod + 5, 5) T[c_lod, ];
   
   // Ct value at peak
   c_p_mean ~ normal(0, 1); //mean at 50% of switch value
@@ -152,9 +156,10 @@ model {
   if (likelihood) {
     // component of likelihood for expected ct values
     for(j in 1:N) {
-      // If positive result: P(observed ct | expected ct)*P(Ct detected | expected ct)
+      // If positive result: P(observed ct | expected ct)
+      // Truncated above 0 and below latent limit of detection
       if(pcr_res[j]) {
-        ct_value[j] ~ normal(exp_ct[j], sigma) T[0, c_lod];
+        ct_value[j] ~ normal(exp_ct[j], sigma) T[0, c_0];
       } else{
       // if negative result: P(Ct not detected | expected ct)
         target += normal_lccdf(c_lod | exp_ct[j], sigma);
@@ -171,7 +176,7 @@ generated quantities {
   }
   for(i in 1:P) {
     for(j in 1:61) {
-      ct[i, j] = ct_hinge_long(j - 1, c_0, c_p[i], c_s[i], c_lod, t_e, t_p[i],  
+      ct[i, j] = ct_hinge_long(j - 1, c_0, c_p[i], c_s[i], c_0, t_e, t_p[i],  
                                t_s[i], t_lod_abs[i]);
     }
   }

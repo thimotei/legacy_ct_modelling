@@ -8,6 +8,7 @@ stan_inits <- function(dt) {
           mean = max(-dt$onset_time[.] + 5, 5), sd = 1
         )
       ),
+      c_0 = truncnorm::rtruncnorm(1, a = dt$c_lod, mean = dt$c_lod + 5, sd = 1),
       c_p_mean = rnorm(1, 0, 1),
       c_p_var = abs(rnorm(1, 0, 0.1)),
       c_p_raw = rnorm(dt$P, 0, 0.1),
@@ -23,7 +24,7 @@ stan_inits <- function(dt) {
       t_lod_mean = rnorm(1, 2.3, 0.5),
       t_lod_var = abs(rnorm(1, 0, 0.01)),
       t_lod_raw = rnorm(dt$P, 0, 1),
-      sigma = truncnorm::rtruncnorm(1, a = 0, mean = 5, sd = 0.1)
+      sigma = truncnorm::rtruncnorm(1, a = 0, mean = 5, sd = 0.5)
     )
 
     if (dt$any_onsets == 1) {
