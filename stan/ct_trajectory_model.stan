@@ -154,7 +154,7 @@ model {
     swab_type_grad ~ normal(1, 1);
   }
 
-  // Variation in observation model (% scale of C_lod)
+  // Variation in observation model
   sigma ~ normal(0, 2) T[0,];
 
   if (any_onsets && likelihood) {
