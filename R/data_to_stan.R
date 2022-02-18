@@ -34,7 +34,7 @@ data_to_stan <- function(input_data, likelihood = TRUE, clod = 40,
           any_onsets = 1,
           onset_avail = as.numeric(!is.na(onset_dt$onset_time)),
           onset_time = onset_dt$onset_time %>%
-            replace_na(0)
+            tidyr::replace_na(0)
         ))
  }
 

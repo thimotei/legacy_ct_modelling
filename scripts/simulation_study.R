@@ -28,7 +28,7 @@ obs <- list(
 ct_sample <- simulate_obs(
   obs = obs,
   parameters = stan_inits(obs)(),
-  time_range = -10:20,
+  time_range = -1:30,
   sample_density = 4:12
 )
 
@@ -38,7 +38,7 @@ plot_obs_ct(ct_sample)
 # compiling model
 mod <- cmdstan_model("stan/ct_trajectory_model.stan", include_paths = "stan")
 
-sim_stan_data <- data_to_stan(ct_sample, likelihood = FALSE, onset = FALSE)
+sim_stan_data <- data_to_stan(ct_sample, onset = TRUE)
 
 # fitting the model - not very quick, as many iterations hit the
 # max_tree_depth at the moment

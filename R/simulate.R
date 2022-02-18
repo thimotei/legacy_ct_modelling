@@ -9,13 +9,13 @@ obs <- list(
 
 simulate_obs <- function(obs = obs,
                          parameters = stan_inits(obs)(),
-                         time_range = -10:30,
+                         time_range = 0:30,
                          sample_density = 2:8) {
 
   params <- with(parameters,
     data.table::data.table(
       id = 1:obs$P,
-      onset_time = obs$onset_time,
+      onset_time = rlnorm(obs$P, inc_mean, inc_sd),
       T_e = T_e,
       t_p = exp(t_p_mean + t_p_var * t_p_raw),
       t_s = exp(t_s_mean + t_s_var * t_s_raw),
@@ -59,13 +59,13 @@ simulate_obs <- function(obs = obs,
     pcr_res := ifelse(ct_value < c_lod, 1, 0)
   ]
 
-  ct_trajs <- index_by_first_positive(ct_trajs)
-
   if (!is.null(sample_density)) {
     ct_trajs <- ct_trajs[,
      .SD[sample %in% sample(.N, sample(sample_density, 1))], by = "id"
     ]
   }
 
+  ct_trajs <- index_by_first_positive(ct_trajs)
+  ct_trajs[, onset_time := as.integer(onset_time - t_first_pos)]
   return(ct_trajs)
 }
