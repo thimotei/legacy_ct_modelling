@@ -18,7 +18,7 @@ plot_obs_ct <- function(ct_dt, ct_traj, pp, traj_alpha = 0.02, onsets = TRUE,
      plot <- plot +
       geom_linerange(
         data = pp,
-        aes(ymin = lo90, ymax = h90, y = NULL), size = 1.1, alpha = 0.1
+        aes(ymin = lo90, ymax = hi90, y = NULL), size = 1.1, alpha = 0.1
       ) +
       geom_linerange(
         data = pp,
