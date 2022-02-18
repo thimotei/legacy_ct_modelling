@@ -9,8 +9,10 @@ subset_data <- function(dt_clean_in, voc, no_pos_swabs) {
     .[no_pos_results >= no_pos_swabs] %>%
     .[, data_id := id] %>%
     .[, id := .GRP, by = id] %>%
-    .[, c("id", "data_id", "infection_id", "swab_date", "t_first_test", "t",
-          "ct_value", "onset_time", "result", "pcr_res")
+    .[, swab_type := as.numeric(!swab_type %in% "Dry")] %>%
+    .[, c("id", "data_id", "infection_id", "swab_date", "swab_type",
+          "t_first_test", "t", "ct_value", "onset_time", "result", "pcr_res"
+        )
      ]
 
   return(dt_out)
