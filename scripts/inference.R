@@ -80,7 +80,9 @@ ct_summary <- summarise_draws(
 
 # extract posterior CT predictons and  summarise
 ct_pp <- extract_posterior_predictions(fit, dt_2_tests)
-ct_pp <- summarise_draws(ct_pp[, value := sim_ct], by = c("id", "t", "pcr_res"))
+ct_pp <- summarise_draws(
+  ct_pp[, value := sim_ct], by = c("id", "t", "pcr_res", "obs")
+)
 
 # plotting summaries of fitted trajectories against simulated data
 pp_plot <- plot_obs_ct(
