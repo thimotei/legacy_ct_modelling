@@ -12,7 +12,7 @@ extract_posterior_predictions <- function(fit, obs) {
   if (!missing(obs)) {
     simulated_cts <- merge(
       obs[, obs := 1:.N], simulated_cts, by = "obs"
-    )[, obs := NULL]
+    )
   }
   return(simulated_cts[])
 }

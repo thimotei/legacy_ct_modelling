@@ -75,7 +75,6 @@ parameters {
 }
 
 transformed parameters {
-
   vector[P] t_p;
   vector[P] t_s;
   vector[P] t_lod;
@@ -180,12 +179,12 @@ model {
   if (likelihood) {
     // component of likelihood for expected ct values
     for(j in 1:N) {
-      // If positive result: P(observed ct | expected ct)
+      // If non-censored result: P(observed ct | expected ct)
       // Truncated above 0 and below latent limit of detection
       if(pcr_res[j]) {
         ct_value[j] ~ normal(adj_exp_ct[j], sigma) T[0, c_0];
       } else{
-      // if negative result: P(Ct not detected | expected ct)
+      // if censored result: P(Ct not detected | expected ct)
         target += normal_lccdf(c_lod | adj_exp_ct[j], sigma);
       }
     }
