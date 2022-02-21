@@ -1,7 +1,15 @@
 plot_obs_ct <- function(ct_dt, ct_traj, pp, traj_alpha = 0.02, onsets = TRUE,
                         clod = 40) {
+
+  if (!missing(pp)) {
+    ct_dt <- cbind(
+      ct_dt,
+      data.table::copy(pp)[, c("t", "id", "pcr_res", "obs") := NULL]
+    )
+  }
+
   plot <- ggplot(ct_dt) +
-    aes(x = t, y = ct_value, colour = factor(pcr_res)) +
+    aes(x = t, y = ct_value, colour = factor(swab_type)) +
     scale_colour_brewer(palette = "Dark2")
 
   if (!is.null(ct_dt$onset_time) & onsets) {
@@ -17,12 +25,15 @@ plot_obs_ct <- function(ct_dt, ct_traj, pp, traj_alpha = 0.02, onsets = TRUE,
    if (!missing(pp)) {
      plot <- plot +
       geom_linerange(
-        data = pp, aes(ymin = lo, ymax = hi, y = NULL), size = 1.1, alpha = 0.2
+        aes(ymin = lo90, ymax = hi90, y = NULL), size = 1.1, alpha = 0.2
+      ) +
+      geom_linerange(
+        aes(ymin = lo60, ymax = hi60, y = NULL), size = 1.1, alpha = 0.2
       )
    }
 
   plot <- plot +
-    geom_point()
+    geom_point(alpha = 0.6)
 
    if (!missing(ct_traj)) {
      plot <- plot +
@@ -36,10 +47,12 @@ plot_obs_ct <- function(ct_dt, ct_traj, pp, traj_alpha = 0.02, onsets = TRUE,
    }
 
    plot <- plot +
-      facet_wrap(vars(factor(id))) +
-      custom_plot_theme() +
-      theme(legend.position = "bottom") +
-      labs(colour = "PCR result", x = "Days since first positive test",
-           y = "CT value")
+    facet_wrap(vars(factor(id))) +
+    custom_plot_theme() +
+    theme(legend.position = "bottom") +
+    labs(
+      colour = "Swab type", x = "Days since first positive test", 
+      y = "CT value"
+    )
   return(plot)
 }
