@@ -1,6 +1,7 @@
 functions{ 
 #include functions/ct_trajectory.stan
 #include functions/truncated_normal_rng.stan
+#include functions/censor.stan
 }
 
 data {
@@ -195,7 +196,8 @@ generated quantities {
   matrix[P, 61] ct;
   vector[N] sim_ct;
   for (i in 1:N) {
-    sim_ct[i] = truncated_normal_rng(adj_exp_ct[i], sigma, 0, c_lod);
+    sim_ct[i] = truncated_normal_rng(adj_exp_ct[i], sigma, 0, c_0);
+    sim_ct[i] = censor(sim_ct[i], c_lod);
   }
   for(i in 1:P) {
     for(j in 1:61) {
