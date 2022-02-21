@@ -20,11 +20,12 @@ obs <- list(
   onset_time = rep(0, 20),
   c_lod = 40,
   lmean = get_inc_period()$inc_mean_p,
-  lsd = get_inc_period()$inc_sd_p
+  lsd = get_inc_period()$inc_sd_p,
+  swab_types = 0
 )
 
 # Simulate from the centre of the prior for all parameters
-# based on initial conditions used for the stan model. 
+# based on initial conditions used for the stan model.
 ct_sample <- simulate_obs(
   obs = obs,
   parameters = stan_inits(obs)(),
