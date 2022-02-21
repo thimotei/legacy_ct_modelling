@@ -14,17 +14,13 @@ library(tidyr)
 files <- list.files("R", "*.R", full.names = TRUE)
 walk(files, source)
 
-#--- loading in adjustment factors and defining function for 
-#--- dry vs wet swab adjustment. We adjust the VTM swabs downwards
-adj_params <- fread("data/adjustment_params.csv")
-
 dt_raw <- fread("data/ct_values_clean.csv")
 
 # processing data, adding machine readable dates, moving dates
 # back for certain swabs, based on data collection advice and adjusting
 # all wet swabs upwards according to the fitted dry vs wet adjustment
 # factor
-dt_clean <- process_data(dt_raw, adj_params)
+dt_clean <- process_data(dt_raw)
 
 #--- TEMPORARY, for now, as "invalid" and "inconclusive" both have many
 #--- observations consistent with positive Ct values, keeping them for now
@@ -84,10 +80,12 @@ ct_summary <- summarise_draws(
 
 # extract posterior CT predictons and  summarise
 ct_pp <- extract_posterior_predictions(fit, dt_2_tests)
-ct_pp <- summarise_draws(ct_pp[, value := sim_ct], by = c("id", "t", "pcr_res"))
+ct_pp <- summarise_draws(
+  ct_pp[, value := sim_ct], by = c("id", "t", "pcr_res", "obs")
+)
 
 # plotting summaries of fitted trajectories against simulated data
 pp_plot <- plot_obs_ct(
   dt_2_tests, ct_draws[iteration <= 10], ct_pp, traj_alpha = 0.05
 )
-ggsave("outputs/figures/pp.png", pp_plot, height = 10, width = 10)
+ggsave("outputs/figures/pp.png", pp_plot, height = 16, width = 16)
