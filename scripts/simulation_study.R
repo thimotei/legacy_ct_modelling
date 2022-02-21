@@ -11,39 +11,34 @@ library(purrr)
 files <- list.files("R", "*.R", full.names = TRUE)
 walk(files, source)
 
-# Simulate trajectories for 10 individuals with a test per day
-sim_ct <- simulate_ct_trajectories(
-  t_max = 30, t_stepsize = 1, cp_min = 10, cp_max = 20,
-  cs_min = 20, cs_max = 30, te_min = 1, te_max = 7,
-  tp_min = 1, tp_max = 7, ts_min = 1, ts_max = 7,
-  tlod_min = 5, tlod_max = 10, c0 = 40, clod = 40, n = 10,
-  sigma_obs = 1
+# Set up simulations for 20 individuals
+# To be lazy here we are assuming that onsets are not available
+# To update need another modelling step for onsets
+obs <- list(
+  P = 20,
+  any_onsets = 1,
+  onset_time = rep(0, 20),
+  c_lod = 40,
+  lmean = get_inc_period()$inc_mean_p,
+  lsd = get_inc_period()$inc_sd_p
 )
 
-plot_obs_ct(sim_ct)
+# Simulate from the centre of the prior for all parameters
+# based on initial conditions used for the stan model. 
+ct_sample <- simulate_obs(
+  obs = obs,
+  parameters = stan_inits(obs)(),
+  time_range = -1:30,
+  sample_density = 4:12
+)
 
-# saving the true parameters for comparison to estimated values
-true_params <- sim_ct[,
-  .(id = unique(id), cs = unique(cs), cp = unique(cp),
-    te = unique(te), tp = unique(tp), ts = unique(ts),
-    tlod = unique(tlod)
-  )
-]
-
-# sampling a "realistic size" subset of the data. I.e. between 3 and 8 samples
-# at random times per person
-ct_sample <- sim_ct[, .SD[t %in% sample(.N, sample(3:8, 1))], by = "id"]
-
-# get time for first positive test per person
-ct_sample <- index_by_first_positive(ct_sample)
-
-# quick plot of subset of data
+# plot of subset of data
 plot_obs_ct(ct_sample)
 
 # compiling model
 mod <- cmdstan_model("stan/ct_trajectory_model.stan", include_paths = "stan")
 
-sim_stan_data <- data_to_stan(ct_sample, likelihood = FALSE)
+sim_stan_data <- data_to_stan(ct_sample, onset = TRUE)
 
 # fitting the model - not very quick, as many iterations hit the
 # max_tree_depth at the moment

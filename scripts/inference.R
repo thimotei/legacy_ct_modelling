@@ -42,6 +42,9 @@ ids_spurious_gaps <- dt_clean[,
 ids_spurious_gaps[spurious == TRUE][]
 dt_clean <- dt_clean[ids_spurious_gaps, on = "id"]
 dt_clean <- dt_clean[spurious == FALSE | is.na(spurious)]
+
+#--- Drop subject with ID 978 due to large mismatch between onset and positive
+#--  tests
 dt_clean <- dt_clean[id != 978]
 
 #--- quick plots of the raw data, stratified by variant
