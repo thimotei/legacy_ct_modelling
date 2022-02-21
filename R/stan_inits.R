@@ -37,8 +37,8 @@ stan_inits <- function(dt) {
     }
 
     if (dt$swab_types > 0) {
-      inits$swab_type_int <- rnorm(1, 0, 0.1)
-      inits$swab_type_grad <- rnorm(1, 1, 0.1)
+      inits$swab_type_int <- rnorm(dt$swab_types, 0, 0.1)
+      inits$swab_type_grad <- rnorm(dt$swab_types, 1, 0.1)
     }
 
     return(inits)
