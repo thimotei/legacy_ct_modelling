@@ -90,25 +90,25 @@ fit_omicron <- mod$sample(
 
 
 # extracting Ct fits. Bit slow as it is at the moment
-ct_draws <- extract_ct_trajectories(fit)
+# ct_draws <- extract_ct_trajectories(fit)
 
 # summarising trajectories using median and 95% CrI
-ct_summary <- summarise_draws(
-  copy(ct_draws)[,
-    time_since_first_pos := as.integer(time_since_first_pos)
-    ],
-  by = c("id", "time_since_first_pos")
-)
-
-# extract posterior CT predictons and  summarise
-ct_pp <- extract_posterior_predictions(fit, dt_2_tests)
-ct_pp <- summarise_draws(
-  ct_pp[, value := sim_ct], by = c("id", "t", "pcr_res", "obs")
-)
-
-# plotting summaries of fitted trajectories against simulated data
-pp_plot <- plot_obs_ct(
-  dt_2_tests, ct_draws[iteration <= 10], ct_pp, traj_alpha = 0.05
-)
-
-ggsave("outputs/figures/pp.png", pp_plot, height = 16, width = 16)
+# ct_summary <- summarise_draws(
+#   copy(ct_draws)[,
+#     time_since_first_pos := as.integer(time_since_first_pos)
+#     ],
+#   by = c("id", "time_since_first_pos")
+# )
+# 
+# # extract posterior CT predictons and  summarise
+# ct_pp <- extract_posterior_predictions(fit, dt_2_tests)
+# ct_pp <- summarise_draws(
+#   ct_pp[, value := sim_ct], by = c("id", "t", "pcr_res", "obs")
+# )
+# 
+# # plotting summaries of fitted trajectories against simulated data
+# pp_plot <- plot_obs_ct(
+#   dt_2_tests, ct_draws[iteration <= 10], ct_pp, traj_alpha = 0.05
+# )
+# 
+# ggsave("outputs/figures/pp.png", pp_plot, height = 16, width = 16)
