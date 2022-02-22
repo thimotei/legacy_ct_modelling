@@ -3,7 +3,7 @@
 # inference
 
 subset_data <- function(dt_clean_in, voc, no_pos_swabs) {
-  dt_out <- dt_clean[VOC %in% voc] %>%
+  dt_out <- dt_clean_in[VOC %in% voc] %>%
     .[, t_first_test := as.numeric(swab_date - min(swab_date), units = "days"),
       by = c("id", "infection_id")] %>%
     .[no_pos_results >= no_pos_swabs] %>%
