@@ -5,6 +5,9 @@ source("scripts/inference.R")
 draws <- rbind(as.data.table(fit_delta$draws())[, voc := "delta"],
                as.data.table(fit_omicron$draws())[, voc := "omicron"])
 
+# draws[variable %like% "inc_mean"] %>% 
+#   ggplot(
+
 #--- gathering and plotting population-level posteriors by VOC
 pop_params_rel <- c("c_0", "c_p_mean", "c_s_mean", 
                     "t_p_mean", "t_s_mean", "t_lod_mean")
@@ -31,17 +34,20 @@ p_pop_posteriors <- plot_pop_posteriors(
                            labels = pop_params_abs_labs)]
   )
 
+
 #--- gathering and plotting population-level posterior predictive curves by VOC
 pop_pp_samples_dt <- pop_pp_samples(pop_posteriors_wide, t_max = 40, t_step = 0.1)
 pop_pp_summary_dt <- summarise_draws(pop_pp_samples_dt, by = c("time", "voc"))
 
-p_pred_summary <- plot_pop_pp(pop_pp_summary_dt) 
+p_pred_summary <- plot_pop_pp(pop_pp_summary_dt,
+                              pop_pp_samples_dt,
+                              no_samples = 100) 
 
 
 #--- combining posteriors and posterior predictive plots
 p_final <- p_pop_posteriors / p_pred_summary + plot_layout(guides = "collect")
   
-ggsave("outputs/posteriors_and_predictive.png",
+ggsave("outputs/figures/posteriors_and_predictive.png",
        p_final,
        width = 8,
        height = 8,

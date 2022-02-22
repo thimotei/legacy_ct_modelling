@@ -1,4 +1,6 @@
-plot_pop_pp <- function(pop_pp_summary_dt) {
+plot_pop_pp <- function(pop_pp_summary_dt,
+                        pop_pp_samples_dt,
+                        no_samples) {
   
   pop_pp_out <- pop_pp_summary_dt %>% 
     ggplot() + 
@@ -7,7 +9,7 @@ plot_pop_pp <- function(pop_pp_summary_dt) {
                   group = voc,
                   colour = voc),
               linetype = "dashed", alpha = 0.5) +
-    geom_line(data = post_pred_samples[iteration %in% 1:100],
+    geom_line(data = pop_pp_samples_dt[iteration %in% 1:no_samples],
               aes(x = time, 
                   y = value, 
                   group = interaction(voc, iteration), 
