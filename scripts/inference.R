@@ -57,6 +57,8 @@ mod <- cmdstan_model("stan/ct_trajectory_model.stan", include_paths = "stan")
 
 #--- fit
 stan_data <- data_to_stan(dt_2_tests, likelihood = TRUE, onsets = TRUE)
+stan_data_delta <- data_to_stan(dt_delta, likelihood = TRUE, onsets = TRUE)
+stan_data_omicron <- data_to_stan(dt_omicron, likelihood = TRUE, onsets = TRUE)
 
 fit <- mod$sample(
   data = stan_data,
@@ -66,6 +68,26 @@ fit <- mod$sample(
   iter_warmup = 1000,
   iter_sampling = 1000
 )
+
+fit_delta <- mod$sample(
+  data = stan_data_delta,
+  init = stan_inits(stan_data_delta),
+  chains = 4,
+  parallel_chains = 4,
+  iter_warmup = 1000,
+  iter_sampling = 1000
+)
+
+
+fit_omicron <- mod$sample(
+  data = stan_data_omicron,
+  init = stan_inits(stan_data_omicron),
+  chains = 4,
+  parallel_chains = 4,
+  iter_warmup = 1000,
+  iter_sampling = 1000
+)
+
 
 # extracting Ct fits. Bit slow as it is at the moment
 ct_draws <- extract_ct_trajectories(fit)
@@ -88,4 +110,5 @@ ct_pp <- summarise_draws(
 pp_plot <- plot_obs_ct(
   dt_2_tests, ct_draws[iteration <= 10], ct_pp, traj_alpha = 0.05
 )
+
 ggsave("outputs/figures/pp.png", pp_plot, height = 16, width = 16)
