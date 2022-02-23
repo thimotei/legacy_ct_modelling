@@ -1,5 +1,7 @@
 process_data <- function(data_raw) {
 
+  setnames(data_raw, "ORF1ab", "ct")
+  
   out <- data_raw[, swab_date := dmy(swab_date)][
     barcode %like% "49U", swab_date := swab_date - 1][
     symptom_onset_date == "unknown", symptom_onset_date := NA][,
