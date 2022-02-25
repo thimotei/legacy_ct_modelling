@@ -1,7 +1,7 @@
 plot_pop_pp <- function(pop_pp_summary_dt,
                         pop_pp_samples_dt,
                         no_samples) {
-  
+
   pop_pp_out <- pop_pp_summary_dt %>% 
     ggplot() + 
     geom_line(aes(x = time, 

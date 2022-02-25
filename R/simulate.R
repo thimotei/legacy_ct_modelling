@@ -9,6 +9,41 @@ obs <- list(
   swab_types = 0
 )
 
+simulate_cts <- function(params, time_range = 0:30, obs_noise = TRUE) {
+
+  times <- data.table::data.table(
+    t = time_range
+  )[,
+    sample := 1:.N
+  ]
+
+  ct_trajs <- merge(
+    params[, tid := 1], times[, tid := 1], by = "tid",
+    allow.cartesian = TRUE
+  )[,
+    tid := NULL][,
+    exp_ct := ct_hinge_long(
+        t, c0 = c_0, cp = c_p, cs = c_s, clod = c_0, te = 0,
+        tp = t_p, ts = t_s, tlod = t_lod
+      ),
+    by = c("id", "t", "sample")
+  ]
+
+  if (obs_noise) {
+    ct_trajs[,
+    ct_value := truncnorm::rtruncnorm(
+        1, b = c_0, mean = exp_ct, sd = sigma
+    )
+    ][ct_value >= c_lod,
+      ct_value := c_lod
+    ][,
+      pcr_res := ifelse(ct_value < c_lod, 1, 0)
+    ]
+  }
+
+  return(ct_trajs[])
+}
+
 simulate_obs <- function(obs = obs,
                          parameters = stan_inits(obs)(),
                          time_range = 0:30,
@@ -35,32 +70,8 @@ simulate_obs <- function(obs = obs,
       sigma := sigma
     ]
   )
-
-  times <- data.table::data.table(
-    t = time_range
-  )[,
-    sample := 1:.N
-  ]
-
-  ct_trajs <- merge(
-    params[, tid := 1], times[, tid := 1], by = "tid",
-    allow.cartesian = TRUE
-  )[,
-    tid := NULL][,
-    exp_ct := ct_hinge_long(
-        t, c0 = c_0, cp = c_p, cs = c_s, clod = c_0, te = 0,
-        tp = t_p, ts = t_s, tlod = t_lod
-      ),
-    by = c("id", "t", "sample")
-  ][,
-    ct_value := rtruncnorm(
-        1, b = c_0, mean = exp_ct, sd = sigma
-    )
-  ][ct_value >= c_lod,
-    ct_value := c_lod
-  ][,
-    pcr_res := ifelse(ct_value < c_lod, 1, 0)
-  ]
+  
+  ct_trajs <- simulate_cts(params, time_range = time_range, obs_noise = TRUE)
 
   if (!is.null(sample_density)) {
     ct_trajs <- ct_trajs[,
