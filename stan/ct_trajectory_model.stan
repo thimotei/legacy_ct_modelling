@@ -194,7 +194,7 @@ model {
       beta_t_s ~ normal(0, preds_sd);
     }
     if (adj_t_lod) {
-      beta_t_p ~ normal(0, preds_sd);
+      beta_t_lod ~ normal(0, preds_sd);
     }
     if (adj_c_p) {
       beta_c_p ~ normal(0, preds_sd);
