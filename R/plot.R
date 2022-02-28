@@ -119,6 +119,29 @@ plot_ct_pp <- function(pp, sum_pp, onsets = TRUE, clod = 40, alpha = 0.025,
   return(plot)
 }
 
+plot_pp <- function(fit, obs, samples = 10, alpha = 0.05) {
+  ct_draws <- extract_ct_trajectories(fit)
+
+  ct_summary <- summarise_draws(
+    data.table::copy(ct_draws)[,
+      time_since_first_pos := as.integer(time_since_first_pos)
+      ],
+    by = c("id", "time_since_first_pos")
+  )
+
+  ct_pp <- extract_posterior_predictions(fit, obs)
+  ct_pp <- summarise_draws(
+    ct_pp[, value := sim_ct], by = c("id", "t", "pcr_res", "obs")
+  )
+
+  # Plotting summaries of fitted trajectories against simulated data
+  plot <- plot_obs_ct(
+    obs, ct_draws[iteration <= ceiling(samples / max(chain))],
+    ct_pp, traj_alpha = alpha
+  )
+  return(plot)
+}
+
 plot_density <- function(draws, ...) {
   plot <- ggplot(draws) +
     geom_density(aes(x = value, ...), alpha = 0.2) +
