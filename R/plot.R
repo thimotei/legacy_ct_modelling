@@ -57,7 +57,7 @@ plot_obs_ct <- function(ct_dt, ct_traj, pp, traj_alpha = 0.02, onsets = TRUE,
   return(plot)
 }
 
-plot_ct_pp <- function(pp, sum_pp, onsets = TRUE, clod = 40, alpha = 0.05,
+plot_ct_pp <- function(pp, sum_pp, onsets = TRUE, clod = 40, alpha = 0.025,
                        ...) {
 
   plot <- ggplot(pp) +
@@ -100,9 +100,38 @@ plot_ct_pp <- function(pp, sum_pp, onsets = TRUE, clod = 40, alpha = 0.05,
 
 plot_density <- function(draws, ...) {
   plot <- ggplot(draws) +
-    aes(x = value, ...) +
-    geom_density(alpha = 0.2) +
+    geom_density(aes(x = value, ...), alpha = 0.2) +
     facet_wrap(~variable, nrow = 2, scales = "free") +
+    custom_plot_theme() +
     labs(x = "", y = "Probability density")
+  return(plot)
+}
+
+plot_ct_summary <- function(draws, time_range = seq(0, 60, by = 0.01),
+                            samples = 100, by = c(), traj_alpha = 0.025, ...) {
+  pop_draws <- extract_pop_params(draws)
+  
+  pop_ct_draws <- pop_draws[.draw <= samples] %>%
+    transform_to_model() %>%
+    simulate_cts(time_range = time_range, obs_noise = FALSE)
+
+  sum_cols <- c("value", "t", by)
+  pop_ct_sum <- summarise_draws(
+    pop_ct_draws[, value := ct_value][, ..sum_cols],
+    by = setdiff(sum_cols, "value")
+  )
+
+  ct_pp_plot <- plot_ct_pp(pop_ct_draws, pop_ct_sum, alpha = traj_alpha, ...)
+
+  param_pp_plot <- pop_draws %>%
+    transform_to_natural() %>%
+    melt_draws() %>%
+    update_ct_variables() %>%
+    plot_density(...)
+
+  plot <- param_pp_plot / ct_pp_plot +
+    patchwork::plot_layout(guides = "collect") &
+    theme(legend.position = "bottom")
+  
   return(plot)
 }

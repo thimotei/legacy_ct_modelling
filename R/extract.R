@@ -1,8 +1,15 @@
-extract_draws <- function(fit, params = c("c_0", "c_p_mean",
-                                          "c_s_mean", "t_p_mean",
-                                          "t_s_mean", "t_lod_mean")) {
+extract_draws <- function(fit, params = NULL) {
   draws <- fit$draws(format = "df", variables = params)
   draws <- data.table::as.data.table(draws)
+  return(draws[])
+}
+
+extract_pop_params <- function(draws, params = c("c_0", "c_p_mean",
+                                                 "c_s_mean", "t_p_mean",
+                                                 "t_s_mean", "t_lod_mean")) {
+  cols <- intersect(colnames(draws), params)
+  cols <- c(".iteration", ".draw", ".chain", cols)
+  draws <- draws[, ..cols]
   return(draws[])
 }
 
