@@ -120,8 +120,12 @@ pop_ct_sum <- summarise_draws(
   pop_ct_draws[, .(.draw, value = ct_value, t)], by = "t"
 )
 
-plot_ct_pp(pop_ct_draws[id <= 100], pop_ct_sum) -> p
+plot_ct_pp(pop_ct_draws[id <= 100], pop_ct_sum)
 
+pop_draws %>%
+  transform_to_natural() %>%
+  melt_draws() %>%
+  geom_density()
 # Extract population level CT parameter samples
 
 # Make population level expected CT trajectories
