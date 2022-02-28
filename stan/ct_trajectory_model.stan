@@ -105,7 +105,7 @@ transformed parameters {
   vector[swab_types + 1] st_int;
   vector[swab_types + 1] st_grad;
   vector[N] adj_exp_ct;
-  // individual-level parameter
+  // individual-level time since infection parameters
   t_p = combine_effects(t_p_mean, beta_t_p, design);
   t_p = exp(t_p + t_p_var * t_p_raw);
 
@@ -115,7 +115,6 @@ transformed parameters {
   t_lod = combine_effects(t_lod_mean, beta_t_lod, design);
   t_lod = exp(t_lod + t_lod_var * t_lod_raw);
 
-
   // Parameterise c_switch as proportion of c_0
   c_s = combine_effects(c_s_mean, beta_c_s, design);
   c_s = c_0 * inv_logit(c_s + c_s_var * c_s_raw);
@@ -124,8 +123,9 @@ transformed parameters {
   c_p = combine_effects(c_p_mean, beta_c_p, design);
   c_p = c_s .* inv_logit(c_p + c_p_var * c_p_raw);
 
-  // Make times absolute and relative to infection
+  // Make times absolute
   t_lod_abs = t_p + t_s + t_lod;
+  // Adjust observed times since first test to be time since infection
   diff = day_rel + T_e[id];
 
   // Expected ct value given viral load parameters
