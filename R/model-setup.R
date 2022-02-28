@@ -38,7 +38,7 @@ data_to_stan <- function(input_data,
                     lmean = get_inc_period()$inc_mean_p,
                     lsd = get_inc_period()$inc_sd_p,
                     likelihood = as.numeric(likelihood),
-                    preds = ncol(ct_model$design) - 1,
+                    preds = (ncol(ct_model$design) - 1 * 6),
                     preds_sd = ct_model$preds_sd,
                     design = ct_model$design
   )
@@ -99,7 +99,24 @@ stan_inits <- function(dt) {
     )
 
     if (dt$preds > 0) {
-      inits$beta <- rnorm(dt$preds, 0, 0.01)
+      if (dt$adj_t_p) {
+        inits$beta_t_p ~ normal(dt$preds, 0.01);
+      }
+      if (dt$adj_t_s) {
+        inits$beta_t_s ~ normal(dt$preds, 0.01);
+      }
+      if (dt$adj_t_lod) {
+        inits$beta_t_lod ~ normal(dt$preds, 0.01);
+      }
+      if (dt$adj_c_p) {
+        inits$beta_c_p ~ normal(dt$preds,  0.01);
+      }
+      if (dt$adj_c_s) {
+        inits$beta_c_s ~ normal(dt$preds,  0.01);
+      }
+      if (dt$adj_inc_mean) {
+        inits$beta_inc_mean ~ normal(dt$preds, 0.01);
+      }
     }
 
     if (dt$any_onsets == 1) {
