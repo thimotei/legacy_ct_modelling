@@ -1,9 +1,19 @@
-data_to_stan <- function(input_data, form = ~ + 1,
-                         coeff_sd = 1,
+  subject_design <- function(formula = ~ 1, data, preds_sd = 1, params) {
+  subjects <- extract_subjects(data)
+  design <- model.matrix(formula, data = subjects)
+
+  out <- list(
+    design = design, subjects = subjects, params = params, preds_sd = preds_sd
+  )
+  return(out)
+}
+
+
+data_to_stan <- function(input_data,
+                         ct_model = subject_design(~ 1, input_data),
                          likelihood = TRUE, clod = 40,
                          onsets = TRUE) {
-  subjects <- extract_subjects(input_data)
-  design <- model.matrix(form, data = subjects)
+
 
   stan_data <- list(N = input_data[, .N],
                     P = length(unique(input_data$id)),
@@ -21,9 +31,9 @@ data_to_stan <- function(input_data, form = ~ + 1,
                     lmean = get_inc_period()$inc_mean_p,
                     lsd = get_inc_period()$inc_sd_p,
                     likelihood = as.numeric(likelihood),
-                    preds = ncol(design) - 1,
-                    preds_sd = coeff_sd,
-                    design = design
+                    preds = ncol(ct_model$design) - 1,
+                    preds_sd = ct_model$preds_sd,
+                    design = ct_model$design
   )
  if (is.null(input_data$onset_time) | !onsets) {
   stan_data <- c(stan_data, list(
