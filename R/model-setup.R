@@ -1,4 +1,4 @@
-  subject_design <- function(formula = ~ 1, data, preds_sd = 1, params) {
+  subject_design <- function(formula = ~ 1, data, preds_sd = 0.1, params) {
   subjects <- extract_subjects(data)
   design <- model.matrix(formula, data = subjects)
 

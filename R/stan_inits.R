@@ -29,6 +29,10 @@ stan_inits <- function(dt) {
       sigma = truncnorm::rtruncnorm(1, a = 0, mean = 5, sd = 0.5)
     )
 
+    if (dt$preds > 0) {
+      inits$beta <- rnorm(dt$preds, 0, 0.01)
+    }
+    
     if (dt$any_onsets == 1) {
       inits$inc_mean <- rnorm(1, dt$lmean[1], dt$lmean[2])
       inits$inc_sd <- truncnorm::rtruncnorm(
