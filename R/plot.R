@@ -100,9 +100,9 @@ plot_ct_pp <- function(pp, sum_pp, onsets = TRUE, clod = 40, alpha = 0.05,
 
 plot_density <- function(draws, ...) {
   plot <- ggplot(draws) +
-    geom_density(aes(x = value, ...), alpha = 0.2) +
+    aes(x = value, ...) +
+    geom_density(alpha = 0.2) +
     facet_wrap(~variable, nrow = 2, scales = "free") +
     labs(x = "", y = "Probability density")
-
   return(plot)
 }

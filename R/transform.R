@@ -18,9 +18,9 @@ transform_to_model <- function(draws) {
 transform_to_natural <- function(draws) {
   draws <- transform_to_model(draws)
   draws[,
-  `:=`(
-    t_s = t_p + t_s,
-    t_lod =  t_p + t_s + t_lod,
-  )]
+    t_lod :=  t_p + t_s + t_lod
+  ][,
+    t_s := t_p + t_s,
+  ]
   return(draws[])
 }
