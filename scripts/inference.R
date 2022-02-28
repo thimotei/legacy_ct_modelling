@@ -25,18 +25,22 @@ dt_2_tests <- subset_data(
 # Plot the raw data
 p1_raw <- plot_obs_ct(dt_2_tests)
 
+# Specify which params adjusting for
+adj_params <- "all"
 # Specify the CT model design matrix
 ct_model <- subject_design(
   ~ 1 + VOC,
   data = dt_2_tests,
-  params = c("t_p", "t_s", "c_p", "c_s", "inc_mean"),
+  params = "all",
   preds_sd = 0.1
 )
 
 # Translate data and model specification to stan format
 stan_data <- data_to_stan(
-  dt_2_tests, ct_model = ct_model,
-  likelihood = TRUE, onsets = TRUE
+  dt_2_tests,
+  ct_model = ct_model,
+  likelihood = TRUE,
+  onsets = TRUE
 )
 
 # Compile model
@@ -54,10 +58,11 @@ fit <- mod$sample(
   max_treedepth = 15
 )
 
-# Print parameter summaries
+# Population level parameter summary
 summarise_pop_pp(fit)
 
-summarise_coeff_pp(fit)
+# Population level adjustment summary
+summarise_coeff_pp(fit, params = adj_params)
 
 # Extract and plot posterior predictions
 ct_draws <- extract_ct_trajectories(fit)
