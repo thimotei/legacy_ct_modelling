@@ -119,7 +119,7 @@ plot_ct_pp <- function(pp, sum_pp, onsets = TRUE, clod = 40, alpha = 0.025,
   return(plot)
 }
 
-plot_pp <- function(fit, obs, samples = 10, alpha = 0.05) {
+plot_pp_from_fit <- function(fit, obs, samples = 10, alpha = 0.05) {
   ct_draws <- extract_ct_trajectories(fit)
 
   ct_summary <- summarise_draws(
