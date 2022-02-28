@@ -11,6 +11,10 @@ obs <- list(
 
 simulate_cts <- function(params, time_range = 0:30, obs_noise = TRUE) {
 
+  if (is.null(params[["id"]])) {
+    params[, id := 1:.N]
+  }
+
   times <- data.table::data.table(
     t = time_range
   )[,
@@ -70,7 +74,7 @@ simulate_obs <- function(obs = obs,
       sigma := sigma
     ]
   )
-  
+
   ct_trajs <- simulate_cts(params, time_range = time_range, obs_noise = TRUE)
 
   if (!is.null(sample_density)) {

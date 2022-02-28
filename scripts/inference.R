@@ -88,7 +88,7 @@ fit_omicron <- mod$sample(
   iter_sampling = 1000
 )
 
-
+#--- extract and plot posterior predictions
 ct_draws <- extract_ct_trajectories(fit)
 
 ct_summary <- summarise_draws(
@@ -110,14 +110,16 @@ pp_plot <- plot_obs_ct(
 
 ggsave("outputs/figures/pp.png", pp_plot, height = 16, width = 16)
 
+#--- extract and plot population level posterior predictions
+
+pop_draws <- extract_draws(fit)
+
+pop_ct_draws <- transform_to_model(pop_draws) %>%
+  simulate_cts(time_range = 0:60, obs_noise = FALSE)
+
 
 # Extract population level CT parameter samples
-extract_ct_param_draws <- function(fit, params = c("c_0", "c_p_mean", 
-                                                   "c_s_mean", "t_p_mean",
-                                                   "t_s_mean", "t_lod_mean")) {
-  draws <- fit$draws(format = "df", variables = params)
-  draws <- data.table::as.data.table(draws)
-}
+
 # Make population level expected CT trajectories
 
 # Plot expected CT trajectories

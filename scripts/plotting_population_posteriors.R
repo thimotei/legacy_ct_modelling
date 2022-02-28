@@ -5,8 +5,6 @@ source("scripts/inference.R")
 draws <- rbind(as.data.table(fit_delta$draws())[, voc := "delta"],
                as.data.table(fit_omicron$draws())[, voc := "omicron"])
 
-# draws[variable %like% "inc_mean"] %>% 
-#   ggplot(
 
 #--- gathering and plotting population-level posteriors by VOC
 pop_params_rel <- c("c_0", "c_p_mean", "c_s_mean", 
