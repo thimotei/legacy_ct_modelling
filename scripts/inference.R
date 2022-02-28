@@ -25,8 +25,9 @@ dt_2_tests <- subset_data(
 # Plot the raw data
 p1_raw <- plot_obs_ct(dt_2_tests)
 
-# Specify which params adjusting for
+# Specify which params adjusting for (see params_avail_to_adjust() for options)
 adj_params <- "all"
+
 # Specify the CT model design matrix
 ct_model <- subject_design(
   ~ 1 + VOC,
@@ -65,24 +66,7 @@ summarise_pop_pp(fit)
 summarise_coeff_pp(fit, params = adj_params)
 
 # Extract and plot posterior predictions
-ct_draws <- extract_ct_trajectories(fit)
-
-ct_summary <- summarise_draws(
-  copy(ct_draws)[,
-    time_since_first_pos := as.integer(time_since_first_pos)
-    ],
-  by = c("id", "time_since_first_pos")
-)
-
-ct_pp <- extract_posterior_predictions(fit, dt_2_tests)
-ct_pp <- summarise_draws(
-  ct_pp[, value := sim_ct], by = c("id", "t", "pcr_res", "obs")
-)
-
-# Plotting summaries of fitted trajectories against simulated data
-pp_plot <- plot_obs_ct(
-  dt_2_tests, ct_draws[iteration <= 10], ct_pp, traj_alpha = 0.05
-)
+pp_plot <- plot_pp(fit, obs = dt_2_tests, samples = 10, alpha = 0.05)
 
 ggsave("outputs/figures/pp.png", pp_plot, height = 16, width = 16)
 
