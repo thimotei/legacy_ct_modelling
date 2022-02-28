@@ -66,7 +66,7 @@ summarise_pop_pp(fit)
 summarise_coeff_pp(fit, params = adj_params)
 
 # Extract and plot posterior predictions
-pp_plot <- plot_pp(fit, obs = dt_2_tests, samples = 10, alpha = 0.05)
+pp_plot <- plot_pp_from_fit(fit, obs = dt_2_tests, samples = 10, alpha = 0.05)
 
 ggsave("outputs/figures/pp.png", pp_plot, height = 16, width = 16)
 
