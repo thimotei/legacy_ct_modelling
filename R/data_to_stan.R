@@ -2,8 +2,8 @@ data_to_stan <- function(input_data, form = ~ + 1,
                          coeff_sd = 1,
                          likelihood = TRUE, clod = 40,
                          onsets = TRUE) {
-
-  design <- model.matrix(form, data = input_data)
+  subjects <- extract_subjects(input_data)
+  design <- model.matrix(form, data = subjects)
 
   stan_data <- list(N = input_data[, .N],
                     P = length(unique(input_data$id)),
@@ -23,7 +23,7 @@ data_to_stan <- function(input_data, form = ~ + 1,
                     likelihood = as.numeric(likelihood),
                     preds = ncol(design) - 1,
                     preds_sd = coeff_sd,
-                    X = design
+                    design = design
   )
  if (is.null(input_data$onset_time) | !onsets) {
   stan_data <- c(stan_data, list(

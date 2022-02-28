@@ -1,5 +1,6 @@
 functions{ 
 #include functions/ct_trajectory.stan
+#include functions/combine_effects.stan
 #include functions/truncated_normal_rng.stan
 #include functions/censor.stan
 }
@@ -23,7 +24,7 @@ data {
   int likelihood;
   int preds; //Number of predictors
   real preds_sd; // Standard deviation of predictor coeffs
-  matrix[N, preds + 1] X; //Design matrix
+  matrix[P, preds + 1] design; //Design matrix
 }
 
 transformed data {
@@ -78,7 +79,7 @@ parameters {
   real<lower = 0> sigma;
 
   // Coefficients
-  vector coeffs[preds ? preds : 0];
+  vector[preds ? preds : 0] beta;
 }
 
 transformed parameters {
@@ -95,7 +96,8 @@ transformed parameters {
   vector[N] adj_exp_ct;
   // individual-level parameters
   // non-centred, hierarchical parameterisation
-  t_p = exp(t_p_mean + t_p_var * t_p_raw);
+  t_p = combine_effects(t_p_mean, beta, design);
+  t_p = exp(t_p + t_p_var * t_p_raw);
   t_s = exp(t_s_mean + t_s_var * t_s_raw);
   t_lod = exp(t_lod_mean + t_lod_var * t_lod_raw);
   // Parameterise c_switch as proportion of c_0
@@ -165,7 +167,7 @@ model {
 
   // Coefficients priors for predictors
   if (preds) {
-    coeffs ~ normal(0, preds_sd);
+    beta ~ normal(0, preds_sd);
   }
 
   if (any_onsets && likelihood) {
