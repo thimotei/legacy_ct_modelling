@@ -136,7 +136,7 @@ plot_pp_from_fit <- function(fit, obs, samples = 10, alpha = 0.05) {
 
   # Plotting summaries of fitted trajectories against simulated data
   plot <- plot_obs_ct(
-    obs, ct_draws[iteration <= ceiling(samples / max(chain))],
+    obs, ct_draws[iteration <= ceiling(samples / max(as.numeric(chain)))],
     ct_pp, traj_alpha = alpha
   )
   return(plot)
@@ -154,7 +154,7 @@ plot_density <- function(draws, ...) {
 plot_ct_summary <- function(draws, time_range = seq(0, 60, by = 0.01),
                             samples = 100, by = c(), traj_alpha = 0.025, ...) {
   pop_draws <- extract_pop_params(draws)
-  
+
   pop_ct_draws <- pop_draws[.draw <= samples] %>%
     transform_to_model() %>%
     simulate_cts(time_range = time_range, obs_noise = FALSE)
@@ -176,6 +176,6 @@ plot_ct_summary <- function(draws, time_range = seq(0, 60, by = 0.01),
   plot <- param_pp_plot / ct_pp_plot +
     patchwork::plot_layout(guides = "collect") &
     theme(legend.position = "bottom")
-  
+
   return(plot)
 }
