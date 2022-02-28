@@ -17,18 +17,21 @@ walk(files, source)
 # load in data processed in scripts/process-data.R
 dt_clean <- fread(here("data/processed-data.csv"))
 
-# quick plots of the raw data, stratified by variant
+# Do additional processing to filter for the desired number of swabs
 dt_2_tests <- subset_data(
   dt_clean, voc = c("Delta", "Omicron"), no_pos_swabs = 2
 )
+
+# Plot the raw data
 p1_raw <- plot_obs_ct(dt_2_tests)
 
 # Specify the CT model design matrix
 ct_model <- subject_design(
   ~ 1 + VOC,
   data = dt_2_tests,
-  params = "all",
-  preds_sd = 0.1)
+  params = c("t_p", "t_s", "c_p", "c_s", "inc_mean"),
+  preds_sd = 0.1
+)
 
 # Translate data and model specification to stan format
 stan_data <- data_to_stan(
@@ -36,20 +39,27 @@ stan_data <- data_to_stan(
   likelihood = TRUE, onsets = TRUE
 )
 
-# compile model
+# Compile model
 mod <- cmdstan_model("stan/ct_trajectory_model.stan", include_paths = "stan")
 
-# fit
+# Fit
 fit <- mod$sample(
   data = stan_data,
   init = stan_inits(stan_data),
   chains = 4,
   parallel_chains = 4,
   iter_warmup = 1000,
-  iter_sampling = 1000
+  iter_sampling = 1000,
+  adapt_delta = 0.95,
+  max_treedepth = 15
 )
 
-# extract and plot posterior predictions
+# Print parameter summaries
+summarise_pop_pp(fit)
+
+summarise_coeff_pp(fit)
+
+# Extract and plot posterior predictions
 ct_draws <- extract_ct_trajectories(fit)
 
 ct_summary <- summarise_draws(
@@ -64,14 +74,14 @@ ct_pp <- summarise_draws(
   ct_pp[, value := sim_ct], by = c("id", "t", "pcr_res", "obs")
 )
 
-# plotting summaries of fitted trajectories against simulated data
+# Plotting summaries of fitted trajectories against simulated data
 pp_plot <- plot_obs_ct(
   dt_2_tests, ct_draws[iteration <= 10], ct_pp, traj_alpha = 0.05
 )
 
 ggsave("outputs/figures/pp.png", pp_plot, height = 16, width = 16)
 
-# extract and plot population level posterior predictions for the CT model
+# Extract and plot population level posterior predictions for the CT model
 draws <- extract_draws(fit)
 
 pop_pp <- plot_ct_summary(

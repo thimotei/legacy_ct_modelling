@@ -1,9 +1,21 @@
-  subject_design <- function(formula = ~ 1, data, preds_sd = 0.1, params) {
+  subject_design <- function(formula = ~ 1, data, preds_sd = 0.1,
+                             params = "all") {
+  choices <- c("t_p", "t_s", "t_lod", "c_p", "c_s", "inc_mean")
+  params <- match.arg(params, c(choices, "all"), several.ok = TRUE)
+  if (any(params %in% "all")) {
+    params <- choices
+  }
+  params_list <- as.list(choices)
+  names(params_list) <- choices
+  params_list <- purrr::map(params_list, ~ as.numeric(any(params %in% .)))
+
+
   subjects <- extract_subjects(data)
   design <- model.matrix(formula, data = subjects)
 
   out <- list(
-    design = design, subjects = subjects, params = params, preds_sd = preds_sd
+    design = design, subjects = subjects, params = params_list,
+    preds_sd = preds_sd
   )
   return(out)
 }
@@ -38,9 +50,15 @@ data_to_stan <- function(input_data,
                     lmean = get_inc_period()$inc_mean_p,
                     lsd = get_inc_period()$inc_sd_p,
                     likelihood = as.numeric(likelihood),
-                    preds = (ncol(ct_model$design) - 1 * 6),
+                    preds = ncol(ct_model$design) - 1,
                     preds_sd = ct_model$preds_sd,
-                    design = ct_model$design
+                    design = ct_model$design,
+                    adj_t_p = ct_model$params[["t_p"]],
+                    adj_t_s = ct_model$params[["t_s"]],
+                    adj_t_lod = ct_model$params[["t_lod"]],
+                    adj_c_p = ct_model$params[["c_p"]],
+                    adj_c_s = ct_model$params[["c_s"]],
+                    adj_inc_mean = ct_model$params[["inc_mean"]]
   )
  if (is.null(input_data$onset_time) | !onsets) {
   stan_data <- c(stan_data, list(
@@ -99,23 +117,23 @@ stan_inits <- function(dt) {
     )
 
     if (dt$preds > 0) {
-      if (dt$adj_t_p) {
-        inits$beta_t_p ~ normal(dt$preds, 0.01);
+      if (dt$adj_t_p > 0) {
+        inits$beta_t_p <- rnorm(dt$preds, 0.01);
       }
-      if (dt$adj_t_s) {
-        inits$beta_t_s ~ normal(dt$preds, 0.01);
+      if (dt$adj_t_s > 0) {
+        inits$beta_t_s <- rnorm(dt$preds, 0.01);
       }
-      if (dt$adj_t_lod) {
-        inits$beta_t_lod ~ normal(dt$preds, 0.01);
+      if (dt$adj_t_lod > 0) {
+        inits$beta_t_lod <- rnorm(dt$preds, 0.01);
       }
-      if (dt$adj_c_p) {
-        inits$beta_c_p ~ normal(dt$preds,  0.01);
+      if (dt$adj_c_p > 0) {
+        inits$beta_c_p <- rnorm(dt$preds,  0.01);
       }
-      if (dt$adj_c_s) {
-        inits$beta_c_s ~ normal(dt$preds,  0.01);
+      if (dt$adj_c_s > 0) {
+        inits$beta_c_s <- rnorm(dt$preds,  0.01);
       }
-      if (dt$adj_inc_mean) {
-        inits$beta_inc_mean ~ normal(dt$preds, 0.01);
+      if (dt$adj_inc_mean > 0) {
+        inits$beta_inc_mean <- rnorm(dt$preds, 0.01);
       }
     }
 
