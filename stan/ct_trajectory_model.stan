@@ -21,6 +21,9 @@ data {
   vector[P] onset_avail;
   vector[P] onset_time;
   int likelihood;
+  int preds; //Number of predictors
+  real preds_sd; // Standard deviation of predictor coeffs
+  matrix[N, preds + 1] X; //Design matrix
 }
 
 transformed data {
@@ -73,6 +76,9 @@ parameters {
 
   // Variance parameter for oobservation model
   real<lower = 0> sigma;
+
+  // Coefficients
+  vector coeffs[preds ? preds : 0];
 }
 
 transformed parameters {
@@ -156,6 +162,11 @@ model {
 
   // Variation in observation model
   sigma ~ normal(0, 2) T[0,];
+
+  // Coefficients priors for predictors
+  if (preds) {
+    coeffs ~ normal(0, preds_sd);
+  }
 
   if (any_onsets && likelihood) {
     // Priors on the incubation period
