@@ -22,7 +22,7 @@ data {
   vector[P] onset_avail;
   vector[P] onset_time;
   int likelihood;
-  int preds; //Number of predictors
+  int preds; // Number of predictors
   real preds_sd; // Standard deviation of predictor coeffs
   matrix[P, preds + 1] design; //Design matrix
 }
