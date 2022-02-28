@@ -1,8 +1,8 @@
 summarise_pop_pp <- function(fit) {
   fit$summary(
     variables = c(
-      "t_p", "t_s", "t_lod", "c_p", "c_s",
-      "inc_mean", "inc_sd"
+      "t_p_mean", "t_s_mean", "t_lod_mean", "c_p_mean",
+      "c_s_mean", "inc_mean", "inc_sd"
     )
   )
 }
