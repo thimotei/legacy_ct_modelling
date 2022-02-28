@@ -111,12 +111,16 @@ pp_plot <- plot_obs_ct(
 ggsave("outputs/figures/pp.png", pp_plot, height = 16, width = 16)
 
 #--- extract and plot population level posterior predictions
-
 pop_draws <- extract_draws(fit)
 
 pop_ct_draws <- transform_to_model(pop_draws) %>%
   simulate_cts(time_range = 0:60, obs_noise = FALSE)
 
+pop_ct_sum <- summarise_draws(
+  pop_ct_draws[, .(.draw, value = ct_value, t)], by = "t"
+)
+
+plot_ct_pp(pop_ct_draws[id <= 100], pop_ct_sum) -> p
 
 # Extract population level CT parameter samples
 
