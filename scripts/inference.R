@@ -8,13 +8,14 @@ library(purrr)
 library(lubridate)
 library(patchwork)
 library(tidyr)
+library(here)
 
 # loading all functions in package directory
 files <- list.files("R", "*.R", full.names = TRUE)
 walk(files, source)
 
 # load in data processed in scripts/process-data.R
-dt_raw <- fread("data/processed-data.csv")
+dt_clean <- fread(here("data/processed-data.csv"))
 
 # quick plots of the raw data, stratified by variant
 dt_2_tests <- subset_data(
@@ -23,7 +24,11 @@ dt_2_tests <- subset_data(
 p1_raw <- plot_obs_ct(dt_2_tests)
 
 # Specify the CT model design matrix
-ct_model <- subject_design(~ 1 + VOC, data = dt_2_tests, params = "all")
+ct_model <- subject_design(
+  ~ 1 + VOC,
+  data = dt_2_tests,
+  params = "all",
+  preds_sd = 0.1)
 
 # Translate data and model specification to stan format
 stan_data <- data_to_stan(

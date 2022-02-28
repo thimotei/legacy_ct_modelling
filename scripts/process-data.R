@@ -4,6 +4,7 @@ library(stringr)
 library(purrr)
 library(lubridate)
 library(tidyr)
+library(here)
 
 # loading all functions in package directory
 files <- list.files("R", "*.R", full.names = TRUE)
@@ -38,4 +39,4 @@ dt_clean <- dt_clean[spurious == FALSE | is.na(spurious)]
 #--  tests
 dt_clean <- dt_clean[id != 978]
 
-fwrite("data", "processed-data.csv")
+fwrite(dt_clean, here("data", "processed-data.csv"))
