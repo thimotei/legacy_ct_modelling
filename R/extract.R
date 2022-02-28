@@ -6,6 +6,10 @@ extract_draws <- function(fit, params = c("c_0", "c_p_mean",
   return(draws[])
 }
 
+melt_draws <- function(draws, ids = c(".chain", ".iteration", ".draw")) {
+  data.table::melt(draws, id.vars = ids)
+}
+
 extract_ct_trajectories <- function(fit, variable = "ct", inf_time = TRUE) {
   dt_draws <- extract_draws(fit, params = variable)
 
