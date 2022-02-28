@@ -49,7 +49,7 @@ parameters {
   real<lower = 0> inc_sd[any_onsets];
   
   // Ct value before detection
-  real<lower = c_lod> c_0; 
+  real<lower = 0> c_0_rel; 
 
   // Hyperparameters
   // Ct value of viral load p
@@ -94,6 +94,7 @@ parameters {
 }
 
 transformed parameters {
+  real c_0;
   vector[P] t_p;
   vector[P] t_s;
   vector[P] t_lod;
@@ -105,6 +106,10 @@ transformed parameters {
   vector[swab_types + 1] st_int;
   vector[swab_types + 1] st_grad;
   vector[N] adj_exp_ct;
+
+  // Realised limit of detection
+  c_0 = c_0_rel + c_lod;
+
   // individual-level time since infection parameters
   t_p = combine_effects(t_p_mean, beta_t_p, design);
   t_p = exp(t_p + t_p_var * t_p_raw);
@@ -149,8 +154,8 @@ model {
   for (i in 1:P) {
     T_e[i] ~ normal(T_e_bound[i] + 5, 5) T[T_e_bound[i],];
   }
-  // CT value prior/post detection
-  c_0 ~ normal(c_lod + 10, 5) T[c_lod, ];
+  // Relative CT value prior/post detection
+  c_0_rel ~ normal(10, 5) T[0, ];
   
   // Ct value at peak
   c_p_mean ~ normal(0, 1); //mean at 50% of switch value

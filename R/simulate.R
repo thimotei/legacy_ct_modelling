@@ -20,7 +20,7 @@ ct_hinge_long <- function(t, c0, cp, cs, clod, te, tp, ts, tlod) {
 
 # for Ct trajectories without the longer wane
 ct_hinge_single <- function(t, c0, cp, clod, te, tp, tlod) {
-    if(t <= te) {
+    if (t <= te) {
       y <- c0;
     } else if (t > te && t <= te + tp) {
       y <- ((t - te) * (cp - c0)) / tp  + c0;
@@ -31,17 +31,6 @@ ct_hinge_single <- function(t, c0, cp, clod, te, tp, tlod) {
     }
     return(y);
   }
-
-obs <- list(
-  P = 20,
-  any_onsets = 1,
-  onset_time = rep(0, 20),
-  c_lod = 40,
-  swab_types = 0,
-  lmean = get_inc_period()$inc_mean_p,
-  lsd = get_inc_period()$inc_sd_p,
-  swab_types = 0
-)
 
 simulate_cts <- function(params, time_range = 0:30, obs_noise = TRUE) {
 
@@ -83,6 +72,16 @@ simulate_cts <- function(params, time_range = 0:30, obs_noise = TRUE) {
 
   return(ct_trajs[])
 }
+obs <- list(
+  P = 20,
+  any_onsets = 1,
+  onset_time = rep(0, 20),
+  c_lod = 40,
+  swab_types = 0,
+  lmean = get_inc_period()$inc_mean_p,
+  lsd = get_inc_period()$inc_sd_p,
+  swab_types = 0
+)
 
 simulate_obs <- function(obs = obs,
                          parameters = stan_inits(obs)(),
@@ -98,7 +97,7 @@ simulate_obs <- function(obs = obs,
       t_p = exp(t_p_mean + t_p_var * t_p_raw),
       t_s = exp(t_s_mean + t_s_var * t_s_raw),
       t_lod = exp(t_lod_mean + t_lod_var * t_lod_raw),
-      c_0 = c_0,
+      c_0 = c_0 + obs$c_lod,
       c_s = c_0 * plogis(c_s_mean + c_s_var * c_s_raw)
     )[,
       c_p := c_s * plogis(c_p_mean + c_p_var * c_p_raw)
