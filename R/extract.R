@@ -19,7 +19,7 @@ extract_pop_params <- function(draws, params = c("c_0", "c_p_mean",
   return(draws[])
 }
 
-extract_coeffs <- function(draws, exponentiate = FALSE) {
+extract_coeffs <- function(draws, exponentiate = FALSE, design) {
   beta_cols <-grep("beta_", colnames(draws), value = TRUE)
   cols <- c(".iteration", ".draw", ".chain", beta_cols)
   draws <- draws[, ..cols]
