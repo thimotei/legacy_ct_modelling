@@ -99,7 +99,7 @@ stan_inits <- function(dt) {
           mean = max(-dt$onset_time[.] + 5, 5), sd = 1
         )
       ),
-      c_0_rel = truncnorm::rtruncnorm(
+      c_0 = truncnorm::rtruncnorm(
         1, a = dt$c_lod, mean = dt$c_lod + 10, sd = 1
       ),
       c_p_mean = rnorm(1, 0, 1),
