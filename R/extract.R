@@ -19,6 +19,27 @@ extract_pop_params <- function(draws, params = c("c_0", "c_p_mean",
   return(draws[])
 }
 
+extract_coeffs <- function(draws, exponentiate = FALSE) {
+  beta_cols <-grep("beta_", colnames(draws), value = TRUE)
+  cols <- c(".iteration", ".draw", ".chain", beta_cols)
+  draws <- draws[, ..cols]
+
+  if (exponentiate) {
+    draws[, (beta_cols) := lapply(.SD, exp), .SDcols = beta_cols]
+  }
+
+  setnames(draws, beta_cols, gsub("beta_", "", beta_cols))
+
+  draws <- melt_draws(draws)
+
+  draws <- draws[,
+    coeff := stringr::str_extract(variable, "[0-9]")
+  ][,
+    variable := stringr::str_split(variable, "\\[[0-9]\\]")
+  ]
+  return(draws[])
+}
+
 melt_draws <- function(draws, ids = c(".chain", ".iteration", ".draw")) {
   data.table::melt(draws, id.vars = ids)
 }
