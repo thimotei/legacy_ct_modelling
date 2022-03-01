@@ -45,6 +45,8 @@ extract_ct_trajectories <- function(fit, variable = "ct", inf_time = TRUE) {
     ct_dt_out <- ct_dt_out[inf_time_draws, on = c("id", "iteration", "chain")]
   }
   ct_dt_out[, time_since_first_pos := time - inf_time]
+  cols <- c("chain", "iteration")
+  ct_dt_out[, (cols) := lapply(.SD, as.numeric), .SDcols = cols]
   return(ct_dt_out[])
 }
 

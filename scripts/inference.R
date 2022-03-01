@@ -26,7 +26,8 @@ dt_2_tests <- subset_data(
 p1_raw <- plot_obs_ct(dt_2_tests)
 
 # Specify which params adjusting for (see params_avail_to_adjust() for options)
-adj_params <- "all"
+# Here all available options excluding the incubation period standard deviation
+adj_params <- c("t_p", "t_s", "t_lod", "c_p", "c_s", "inc_mean")
 
 # Specify the CT model design matrix
 ct_model <- subject_design(
@@ -66,7 +67,7 @@ summarise_pop_pp(fit)
 summarise_coeff_pp(fit, params = adj_params)
 
 # Extract and plot posterior predictions
-pp_plot <- plot_pp_from_fit(fit, obs = dt_2_tests, samples = 10, alpha = 0.05)
+pp_plot <- plot_pp_from_fit(fit, obs = dt_2_tests, samples = 50, alpha = 0.05)
 
 ggsave("outputs/figures/pp.png", pp_plot, height = 16, width = 16)
 

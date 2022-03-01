@@ -13,7 +13,8 @@
 // 
 // @return A vector of linear predictions without error.
 // 
-//  @examples
+// @author Sam Abbott
+// @examples
 // 
 // # make example data
 // intercept <- 1
