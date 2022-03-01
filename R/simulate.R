@@ -97,7 +97,7 @@ simulate_obs <- function(obs = obs,
       t_p = exp(t_p_mean + t_p_var * t_p_raw),
       t_s = exp(t_s_mean + t_s_var * t_s_raw),
       t_lod = exp(t_lod_mean + t_lod_var * t_lod_raw),
-      c_0 = c_0 + obs$c_lod,
+      c_0 = c_0,
       c_s = c_0 * plogis(c_s_mean + c_s_var * c_s_raw)
     )[,
       c_p := c_s * plogis(c_p_mean + c_p_var * c_p_raw)

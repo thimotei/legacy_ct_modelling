@@ -26,7 +26,7 @@ dt_2_tests <- subset_data(
 p1_raw <- plot_obs_ct(dt_2_tests)
 
 # Specify which params adjusting for (see params_avail_to_adjust() for options)
-# Here all available options excluding the incubation period standard deviation
+# Here all available options (can also specify this using "all")
 adj_params <- c("t_p", "t_s", "t_lod", "c_p", "c_s", "inc_mean", "inc_sd")
 
 # Specify the CT model design matrix
