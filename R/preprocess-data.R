@@ -73,7 +73,7 @@ process_data <- function(data_raw) {
 }
 
 # function to condition full dataset on VOC type and number of positive swabs
-# by individual.
+# by individual + add unique infection level ID
 subset_data <- function(dt_clean_in, voc, no_pos_swabs) {
   dt_out <- dt_clean[VOC %in% voc][,
     t_first_test := as.numeric(swab_date - min(swab_date), units = "days"),
