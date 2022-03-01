@@ -64,7 +64,8 @@ data_to_stan <- function(input_data,
                     adj_t_lod = ct_model$params[["t_lod"]],
                     adj_c_p = ct_model$params[["c_p"]],
                     adj_c_s = ct_model$params[["c_s"]],
-                    adj_inc_mean = ct_model$params[["inc_mean"]]
+                    adj_inc_mean = ct_model$params[["inc_mean"]],
+                    adj_inc_sd = ct_model$params[["inc_sd"]]
   )
  if (is.null(input_data$onset_time) | !onsets) {
   stan_data <- c(stan_data, list(

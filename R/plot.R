@@ -180,3 +180,36 @@ plot_ct_summary <- function(draws, time_range = seq(0, 60, by = 0.01),
 
   return(plot)
 }
+
+summarise_effects <- function(draws, design, variable, preds) {
+  eff_draws <- extract_coeffs(
+      draws, exponentiate = TRUE, design = design
+    )
+    
+    by <- "variable"
+    if (!missing(design)) {
+      by = c(by, "preds")
+    }
+    eff_summary <- summarise_draws(eff_draws, by = by)
+    return(effects)
+}
+
+plot_effects <- function(effects, ...) {
+ 
+  eff_plot <- ggplot(effects) +
+    aes(y = variable, ...) +
+    geom_vline(xintercept = 1, linetype = 2) +
+    geom_linerange(
+      aes(xmin = lo90, xmax = hi90), 
+      size = 2, alpha = 0.3
+    ) +
+    geom_linerange(
+      aes(xmin = lo60, xmax = hi60), 
+      size = 2, alpha = 0.3
+    ) +
+    custom_plot_theme() +
+    theme(legend.position = "bottom") +
+    scale_x_continuous(trans = "log") +
+    labs(x = "Effect size", y = "Variable modified")
+  return(eff_plot)
+}

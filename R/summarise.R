@@ -26,6 +26,19 @@ summarise_coeff_pp <- function(fit, params, exponentiate = FALSE) {
   return(draws[])
 }
 
+summarise_effects <- function(draws, design) {
+  eff_draws <- extract_coeffs(
+      draws, exponentiate = TRUE, design = design
+    )
+    
+    by <- "variable"
+    if (!missing(design)) {
+      by = c(by, "preds")
+    }
+    eff_summary <- summarise_draws(eff_draws, by = by)
+    return(eff_summary)
+}
+
 summarise_draws <- function(draws, by = c("id", "time")) {
 
   out <- draws[,

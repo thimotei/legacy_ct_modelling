@@ -220,7 +220,7 @@ model {
     inc_mean_p = combine_effects(inc_mean[1], beta_inc_mean, design);
     inc_sd[1] ~ normal(lsd[1], lsd[2]) T[0, ];
     if (adj_inc_sd) {
-      inc_sd_p = combine_effects(log(inc_sd[1]), beta_inc_mean, design);
+      inc_sd_p = combine_effects(log(inc_sd[1]), beta_inc_sd, design);
       inc_sd_p = exp(inc_sd_p);
     }else{
       inc_sd_p = rep_vector(inc_sd[1], P);

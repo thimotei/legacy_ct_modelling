@@ -35,7 +35,9 @@ extract_coeffs <- function(draws, exponentiate = FALSE, design) {
   draws <- draws[,
     coeff := as.numeric(stringr::str_extract(variable, "[0-9]"))
   ][,
-    variable := stringr::str_split(variable, "\\[[0-9]\\]")
+    variable := purrr::map_chr(
+      variable, ~ stringr::str_split(., "\\[[0-9]\\]")[[1]][1]
+    )
   ]
 
   if (!missing(design)) {
