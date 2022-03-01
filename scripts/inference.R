@@ -64,7 +64,7 @@ fit <- mod$sample(
 summarise_pop_pp(fit)
 
 # Population level adjustment summary
-summarise_coeff_pp(fit, params = adj_params)
+summarise_coeff_pp(fit, params = adj_params, exponentiate = TRUE)
 
 # Extract and plot posterior predictions
 pp_plot <- plot_pp_from_fit(fit, obs = dt_2_tests, samples = 50, alpha = 0.05)
