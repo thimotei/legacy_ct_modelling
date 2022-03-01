@@ -1,10 +1,6 @@
 extract_subjects <- function(dt) {
   subjects <- data.table::copy(dt)
-  subjects[,
-    c("swab_date", "swab_type", "t_first_test", "t", "ct_value", "result",
-      "pcr_res", "onset_time") := NULL
-  ]
-  subjects <- unique(subjects)
+  subjects <- subjects[, .SD[1,], by = "id"]
   return(subjects[])
 }
 
