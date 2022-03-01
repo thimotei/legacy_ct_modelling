@@ -81,7 +81,7 @@ subset_data <- function(dt_clean_in, voc, no_pos_swabs) {
     no_pos_results >= no_pos_swabs][,
     data_id := id][,
     id := .GRP, by = c("data_id", "infection_id")][,
-    swab_type := as.numeric(!swab_type %in% "Dry")]
+    swab_type_num := as.numeric(!swab_type %in% "Dry")]
   return(dt_out)
 }
 
