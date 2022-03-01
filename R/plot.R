@@ -145,7 +145,6 @@ plot_pp_from_fit <- function(fit, obs, samples = 10, alpha = 0.05) {
 plot_density <- function(draws, ...) {
   plot <- ggplot(draws) +
     geom_density(aes(x = value, ...), alpha = 0.2) +
-    facet_wrap(~variable, nrow = 2, scales = "free") +
     custom_plot_theme() +
     labs(x = "", y = "Probability density")
   return(plot)
@@ -171,7 +170,8 @@ plot_ct_summary <- function(draws, time_range = seq(0, 60, by = 0.01),
     transform_to_natural() %>%
     melt_draws() %>%
     update_ct_variables() %>%
-    plot_density(...)
+    plot_density(...) +
+    ggplot2::facet_wrap(~variable, nrow = 2, scales = "free")
 
   plot <- param_pp_plot / ct_pp_plot +
     patchwork::plot_layout(guides = "collect") &
