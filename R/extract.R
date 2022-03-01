@@ -33,10 +33,17 @@ extract_coeffs <- function(draws, exponentiate = FALSE, design) {
   draws <- melt_draws(draws)
 
   draws <- draws[,
-    coeff := stringr::str_extract(variable, "[0-9]")
+    coeff := as.numeric(stringr::str_extract(variable, "[0-9]"))
   ][,
     variable := stringr::str_split(variable, "\\[[0-9]\\]")
   ]
+
+  if (!missing(design)) {
+    design <- data.table::data.table(preds = colnames(design))
+    design <- design[!preds %in% "(Intercept)"]
+    design[, coeff := 1:.N]
+    draws <- draws[design, on = "coeff"]
+  }
   return(draws[])
 }
 
