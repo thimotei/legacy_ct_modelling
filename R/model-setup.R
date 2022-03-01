@@ -1,5 +1,5 @@
   params_avail_to_adjust <- function(params = "all") {
-    choices <- c("t_p", "t_s", "t_lod", "c_p", "c_s", "inc_mean")
+    choices <- c("t_p", "t_s", "t_lod", "c_p", "c_s", "inc_mean", "inc_sd")
     params <- match.arg(params, c(choices, "all"), several.ok = TRUE)
     if (any(params %in% "all")) {
       params <- choices
@@ -140,6 +140,9 @@ stan_inits <- function(dt) {
       }
       if (dt$adj_inc_mean > 0) {
         inits$beta_inc_mean <- rnorm(dt$preds, 0.01);
+      }
+      if (dt$adj_inc_sd > 0) {
+        inits$beta_inc_sd <- rnorm(dt$preds, 0.01);
       }
     }
 

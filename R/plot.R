@@ -137,7 +137,7 @@ plot_pp_from_fit <- function(fit, obs, samples = 10, alpha = 0.05) {
 
   # Plotting summaries of fitted trajectories against simulated data
   plot <- plot_obs_ct(
-    obs, ct_draws[iteration <= ceiling(samples / max(as.numeric(chain)))],
+    obs, ct_draws[iteration <= ceiling(samples / max(chain))],
     ct_pp, traj_alpha = alpha
   )
   return(plot)

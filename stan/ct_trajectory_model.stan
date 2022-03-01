@@ -31,6 +31,7 @@ data {
   int adj_c_p; // Should CT at peak be adjusted
   int adj_c_s; // Should CT at switch be adjusted
   int adj_inc_mean; // Should incubation period mean be adjusted
+  int adj_inc_sd; // Should incubation period standard deviation be adjusted
 }
 
 transformed data {
@@ -91,6 +92,7 @@ parameters {
   vector[preds && adj_c_s ? preds : 0] beta_c_s;
   vector[preds && adj_c_p ? preds : 0] beta_c_p;
   vector[preds && adj_inc_mean ? preds : 0] beta_inc_mean;
+  vector[preds && adj_inc_sd ? preds : 0] beta_inc_sd;
 }
 
 transformed parameters {
@@ -205,15 +207,25 @@ model {
     if (adj_inc_mean) {
       beta_inc_mean ~ normal(0, preds_sd);
     } 
+    if (adj_inc_sd) {
+      beta_inc_sd ~ normal(0, preds_sd);
+    } 
   }
 
   if (any_onsets && likelihood) {
     vector[P] inc_mean_p;
-
+    vector[P] inc_sd_p;
     // Priors on the incubation period
     inc_mean[1] ~ normal(lmean[1], lmean[2]);
     inc_mean_p = combine_effects(inc_mean[1], beta_inc_mean, design);
     inc_sd[1] ~ normal(lsd[1], lsd[2]) T[0, ];
+    if (adj_inc_sd) {
+      inc_sd_p = combine_effects(log(inc_sd[1]), beta_inc_mean, design);
+      inc_sd_p = exp(inc_sd_p);
+    }else{
+      inc_sd_p = rep_vector(inc_sd[1], P);
+    }
+
    // component of likelihood for time of exposure
    for(j in 1:P) {
    // likelihood for time of exposure using the CDF of the incubation period
@@ -223,8 +235,8 @@ model {
       real onset_from_inf = onset_time[j] + T_e[j];
       real onset_window = max({0, onset_from_inf - 1});
         target += log_diff_exp(
-          lognormal_lcdf(onset_from_inf | inc_mean_p[j], inc_sd[1]),
-          lognormal_lcdf(onset_window | inc_mean_p[j], inc_sd[1])
+          lognormal_lcdf(onset_from_inf | inc_mean_p[j], inc_sd_p[j]),
+          lognormal_lcdf(onset_window | inc_mean_p[j], inc_sd_p[j]])
         );
      }
     }
