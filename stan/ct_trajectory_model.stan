@@ -236,7 +236,7 @@ model {
       real onset_window = max({0, onset_from_inf - 1});
         target += log_diff_exp(
           lognormal_lcdf(onset_from_inf | inc_mean_p[j], inc_sd_p[j]),
-          lognormal_lcdf(onset_window | inc_mean_p[j], inc_sd_p[j]])
+          lognormal_lcdf(onset_window | inc_mean_p[j], inc_sd_p[j])
         );
      }
     }
