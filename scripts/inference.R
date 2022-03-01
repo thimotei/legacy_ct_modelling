@@ -27,7 +27,7 @@ p1_raw <- plot_obs_ct(dt_2_tests)
 
 # Specify which params adjusting for (see params_avail_to_adjust() for options)
 # Here all available options excluding the incubation period standard deviation
-adj_params <- c("t_p", "t_s", "t_lod", "c_p", "c_s", "inc_mean")
+adj_params <- c("t_p", "t_s", "t_lod", "c_p", "c_s", "inc_mean", "inc_sd")
 
 # Specify the CT model design matrix
 ct_model <- subject_design(
@@ -81,4 +81,15 @@ pop_pp <- plot_ct_summary(
 ggsave(
   "outputs/figures/population_ct_pp.png",
   pop_pp, width = 8, height = 8,
+)
+
+# Extract effect sizes and make a summary plot
+eff_plot <- draws %>%
+  summarise_effects(design = ct_model$design) %>%
+  update_ct_variables(reverse = TRUE) %>%
+  plot_effects()
+
+ggsave(
+  "outputs/figures/effects_summary.png",
+  eff_plot, width = 8, height = 8,
 )
