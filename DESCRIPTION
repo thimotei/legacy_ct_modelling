@@ -5,7 +5,11 @@ Authors@R:
     c(person(given = "Tim",
              family = "Russell",
              role = c("aut", "cre"),
-             email = "timothy.russell@lshtm.ac.uk"))
+             email = "timothy.russell@lshtm.ac.uk"),
+      person(given = "Sam",
+             family = "Abbott",
+             role = c("aut", "cre"),
+             email = "sam.abbott@lshtm.ac.uk"))
 Description: Viral load curve estimation
 License: MIT + file LICENSE
 Imports:
