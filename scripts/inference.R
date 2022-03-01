@@ -33,7 +33,7 @@ adj_params <- c("t_p", "t_s", "t_lod", "c_p", "c_s", "inc_mean", "inc_sd")
 ct_model <- subject_design(
   ~ 1 + VOC,
   data = dt_2_tests,
-  params = "all",
+  params = adj_params,
   preds_sd = 0.1
 )
 
