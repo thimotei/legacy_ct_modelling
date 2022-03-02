@@ -8,8 +8,7 @@ library(stringr)
 library(purrr)
 
 # loading all functions in package directory
-files <- list.files("R", "*.R", full.names = TRUE)
-walk(files, source)
+devtools::load_all() 
 
 # Set up simulations for 20 individuals
 # To be lazy here we are assuming that onsets are not available
@@ -21,7 +20,8 @@ obs <- list(
   c_lod = 40,
   lmean = get_inc_period()$inc_mean_p,
   lsd = get_inc_period()$inc_sd_p,
-  swab_types = 0
+  swab_types = 0,
+  preds = 0
 )
 
 # Simulate from the centre of the prior for all parameters
@@ -52,25 +52,21 @@ fit_sim <- mod$sample(
   iter_sampling = 1000
 )
 
-# extracting Ct fits. Bit slow as it is at the moment
-ct_draws <- extract_ct_trajectories(fit_sim)
-
-# summarising trajectories using median and 95% CrI
-ct_summary <- summarise_draws(
-  copy(ct_draws)[,
-    time_since_first_pos := as.integer(time_since_first_pos)
-    ],
-  by = c("id", "time_since_first_pos")
+# Extract and plot posterior predictions
+sim_pp_plot <- plot_pp_from_fit(
+  fit_sim, obs = ct_sample, samples = 50, alpha = 0.025
 )
 
-# extract posterior CT predictons and  summarise
-ct_pp <- extract_posterior_predictions(fit_sim, ct_sample)
-ct_pp <- summarise_draws(
-  ct_pp[, value := sim_ct], by = c("id", "t", "pcr_res", "obs")
-)
-
-# plotting summaries of fitted trajectories against simulated data
-sim_pp_plot <- plot_obs_ct(
-  ct_sample, ct_draws[iteration <= 10], ct_pp, traj_alpha = 0.05
-)
 ggsave("outputs/figures/sim_pp.png", sim_pp_plot, height = 10, width = 10)
+
+# Extract and plot population level posterior predictions for the CT model
+sim_draws <- extract_draws(fit_sim)
+
+sim_pop_pp <- plot_ct_summary(
+  sim_draws, time_range = seq(0, 60, by = 0.01), samples = 100, by = c()
+)
+
+ggsave(
+  "outputs/figures/sim_population_ct_pp.png",
+  sim_pop_pp, width = 8, height = 8,
+)

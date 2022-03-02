@@ -7,8 +7,7 @@ library(tidyr)
 library(here)
 
 # loading all functions in package directory
-files <- list.files("R", "*.R", full.names = TRUE)
-walk(files, source)
+devtools::load_all()
 
 dt_raw <- fread("data/ct_values_clean.csv")
 

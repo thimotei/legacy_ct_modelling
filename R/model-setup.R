@@ -125,32 +125,32 @@ stan_inits <- function(dt) {
 
     if (dt$preds > 0) {
       if (dt$adj_t_p > 0) {
-        inits$beta_t_p <- rnorm(dt$preds, 0.01);
+        inits$beta_t_p <- rnorm(dt$preds, 0, 0.01);
       }
       if (dt$adj_t_s > 0) {
-        inits$beta_t_s <- rnorm(dt$preds, 0.01);
+        inits$beta_t_s <- rnorm(dt$preds, 0, 0.01);
       }
       if (dt$adj_t_lod > 0) {
-        inits$beta_t_lod <- rnorm(dt$preds, 0.01);
+        inits$beta_t_lod <- rnorm(dt$preds, 0, 0.01);
       }
       if (dt$adj_c_p > 0) {
-        inits$beta_c_p <- rnorm(dt$preds,  0.01);
+        inits$beta_c_p <- rnorm(dt$preds,  0, 0.01);
       }
       if (dt$adj_c_s > 0) {
-        inits$beta_c_s <- rnorm(dt$preds,  0.01);
+        inits$beta_c_s <- rnorm(dt$preds,  0, 0.01);
       }
       if (dt$adj_inc_mean > 0) {
-        inits$beta_inc_mean <- rnorm(dt$preds, 0.01);
+        inits$beta_inc_mean <- rnorm(dt$preds, 0, 0.01);
       }
       if (dt$adj_inc_sd > 0) {
-        inits$beta_inc_sd <- rnorm(dt$preds, 0.01);
+        inits$beta_inc_sd <- rnorm(dt$preds, 0, 0.01);
       }
     }
 
     if (dt$any_onsets == 1) {
-      inits$inc_mean <- rnorm(1, dt$lmean[1], dt$lmean[2])
+      inits$inc_mean <- rnorm(1, dt$lmean[1], dt$lmean[2] * 0.1)
       inits$inc_sd <- truncnorm::rtruncnorm(
-        1, a = 0, mean = dt$lsd[1], sd = dt$lsd[2]
+        1, a = 0, mean = dt$lsd[1], sd = dt$lsd[2] * 0.1
       )
     }
 
