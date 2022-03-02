@@ -11,8 +11,7 @@ library(tidyr)
 library(here)
 
 # loading all functions in package directory
-files <- list.files("R", "*.R", full.names = TRUE)
-walk(files, source)
+devtools::load_all()
 
 # load in data processed in scripts/process-data.R
 dt_clean <- fread(here("data/processed-data.csv"))
@@ -67,7 +66,7 @@ summarise_pop_pp(fit)
 summarise_coeff_pp(fit, params = adj_params, exponentiate = TRUE)
 
 # Extract and plot posterior predictions
-pp_plot <- plot_pp_from_fit(fit, obs = dt_2_tests, samples = 50, alpha = 0.05)
+pp_plot <- plot_pp_from_fit(fit, obs = dt_2_tests, samples = 50, alpha = 0.025)
 
 ggsave("outputs/figures/pp.png", pp_plot, height = 16, width = 16)
 
