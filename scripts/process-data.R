@@ -48,4 +48,4 @@ dt_clean[is.na(symptoms)]
 
 summary(dt_clean)
 
-fwrite(dt_clean, here("data", "processed-data.csv"))
+saveRDS(dt_clean, here("data", "processed-data.rds"))

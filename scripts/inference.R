@@ -14,7 +14,7 @@ library(here)
 devtools::load_all()
 
 # load in data processed in scripts/process-data.R
-dt_clean <- fread(here("data/processed-data.csv"))
+dt_clean <- readRDS(here("data/processed-data.rds"))
 
 # Do additional processing to filter for the desired number of swabs
 # per positive episode
