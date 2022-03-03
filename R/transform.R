@@ -24,3 +24,7 @@ transform_to_natural <- function(draws) {
   ]
   return(draws[])
 }
+
+transform_ip_to_natural <- function(draws) {
+  return(draws)
+}

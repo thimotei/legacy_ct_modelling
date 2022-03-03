@@ -10,13 +10,24 @@ extract_draws <- function(fit, params = NULL, format = "df") {
   return(draws[])
 }
 
-extract_pop_params <- function(draws, params = c("c_0", "c_p_mean",
-                                                 "c_s_mean", "t_p_mean",
-                                                 "t_s_mean", "t_lod_mean")) {
+extract_params <- function(draws, params) {
   cols <- intersect(colnames(draws), params)
   cols <- c(".iteration", ".draw", ".chain", cols)
   draws <- draws[, ..cols]
   return(draws[])
+}
+extract_pop_params <- function(draws, params = c("c_0", "c_p_mean",
+                                                 "c_s_mean", "t_p_mean",
+                                                 "t_s_mean", "t_lod_mean")) {
+  extract_params(draws, params = params)
+}
+
+extract_ip_params <- function(draws, params = c("inc_mean[1]", "inc_sd[1]")) {
+  draws <- extract_params(draws, params = params)
+  colnames(draws) <- purrr::map_chr(
+      colnames(draws), ~ stringr::str_split(., "\\[[0-9]\\]")[[1]][1]
+    )
+  return(draws)
 }
 
 extract_coeffs <- function(draws, exponentiate = FALSE, design) {
