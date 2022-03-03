@@ -72,6 +72,32 @@ simulate_cts <- function(params, time_range = 0:30, obs_noise = TRUE) {
 
   return(ct_trajs[])
 }
+
+simulate_ips <- function(params, time_range = 0:30) {
+  
+  if (is.null(params[["id"]])) {
+    params[, id := 1:.N]
+  }
+
+  times <- data.table::data.table(
+    t = time_range
+  )[,
+    sample := 1:.N
+  ]
+
+  ip <- merge(
+    params[, tid := 1], times[, tid := 1], by = "tid",
+    allow.cartesian = TRUE
+  )
+
+  ip <- ip[,
+    value := dlnorm(time_range, inc_mean, inc_sd),
+    by = c("id")
+  ]
+
+  return(ip[])
+}
+
 obs <- list(
   P = 20,
   any_onsets = 1,

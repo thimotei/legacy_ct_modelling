@@ -81,6 +81,15 @@ ggsave(
   pop_pp, width = 8, height = 8,
 )
 
+ip_pp <- plot_ip_summary(
+  draws, time_range = seq(0, 60, by = 0.01), samples = 100, by = c()
+)
+
+ggsave(
+  "outputs/figures/population_ip_pp.png",
+  ip_pp, width = 8, height = 8,
+)
+
 # Extract effect sizes and make a summary plot
 eff_plot <- draws %>%
   summarise_effects(design = ct_model$design) %>%
