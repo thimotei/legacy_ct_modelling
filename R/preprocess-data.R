@@ -1,6 +1,8 @@
 process_data <- function(data_raw) {
 
-  setnames(data_raw, "ORF1ab", "ct")
+  setnames(
+    data_raw, c("ORF1ab", "total infections"), c("ct", "total_infections")
+  )
   
   out <- data_raw[, swab_date := dmy(swab_date)][
     barcode %like% "49U", swab_date := swab_date - 1][
@@ -71,19 +73,39 @@ process_data <- function(data_raw) {
   out[,
    onset_time := as.numeric(symptom_onset_date - first_pos_test_date)
   ]
+
+  # Deal with people missing symptom status but having an onset date
+  out[!symptoms %in% c("0", "1", "unknown"),
+      symptoms := ifelse(!is.na(symptom_onset_date), "1", "unknown")
+  ]
+  # Make variables factors
+  facs <- c("no_vaccines", "VOC", "swab_type", "dose_1", "dose_2", "dose_3",
+            "result", "VOC_basis", "centre", "total_infections")
+  out[, (facs) := lapply(.SD, factor), .SDcols = facs]
+  out[,
+    symptoms := factor(
+      symptoms, levels = c("0", "1", "unknown"),
+      labels = c("asymptomatic", "symptomatic", "unknown")
+    )
+  ]
   return(out[])
 }
 
-# function to condition full dataset on VOC type and number of positive swabs
-# by individual + add unique infection level ID
-subset_data <- function(dt_clean_in, voc, no_pos_swabs) {
-  dt_out <- dt_clean[VOC %in% voc][,
+# Function to postprocess cleaned input data into modelling dataset
+subset_data <- function(dt_clean_in, no_pos_swabs) {
+  dt_out <- dt_clean[,
     t_first_test := as.numeric(swab_date - min(swab_date), units = "days"),
     by = c("id", "infection_id")][
     no_pos_results >= no_pos_swabs][,
     data_id := id][,
     id := .GRP, by = c("data_id", "infection_id")][,
     swab_type_num := as.numeric(!swab_type %in% "Dry")]
+
+  # Drop swab type private
+  dt_out <- dt_out[!swab_type %in% "Private"]
+
+  # Assume potential BA.2 are BA.2
+  dt_out <- dt_out[VOC %in% "?BA2", VOC := "BA2"]
   return(dt_out)
 }
 
