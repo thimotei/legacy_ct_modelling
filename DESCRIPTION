@@ -27,7 +27,8 @@ Imports:
     stringr,
     truncnorm,
     tidyr,
-    magrittr
+    magrittr,
+    forcats
 Additional_repositories: 
     https://mc-stan.org/r-packages/
 Encoding: UTF-8

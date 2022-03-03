@@ -181,6 +181,35 @@ plot_ct_summary <- function(draws, time_range = seq(0, 60, by = 0.01),
   return(plot)
 }
 
+plot_ip_summary <- function(draws, time_range = seq(0, 60, by = 0.01),
+                            samples = 100, by = c(), traj_alpha = 0.025, ...) {
+  pop_draws <- extract_ip_params(draws)
+
+  pop_ip_draws <- pop_draws[.draw <= samples] %>%
+    simulate_ips(time_range = time_range, obs_noise = FALSE)
+
+  sum_cols <- c("value", "t", by)
+  pop_ip_sum <- summarise_draws(
+    pop_ip_draws[, value := ct_value][, ..sum_cols],
+    by = setdiff(sum_cols, "value")
+  )
+
+  ct_pp_plot <- plot_ct_pp(pop_ct_draws, pop_ct_sum, alpha = traj_alpha, ...)
+
+  param_pp_plot <- pop_draws %>%
+    transform_to_natural() %>%
+    melt_draws() %>%
+    update_ct_variables() %>%
+    plot_density(...) +
+    ggplot2::facet_wrap(~variable, nrow = 2, scales = "free")
+
+  plot <- param_pp_plot / ct_pp_plot +
+    patchwork::plot_layout(guides = "collect") &
+    theme(legend.position = "bottom")
+
+  return(plot)
+}
+
 plot_effects <- function(effects, ...) {
  
   eff_plot <- ggplot(effects) +
