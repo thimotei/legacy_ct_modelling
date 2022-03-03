@@ -91,5 +91,5 @@ eff_plot <- draws %>%
 
 ggsave(
   "outputs/figures/effects_summary.png",
-  eff_plot, width = 8, height = 8,
+  eff_plot, width = 16, height = 16,
 )
