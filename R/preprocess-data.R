@@ -88,6 +88,15 @@ process_data <- function(data_raw) {
       labels = c("asymptomatic", "symptomatic", "unknown")
     )
   ]
+
+  # Set baselines for factors
+  out <- out[,
+    VOC := forcats::fct_relevel(VOC, "Delta")
+  ][,
+    symptoms := forcats::fct_relevel(symptoms, "symptomatic")
+  ][,
+    no_vaccines := forcats::fct_relevel(no_vaccines, "3")
+  ]
   return(out[])
 }
 

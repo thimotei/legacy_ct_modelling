@@ -17,9 +17,8 @@ devtools::load_all()
 dt_clean <- fread(here("data/processed-data.csv"))
 
 # Do additional processing to filter for the desired number of swabs
-dt_2_tests <- subset_data(
-  dt_clean, voc = c("Delta", "Omicron"), no_pos_swabs = 2
-)
+# per positive episode
+dt_2_tests <- subset_data(dt_clean, no_pos_swabs = 2)
 
 # Plot the raw data
 p1_raw <- plot_obs_ct(dt_2_tests)
