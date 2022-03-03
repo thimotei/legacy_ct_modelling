@@ -30,7 +30,7 @@ adj_params <- c("t_p", "t_s", "t_lod", "c_p", "c_s", "inc_mean", "inc_sd")
 
 # Specify the CT model design matrix
 ct_model <- subject_design(
-  ~ 1 + VOC,
+  ~ 1 + VOC + symptoms + no_vaccines,
   data = dt_2_tests,
   params = adj_params,
   preds_sd = 0.1
@@ -86,7 +86,8 @@ ggsave(
 eff_plot <- draws %>%
   summarise_effects(design = ct_model$design) %>%
   update_ct_variables(reverse = TRUE) %>%
-  plot_effects()
+  plot_effects() +
+  facet_wrap(vars(preds))
 
 ggsave(
   "outputs/figures/effects_summary.png",
