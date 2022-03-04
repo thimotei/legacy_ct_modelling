@@ -26,5 +26,9 @@ transform_to_natural <- function(draws) {
 }
 
 transform_ip_to_natural <- function(draws) {
-  return(draws)
+  draws <- draws[, `:=`(
+    nat_inc_mean = exp(inc_mean + (inc_sd^2) / 2),
+    nat_inc_sd = sqrt((exp(inc_sd^2) - 1) * exp(2 * inc_mean + inc_sd^2))
+  )]
+  return(draws[])
 }

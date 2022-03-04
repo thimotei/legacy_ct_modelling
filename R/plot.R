@@ -69,7 +69,6 @@ plot_obs_ct <- function(ct_dt, ct_traj, pp, traj_alpha = 0.02, onsets = TRUE,
    }
 
    plot <- plot +
-    facet_wrap(vars(factor(id))) +
     custom_plot_theme() +
     theme(legend.position = "bottom") +
     labs(
@@ -152,14 +151,14 @@ plot_pp_from_fit <- function(fit, obs, samples = 10, alpha = 0.05) {
 
 plot_density <- function(draws, ...) {
   plot <- ggplot(draws) +
-    geom_density(aes(x = value, ...), alpha = 0.2) +
+    geom_density(aes(x = value, y = ..scaled.., ...), alpha = 0.2) +
     custom_plot_theme() +
     labs(x = "", y = "Probability density")
   return(plot)
 }
 
 plot_ct_summary <- function(draws, time_range = seq(0, 60, by = 0.01),
-                            samples = 100, by = c(), traj_alpha = 0.025,
+                            samples = 100, by = c(), traj_alpha = 0.05,
                             simulated_samples = 1000, ...) {
   pop_draws <- extract_pop_params(draws)
 
@@ -180,7 +179,7 @@ plot_ct_summary <- function(draws, time_range = seq(0, 60, by = 0.01),
   param_pp_plot <- pop_draws %>%
     transform_to_natural() %>%
     melt_draws() %>%
-    update_ct_variables() %>%
+    update_variable_labels() %>%
     plot_density(...) +
     ggplot2::facet_wrap(~variable, nrow = 2, scales = "free")
 
@@ -192,7 +191,7 @@ plot_ct_summary <- function(draws, time_range = seq(0, 60, by = 0.01),
 }
 
 plot_ip_summary <- function(draws, time_range = seq(0, 60, by = 0.01),
-                            samples = 100, by = c(), traj_alpha = 0.025, simulated_samples = 1000, ...) {
+                            samples = 100, by = c(), traj_alpha = 0.05, simulated_samples = 1000, ...) {
   ip_draws <- extract_ip_params(draws)
 
   pop_ip_draws <- ip_draws[.draw <= simulated_samples] %>%
@@ -211,7 +210,7 @@ plot_ip_summary <- function(draws, time_range = seq(0, 60, by = 0.01),
   param_pp_plot <- ip_draws %>%
     transform_ip_to_natural() %>%
     melt_draws() %>%
-    update_ct_variables() %>%
+    update_variable_labels() %>%
     plot_density(...) +
     ggplot2::facet_wrap(~variable, nrow = 2, scales = "free")
 
@@ -220,6 +219,25 @@ plot_ip_summary <- function(draws, time_range = seq(0, 60, by = 0.01),
     theme(legend.position = "bottom")
 
   return(plot)
+}
+
+plot_summary <- function(draws, ct_time_range = seq(0, 60, by = 0.01),     
+                         ip_time_range = seq(0, 20, by = 0.01), samples = 100,
+                         by = c(), traj_alpha = 0.05, simulated_samples = 1000, ...) {
+  ct_pp <- plot_ct_summary(
+    draws, time_range = ct_time_range, samples = samples, by = by, simulated_samples = simulated_samples, traj_alpha = traj_alpha
+  )
+
+  ip_pp <- plot_ip_summary(
+    draws, time_range = ip_time_range, samples = samples, by = by, simulated_samples = simulated_samples, traj_alpha = traj_alpha
+  )
+
+  parameter_pp <- ((ct_pp) | (ip_pp)) +
+    patchwork::plot_layout(
+      guides = "collect", widths = c(3, 2),
+    ) &
+    theme(legend.position = "bottom")
+  return(parameter_pp)
 }
 
 plot_effects <- function(effects, ...) {

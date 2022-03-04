@@ -1,9 +1,9 @@
-update_ct_variables <- function(draws, reverse = FALSE) {
+update_variable_labels <- function(draws, reverse = FALSE) {
 
 draws <- data.table::copy(draws)
 params <- c(
   "c_0", "c_p", "c_s","t_p", "t_s", "t_lod", "inc_mean", "inc_sd", 
-  "emp_inc_mean", "emp_inc_sd"
+  "nat_inc_mean", "nat_inc_sd"
 )
 
 clean_params <- c(
@@ -15,7 +15,7 @@ clean_params <- c(
   "Time of limit of detection",
   "Incubation period (log mean)",
   "Incubation period (log sd)",
-    "Incubation period (mean)",
+  "Incubation period (mean)",
   "Incubation period (sd)"
 )
 
