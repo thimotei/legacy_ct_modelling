@@ -62,9 +62,23 @@ ggsave("outputs/figures/sim_pp.png", sim_pp_plot, height = 10, width = 10)
 # Extract and plot population level posterior predictions for the CT model
 sim_draws <- extract_draws(fit_sim)
 
-sim_pop_pp <- plot_ct_summary(
+sim_ct_pp <- plot_ct_summary(
   sim_draws, time_range = seq(0, 60, by = 0.01), samples = 100, by = c()
 )
+
+sim_ip_pp <- plot_ip_summary(
+  sim_draws, time_range = seq(0, 20, by = 0.01), samples = 100, by = c()
+)
+
+sim_parameter_pp <- ((sim_ct_pp) | (sim_ip_pp)) +
+  patchwork::plot_layout(guides = "collect", widths = c(3, 2)) &
+  theme(legend.position = "bottom")
+
+ggsave(
+  "outputs/figures/sim_parameter_pp.png",
+  sim_parameter_pp, width = 12, height = 8,
+)
+
 
 ggsave(
   "outputs/figures/sim_population_ct_pp.png",

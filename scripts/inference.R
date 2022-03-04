@@ -72,22 +72,23 @@ ggsave("outputs/figures/pp.png", pp_plot, height = 16, width = 16)
 # Extract and plot population level posterior predictions for the CT model
 draws <- extract_draws(fit)
 
-pop_pp <- plot_ct_summary(
+ct_pp <- plot_ct_summary(
   draws, time_range = seq(0, 60, by = 0.01), samples = 100, by = c()
-)
-
-ggsave(
-  "outputs/figures/population_ct_pp.png",
-  pop_pp, width = 8, height = 8,
 )
 
 ip_pp <- plot_ip_summary(
-  draws, time_range = seq(0, 60, by = 0.01), samples = 100, by = c()
+  draws, time_range = seq(0, 20, by = 0.01), samples = 100, by = c()
 )
 
+parameter_pp <- ((ct_pp) | (ip_pp)) +
+  patchwork::plot_layout(
+    guides = "collect", widths = c(3, 2),
+  ) &
+  theme(legend.position = "bottom")
+
 ggsave(
-  "outputs/figures/population_ip_pp.png",
-  ip_pp, width = 8, height = 8,
+  "outputs/figures/parameter_pp.png",
+  parameter_pp, width = 12, height = 8,
 )
 
 # Extract effect sizes and make a summary plot
