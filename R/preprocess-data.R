@@ -114,7 +114,9 @@ subset_data <- function(dt_clean_in, no_pos_swabs) {
   dt_out <- dt_out[!swab_type %in% "Private"]
 
   # Assume potential BA.2 are BA.2
-  dt_out <- dt_out[VOC %in% "?BA2", VOC := "BA2"][, VOC := factor(VOC)]
+  dt_out <- dt_out[VOC %in% "?BA2", VOC := "BA2"][,
+   VOC := forcats::fct_drop(VOC)
+  ]
   return(dt_out)
 }
 
