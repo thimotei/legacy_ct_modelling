@@ -10,22 +10,29 @@ extract_draws <- function(fit, params = NULL, format = "df") {
   return(draws[])
 }
 
-extract_params <- function(draws, params) {
+extract_params <- function(draws, params, by) {
+  if (!missing(by)) {
+    params <- c(params, by)
+  }
   cols <- intersect(colnames(draws), params)
   cols <- c(".iteration", ".draw", ".chain", cols)
   draws <- draws[, ..cols]
   return(draws[])
 }
-extract_pop_params <- function(draws, params = c("c_0", "c_p_mean",
-                                                 "c_s_mean", "t_p_mean",
-                                                 "t_s_mean", "t_lod_mean")) {
-  draws <- extract_params(draws, params = params)
+extract_pop_params <- function(draws, params = c("c_0", "c_p_mean", "c_p",
+                                                 "c_s_mean", "c_s", 
+                                                 "t_p_mean", "t_p",
+                                                 "t_s_mean", "t_s",
+                                                 "t_lod_mean", "t_lod"), by) {
+  draws <- extract_params(draws, params = params, by)
   colnames(draws) <- stringr::str_remove(colnames(draws), "_mean")
   return(draws[])
 }
 
-extract_ip_params <- function(draws, params = c("inc_mean[1]", "inc_sd[1]")) {
-  draws <- extract_params(draws, params = params)
+extract_ip_params <- function(draws, params = c("inc_mean[1]", "inc_mean",
+                                                "inc_sd[1]", "inc_sd"),
+                              by) {
+  draws <- extract_params(draws, params = params, by)
   colnames(draws) <- purrr::map_chr(
       colnames(draws), ~ stringr::str_split(., "\\[[0-9]\\]")[[1]][1]
     )
