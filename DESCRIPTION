@@ -4,8 +4,13 @@ Version: 0.1.0
 Authors@R: 
     c(person(given = "Tim",
              family = "Russell",
+             role = c("aut"),
+             email = "timothy.russell@lshtm.ac.uk"),
+      person(given = "Sam",
+             family = "Abbott",
              role = c("aut", "cre"),
-             email = "timothy.russell@lshtm.ac.uk"))
+             comment = c(ORCID = "0000-0001-8057-8037"),
+             email = "sam.abbott@lshtm.ac.uk"))
 Description: Viral load curve estimation
 License: MIT + file LICENSE
 Imports:
@@ -22,10 +27,11 @@ Imports:
     stringr,
     truncnorm,
     tidyr,
-    magrittr
+    magrittr,
+    forcats
 Additional_repositories: 
     https://mc-stan.org/r-packages/
 Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.1.1
+RoxygenNote: 7.1.2
