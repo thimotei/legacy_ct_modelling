@@ -90,7 +90,7 @@ adj_draws <- rbind(
 # for the baseline case and each adjusted case individually
 parameter_pp <- plot_summary(
   adj_draws, fill = predictor, color = predictor, by = "predictor",
-  simulated_samples = 250, samples = 10
+  simulated_samples = 1000, samples = 10
 )
 
 ggsave(

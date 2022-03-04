@@ -157,7 +157,7 @@ plot_density <- function(draws, ...) {
   return(plot)
 }
 
-plot_ct_summary <- function(draws, time_range = seq(0, 60, by = 0.01),
+plot_ct_summary <- function(draws, time_range = seq(0, 60, by = 0.25),
                             samples = 100, by = c(), traj_alpha = 0.05,
                             simulated_samples = 1000, ...) {
   pop_draws <- extract_pop_params(draws, by = by)
@@ -190,7 +190,7 @@ plot_ct_summary <- function(draws, time_range = seq(0, 60, by = 0.01),
   return(plot)
 }
 
-plot_ip_summary <- function(draws, time_range = seq(0, 60, by = 0.01),
+plot_ip_summary <- function(draws, time_range = seq(0, 20, by = 0.25),
                             samples = 100, by = c(), traj_alpha = 0.05, simulated_samples = 1000, ...) {
   ip_draws <- extract_ip_params(draws, by = by)
 
@@ -221,15 +221,17 @@ plot_ip_summary <- function(draws, time_range = seq(0, 60, by = 0.01),
   return(plot)
 }
 
-plot_summary <- function(draws, ct_time_range = seq(0, 60, by = 0.01),     
-                         ip_time_range = seq(0, 20, by = 0.01), samples = 100,
+plot_summary <- function(draws, ct_time_range = seq(0, 60, by = 0.25),     
+                         ip_time_range = seq(0, 20, by = 0.25), samples = 100,
                          by = c(), traj_alpha = 0.05, simulated_samples = 1000, ...) {
   ct_pp <- plot_ct_summary(
-    draws, time_range = ct_time_range, samples = samples, by = by, simulated_samples = simulated_samples, traj_alpha = traj_alpha
+    draws, time_range = ct_time_range, samples = samples, by = by, simulated_samples = simulated_samples, traj_alpha = traj_alpha,
+    ...
   )
 
   ip_pp <- plot_ip_summary(
-    draws, time_range = ip_time_range, samples = samples, by = by, simulated_samples = simulated_samples, traj_alpha = traj_alpha
+    draws, time_range = ip_time_range, samples = samples, by = by, simulated_samples = simulated_samples, traj_alpha = traj_alpha,
+    ...
   )
 
   parameter_pp <- ((ct_pp) | (ip_pp)) +
