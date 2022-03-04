@@ -21,7 +21,8 @@ dt_clean <- readRDS(here("data/processed-data.rds"))
 dt_2_tests <- subset_data(dt_clean, no_pos_swabs = 2)
 
 # Plot the raw data
-p1_raw <- plot_obs_ct(dt_2_tests)
+p1_raw <- plot_obs_ct(dt_2_tests) +
+  facet_wrap(vars(factor(id)))
 
 # Specify which params adjusting for (see params_avail_to_adjust() for options)
 # Here all available options (can also specify this using "all")
@@ -65,26 +66,17 @@ summarise_pop_pp(fit)
 summarise_coeff_pp(fit, params = adj_params, exponentiate = TRUE)
 
 # Extract and plot posterior predictions
-pp_plot <- plot_pp_from_fit(fit, obs = dt_2_tests, samples = 50, alpha = 0.025)
+pp_plot <- plot_pp_from_fit(
+  fit, obs = dt_2_tests, samples = 50, alpha = 0.025
+) +
+  facet_wrap(vars(factor(id), symptoms, VOC, no_vaccines))
 
 ggsave("outputs/figures/pp.png", pp_plot, height = 16, width = 16)
 
 # Extract and plot population level posterior predictions for the CT model
 draws <- extract_draws(fit)
 
-ct_pp <- plot_ct_summary(
-  draws, time_range = seq(0, 60, by = 0.01), samples = 100, by = c()
-)
-
-ip_pp <- plot_ip_summary(
-  draws, time_range = seq(0, 20, by = 0.01), samples = 100, by = c()
-)
-
-parameter_pp <- ((ct_pp) | (ip_pp)) +
-  patchwork::plot_layout(
-    guides = "collect", widths = c(3, 2),
-  ) &
-  theme(legend.position = "bottom")
+parameter_pp <- plot_summary(draws)
 
 ggsave(
   "outputs/figures/parameter_pp.png",
@@ -94,7 +86,7 @@ ggsave(
 # Extract effect sizes and make a summary plot
 eff_plot <- draws %>%
   summarise_effects(design = ct_model$design) %>%
-  update_ct_variables(reverse = TRUE) %>%
+  update_variable_labels(reverse = TRUE) %>%
   plot_effects() +
   facet_wrap(vars(preds))
 

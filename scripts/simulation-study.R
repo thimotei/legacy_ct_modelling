@@ -34,7 +34,8 @@ ct_sample <- simulate_obs(
 )
 
 # plot of subset of data
-plot_obs_ct(ct_sample)
+plot_obs_ct(ct_sample) +
+  facet_wrap(vars(factor(id)))
 
 # compiling model
 mod <- cmdstan_model("stan/ct_trajectory_model.stan", include_paths = "stan")
@@ -55,24 +56,15 @@ fit_sim <- mod$sample(
 # Extract and plot posterior predictions
 sim_pp_plot <- plot_pp_from_fit(
   fit_sim, obs = ct_sample, samples = 50, alpha = 0.025
-)
+) +
+  facet_wrap(vars(factor(id)))
 
 ggsave("outputs/figures/sim_pp.png", sim_pp_plot, height = 10, width = 10)
 
 # Extract and plot population level posterior predictions for the CT model
 sim_draws <- extract_draws(fit_sim)
 
-sim_ct_pp <- plot_ct_summary(
-  sim_draws, time_range = seq(0, 60, by = 0.01), samples = 100, by = c()
-)
-
-sim_ip_pp <- plot_ip_summary(
-  sim_draws, time_range = seq(0, 20, by = 0.01), samples = 100, by = c()
-)
-
-sim_parameter_pp <- ((sim_ct_pp) | (sim_ip_pp)) +
-  patchwork::plot_layout(guides = "collect", widths = c(3, 2)) &
-  theme(legend.position = "bottom")
+sim_parameter_pp <- plot_summary(sim_draws)
 
 ggsave(
   "outputs/figures/sim_parameter_pp.png",
