@@ -153,7 +153,7 @@ plot_density <- function(draws, ...) {
   plot <- ggplot(draws) +
     geom_density(aes(x = value, y = ..scaled.., ...), alpha = 0.2) +
     custom_plot_theme() +
-    labs(x = "", y = "Probability density")
+    labs(x = "", y = "Density")
   return(plot)
 }
 

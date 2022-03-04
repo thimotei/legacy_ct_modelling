@@ -88,21 +88,12 @@ process_data <- function(data_raw) {
       labels = c("asymptomatic", "symptomatic", "unknown")
     )
   ]
-
-  # Set baselines for factors
-  out <- out[,
-    VOC := forcats::fct_relevel(VOC, "Omicron")
-  ][,
-    symptoms := forcats::fct_relevel(symptoms, "symptomatic")
-  ][,
-    no_vaccines := forcats::fct_relevel(no_vaccines, "3")
-  ]
   return(out[])
 }
 
 # Function to postprocess cleaned input data into modelling dataset
 subset_data <- function(dt_clean_in, no_pos_swabs) {
-  dt_out <- dt_clean[,
+  out <- dt_clean[,
     t_first_test := as.numeric(swab_date - min(swab_date), units = "days"),
     by = c("id", "infection_id")][
     no_pos_results >= no_pos_swabs][,
@@ -111,13 +102,21 @@ subset_data <- function(dt_clean_in, no_pos_swabs) {
     swab_type_num := as.numeric(!swab_type %in% "Dry")]
 
   # Drop swab type private
-  dt_out <- dt_out[!swab_type %in% "Private"]
+  out <- out[!swab_type %in% "Private"]
 
   # Assume potential BA.2 are BA.2
-  dt_out <- dt_out[VOC %in% "?BA2", VOC := "BA2"][,
+  out <- dt_out[VOC %in% "?BA2", VOC := "BA2"][,
    VOC := forcats::fct_drop(VOC)
   ]
-  return(dt_out)
+  # Set baselines for factors
+  out <- out[,
+    VOC := forcats::fct_relevel(VOC, "Omicron")
+  ][,
+    symptoms := forcats::fct_relevel(symptoms, "symptomatic")
+  ][,
+    no_vaccines := forcats::fct_relevel(no_vaccines, "3")
+  ]
+  return(out)
 }
 
 index_by_first_positive <- function(dt) {

@@ -33,7 +33,7 @@ summarise_effects <- function(draws, design) {
     
     by <- "variable"
     if (!missing(design)) {
-      by = c(by, "preds")
+      by = c(by, "predictor")
     }
     eff_summary <- summarise_draws(eff_draws, by = by)
     return(eff_summary)
