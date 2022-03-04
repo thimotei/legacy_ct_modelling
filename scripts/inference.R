@@ -77,13 +77,21 @@ ggsave("outputs/figures/pp.png", pp_plot, height = 16, width = 16)
 draws <- extract_draws(fit)
 
 # Add adjusted effects
+adj_draws <- adjust_params(draws, design = ct_model$design)
 
-
+adj_draws <- rbind(
+  extract_param_draws(draws)[,
+   predictor := "Omicron & symptomatic & 3 vaccines"
+  ],
+  adj_draws
+)[, predictor := factor(predictor)]
 
 # Extract and plot population level posterior predictions for the CT model
-
-
-parameter_pp <- plot_summary(draws)
+# for the baseline case and each adjusted case individually
+parameter_pp <- plot_summary(
+  adj_draws, fill = predictor, color = predictor, by = "predictor",
+  simulated_samples = 250, samples = 10
+)
 
 ggsave(
   "outputs/figures/parameter_pp.png",

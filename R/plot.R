@@ -122,7 +122,7 @@ plot_ct_pp <- function(pp, sum_pp, onsets = TRUE, clod = 40, alpha = 0.05,
 plot_ip_pp <- function(pp, sum_pp, onsets = TRUE, alpha = 0.05) {
   pp <- data.table::copy(pp)[, ct_value := value]
   plot <- plot_ct_pp(pp, sum_pp, onsets = TRUE, alpha = alpha, clod = NULL) +
-    labs(y = "Probability")
+    labs(y = "Probability of symptom onset")
     return(plot)
 }
 
@@ -160,7 +160,7 @@ plot_density <- function(draws, ...) {
 plot_ct_summary <- function(draws, time_range = seq(0, 60, by = 0.01),
                             samples = 100, by = c(), traj_alpha = 0.05,
                             simulated_samples = 1000, ...) {
-  pop_draws <- extract_pop_params(draws)
+  pop_draws <- extract_pop_params(draws, by = by)
 
   pop_ct_draws <- pop_draws[.draw <= simulated_samples] %>%
     transform_to_model() %>%
@@ -178,7 +178,7 @@ plot_ct_summary <- function(draws, time_range = seq(0, 60, by = 0.01),
 
   param_pp_plot <- pop_draws %>%
     transform_to_natural() %>%
-    melt_draws() %>%
+    melt_draws(ids = c(".chain", ".iteration", ".draw", by)) %>%
     update_variable_labels() %>%
     plot_density(...) +
     ggplot2::facet_wrap(~variable, nrow = 2, scales = "free_x")
@@ -192,7 +192,7 @@ plot_ct_summary <- function(draws, time_range = seq(0, 60, by = 0.01),
 
 plot_ip_summary <- function(draws, time_range = seq(0, 60, by = 0.01),
                             samples = 100, by = c(), traj_alpha = 0.05, simulated_samples = 1000, ...) {
-  ip_draws <- extract_ip_params(draws)
+  ip_draws <- extract_ip_params(draws, by = by)
 
   pop_ip_draws <- ip_draws[.draw <= simulated_samples] %>%
     simulate_ips(time_range = time_range)
@@ -209,7 +209,7 @@ plot_ip_summary <- function(draws, time_range = seq(0, 60, by = 0.01),
 
   param_pp_plot <- ip_draws %>%
     transform_ip_to_natural() %>%
-    melt_draws() %>%
+    melt_draws(ids = c(".chain", ".iteration", ".draw", by)) %>%
     update_variable_labels() %>%
     plot_density(...) +
     ggplot2::facet_wrap(~variable, nrow = 2, scales = "free_x")
