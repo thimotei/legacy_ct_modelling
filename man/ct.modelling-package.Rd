@@ -9,7 +9,12 @@
 Viral load curve estimation
 }
 \author{
-\strong{Maintainer}: Tim Russell \email{timothy.russell@lshtm.ac.uk}
+\strong{Maintainer}: Sam Abbott \email{sam.abbott@lshtm.ac.uk} (\href{https://orcid.org/0000-0001-8057-8037}{ORCID})
+
+Authors:
+\itemize{
+  \item Tim Russell \email{timothy.russell@lshtm.ac.uk}
+}
 
 }
 \keyword{internal}

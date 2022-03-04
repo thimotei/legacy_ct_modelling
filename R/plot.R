@@ -79,7 +79,7 @@ plot_obs_ct <- function(ct_dt, ct_traj, pp, traj_alpha = 0.02, onsets = TRUE,
   return(plot)
 }
 
-plot_ct_pp <- function(pp, sum_pp, onsets = TRUE, clod = 40, alpha = 0.025,
+plot_ct_pp <- function(pp, sum_pp, onsets = TRUE, clod = 40, alpha = 0.05,
                        ...) {
 
   plot <- ggplot(pp) +
@@ -100,11 +100,11 @@ plot_ct_pp <- function(pp, sum_pp, onsets = TRUE, clod = 40, alpha = 0.025,
      plot <- plot +
       geom_ribbon(
         data = sum_pp,
-        aes(ymin = lo90, ymax = hi90, y = NULL, group = NULL), alpha = 0.2
+        aes(ymin = lo90, ymax = hi90, y = NULL, group = NULL), alpha = 0.15
       ) +
       geom_ribbon(
         data = sum_pp,
-        aes(ymin = lo60, ymax = hi60, y = NULL, group = NULL), alpha = 0.2
+        aes(ymin = lo60, ymax = hi60, y = NULL, group = NULL), alpha = 0.15
       )
    }
 
@@ -120,9 +120,9 @@ plot_ct_pp <- function(pp, sum_pp, onsets = TRUE, clod = 40, alpha = 0.025,
   return(plot)
 }
 
-plot_ip_pp <- function(pp, sum_pp, onsets = TRUE, alpha = 0.025) {
+plot_ip_pp <- function(pp, sum_pp, onsets = TRUE, alpha = 0.05) {
   pp <- data.table::copy(pp)[, ct_value := value]
-  plot <- plot_ct_pp(pp, sum_pp, onsets = TRUE, alpha = 0.025, clod = NULL) +
+  plot <- plot_ct_pp(pp, sum_pp, onsets = TRUE, alpha = alpha, clod = NULL) +
     labs(y = "Probability")
     return(plot)
 }
@@ -159,10 +159,11 @@ plot_density <- function(draws, ...) {
 }
 
 plot_ct_summary <- function(draws, time_range = seq(0, 60, by = 0.01),
-                            samples = 100, by = c(), traj_alpha = 0.025, ...) {
+                            samples = 100, by = c(), traj_alpha = 0.025,
+                            simulated_samples = 1000, ...) {
   pop_draws <- extract_pop_params(draws)
 
-  pop_ct_draws <- pop_draws[.draw <= samples] %>%
+  pop_ct_draws <- pop_draws[.draw <= simulated_samples] %>%
     transform_to_model() %>%
     simulate_cts(time_range = time_range, obs_noise = FALSE)
 
@@ -172,7 +173,9 @@ plot_ct_summary <- function(draws, time_range = seq(0, 60, by = 0.01),
     by = setdiff(sum_cols, "value")
   )
 
-  ct_pp_plot <- plot_ct_pp(pop_ct_draws, pop_ct_sum, alpha = traj_alpha, ...)
+  ct_pp_plot <- plot_ct_pp(
+    pop_ct_draws[.draw <= samples], pop_ct_sum, alpha = traj_alpha, ...
+  )
 
   param_pp_plot <- pop_draws %>%
     transform_to_natural() %>%
@@ -189,10 +192,10 @@ plot_ct_summary <- function(draws, time_range = seq(0, 60, by = 0.01),
 }
 
 plot_ip_summary <- function(draws, time_range = seq(0, 60, by = 0.01),
-                            samples = 100, by = c(), traj_alpha = 0.025, ...) {
+                            samples = 100, by = c(), traj_alpha = 0.025, simulated_samples = 1000, ...) {
   ip_draws <- extract_ip_params(draws)
 
-  pop_ip_draws <- ip_draws[.draw <= samples] %>%
+  pop_ip_draws <- ip_draws[.draw <= simulated_samples] %>%
     simulate_ips(time_range = time_range)
 
   sum_cols <- c("value", "t", by)
@@ -201,7 +204,9 @@ plot_ip_summary <- function(draws, time_range = seq(0, 60, by = 0.01),
     by = setdiff(sum_cols, "value")
   )
 
-  ip_pp_plot <- plot_ip_pp(pop_ip_draws, pop_ip_sum, alpha = traj_alpha, ...)
+  ip_pp_plot <- plot_ip_pp(
+    pop_ip_draws[.draw <= samples], pop_ip_sum, alpha = traj_alpha, ...
+  )
 
   param_pp_plot <- ip_draws %>%
     transform_ip_to_natural() %>%
