@@ -42,11 +42,11 @@ summarise_effects <- function(draws, design) {
 summarise_draws <- function(draws, by = c("id", "time")) {
 
   out <- draws[,
-      .(median = quantile(value, c(0.5)),
-        lo90 = quantile(value, c(0.05)),
-        lo60 = quantile(value, c(0.20)),
-        hi60 = quantile(value, c(0.80)),
-        hi90 = quantile(value, c(0.95))
+      .(median = quantile(value, c(0.5), na.rm = TRUE),
+        lo90 = quantile(value, c(0.05), na.rm = TRUE),
+        lo60 = quantile(value, c(0.20), na.rm = TRUE),
+        hi60 = quantile(value, c(0.80), na.rm = TRUE),
+        hi90 = quantile(value, c(0.95), na.rm = TRUE)
       ),
       by = by
     ]

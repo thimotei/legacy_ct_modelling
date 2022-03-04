@@ -76,28 +76,6 @@ ggsave("outputs/figures/pp.png", pp_plot, height = 16, width = 16)
 # Extract posterior predictions
 draws <- extract_draws(fit)
 
-# Add adjusted effects
-adj_draws <- adjust_params(draws, design = ct_model$design)
-
-adj_draws <- rbind(
-  extract_param_draws(draws)[,
-   predictor := "Omicron & symptomatic & 3 vaccines"
-  ],
-  adj_draws
-)[, predictor := factor(predictor)]
-
-# Extract and plot population level posterior predictions for the CT model
-# for the baseline case and each adjusted case individually
-parameter_pp <- plot_summary(
-  adj_draws, fill = predictor, color = predictor, by = "predictor",
-  simulated_samples = 1000, samples = 10
-)
-
-ggsave(
-  "outputs/figures/parameter_pp.png",
-  parameter_pp, width = 12, height = 8,
-)
-
 # Extract effect sizes and make a summary plot
 eff_plot <- draws %>%
   summarise_effects(design = ct_model$design) %>%
@@ -108,4 +86,40 @@ eff_plot <- draws %>%
 ggsave(
   "outputs/figures/effects_summary.png",
   eff_plot, width = 16, height = 16,
+)
+
+# Add adjusted effects to draws
+adj_draws <- adjust_params(draws, design = ct_model$design)
+
+# Filter for just adjustments that summary shows appear to differ from base case
+adj_draws <- adj_draws[
+  predictor %in% c("no_vaccines2", "symptomsasymptomatic",  "VOCDelta")
+]
+
+adj_draws[, predictor := factor(
+  predictor, 
+  levels =  c("no_vaccines2", "symptomsasymptomatic",  "VOCDelta"),
+  labels = c("2 vaccines", "asymptomatic",  "Delta")
+  )
+]
+
+adj_draws <- rbind(
+  extract_param_draws(draws)[,
+   predictor := "Baseline (Omicron & symptomatic & 3 vaccines)"
+  ],
+  adj_draws
+)[, predictor := factor(predictor)]
+
+# Extract and plot population level posterior predictions for the CT model
+# for the baseline case and each adjusted case individually
+parameter_pp <- plot_summary(
+  adj_draws, fill = predictor, colour = predictor, by = "predictor",
+  simulated_samples = 1000, samples = 0,
+  ct_time_range = seq(0, 40, by = 0.25), ip_time_range = seq(0, 20, by = 0.25)
+) &
+  labs(fill = "Adjustment", colour = "Adjustment")
+
+ggsave(
+  "outputs/figures/parameter_pp.png",
+  parameter_pp, width = 12, height = 8,
 )
