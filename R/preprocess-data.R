@@ -1,6 +1,8 @@
 process_data <- function(data_raw) {
 
-  setnames(data_raw, "ORF1ab", "ct")
+  setnames(
+    data_raw, c("ORF1ab", "total infections"), c("ct", "total_infections")
+  )
   
   out <- data_raw[, swab_date := dmy(swab_date)][
     barcode %like% "49U", swab_date := swab_date - 1][
@@ -43,7 +45,7 @@ process_data <- function(data_raw) {
   )
 
   #--- conditioning out observations with NA Ct values (how can we use these?)
-  out <- out[is.na(ct_unadjusted) == FALSE]
+  out <- out[!is.na(ct_unadjusted)]
 
   #--- adding time since first positive test by individual
   first_pos_test_date_dt <- out[
@@ -71,5 +73,58 @@ process_data <- function(data_raw) {
   out[,
    onset_time := as.numeric(symptom_onset_date - first_pos_test_date)
   ]
+
+  # Deal with people missing symptom status but having an onset date
+  out[!symptoms %in% c("0", "1", "unknown"),
+      symptoms := ifelse(!is.na(symptom_onset_date), "1", "unknown")
+  ]
+  # Make variables factors
+  facs <- c("no_vaccines", "VOC", "swab_type", "dose_1", "dose_2", "dose_3",
+            "result", "VOC_basis", "centre", "total_infections")
+  out[, (facs) := lapply(.SD, factor), .SDcols = facs]
+  out[,
+    symptoms := factor(
+      symptoms, levels = c("0", "1", "unknown"),
+      labels = c("asymptomatic", "symptomatic", "unknown")
+    )
+  ]
   return(out[])
+}
+
+# Function to postprocess cleaned input data into modelling dataset
+subset_data <- function(dt_clean_in, no_pos_swabs) {
+  out <- dt_clean[,
+    t_first_test := as.numeric(swab_date - min(swab_date), units = "days"),
+    by = c("id", "infection_id")][
+    no_pos_results >= no_pos_swabs][,
+    data_id := id][,
+    id := .GRP, by = c("data_id", "infection_id")][,
+    swab_type_num := as.numeric(!swab_type %in% "Dry")]
+
+  # Drop swab type private
+  out <- out[!swab_type %in% "Private"]
+
+  # Assume potential BA.2 are BA.2
+  out <- out[VOC %in% "?BA2", VOC := "BA2"][,
+   VOC := forcats::fct_drop(VOC)
+  ]
+  # Set baselines for factors
+  out <- out[,
+    VOC := forcats::fct_relevel(VOC, "Omicron")
+  ][,
+    symptoms := forcats::fct_relevel(symptoms, "symptomatic")
+  ][,
+    no_vaccines := forcats::fct_relevel(no_vaccines, "3")
+  ]
+  return(out)
+}
+
+index_by_first_positive <- function(dt) {
+  pos_test <- dt[
+    pcr_res == 1, .SD[t == min(t)], by = "id"][,
+    .(id, t_first_pos = t)
+  ]
+  dt <- dt[pos_test, on = "id"]
+  dt[, t := t - t_first_pos]
+  return(dt[])
 }
