@@ -181,7 +181,7 @@ plot_ct_summary <- function(draws, time_range = seq(0, 60, by = 0.01),
     melt_draws() %>%
     update_variable_labels() %>%
     plot_density(...) +
-    ggplot2::facet_wrap(~variable, nrow = 2, scales = "free")
+    ggplot2::facet_wrap(~variable, nrow = 2, scales = "free_x")
 
   plot <- param_pp_plot / ct_pp_plot +
     patchwork::plot_layout(guides = "collect") &
@@ -212,7 +212,7 @@ plot_ip_summary <- function(draws, time_range = seq(0, 60, by = 0.01),
     melt_draws() %>%
     update_variable_labels() %>%
     plot_density(...) +
-    ggplot2::facet_wrap(~variable, nrow = 2, scales = "free")
+    ggplot2::facet_wrap(~variable, nrow = 2, scales = "free_x")
 
   plot <- param_pp_plot / ip_pp_plot +
     patchwork::plot_layout(guides = "collect") &

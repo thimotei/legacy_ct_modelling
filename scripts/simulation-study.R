@@ -35,7 +35,7 @@ ct_sample <- simulate_obs(
 
 # plot of subset of data
 plot_obs_ct(ct_sample) +
-  facet_wrap(vars(factor(id)))
+  facet_wrap(vars(id)) +
 
 # compiling model
 mod <- cmdstan_model("stan/ct_trajectory_model.stan", include_paths = "stan")
@@ -57,7 +57,7 @@ fit_sim <- mod$sample(
 sim_pp_plot <- plot_pp_from_fit(
   fit_sim, obs = ct_sample, samples = 50, alpha = 0.025
 ) +
-  facet_wrap(vars(factor(id)))
+  facet_wrap(vars(id)) +
 
 ggsave("outputs/figures/sim_pp.png", sim_pp_plot, height = 10, width = 10)
 
