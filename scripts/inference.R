@@ -73,8 +73,15 @@ pp_plot <- plot_pp_from_fit(
 
 ggsave("outputs/figures/pp.png", pp_plot, height = 16, width = 16)
 
-# Extract and plot population level posterior predictions for the CT model
+# Extract posterior predictions
 draws <- extract_draws(fit)
+
+# Add adjusted effects
+
+
+
+# Extract and plot population level posterior predictions for the CT model
+
 
 parameter_pp <- plot_summary(draws)
 
@@ -88,7 +95,7 @@ eff_plot <- draws %>%
   summarise_effects(design = ct_model$design) %>%
   update_variable_labels(reverse = TRUE) %>%
   plot_effects() +
-  facet_wrap(vars(preds))
+  facet_wrap(vars(predictor))
 
 ggsave(
   "outputs/figures/effects_summary.png",

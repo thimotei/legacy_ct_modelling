@@ -19,7 +19,9 @@ extract_params <- function(draws, params) {
 extract_pop_params <- function(draws, params = c("c_0", "c_p_mean",
                                                  "c_s_mean", "t_p_mean",
                                                  "t_s_mean", "t_lod_mean")) {
-  extract_params(draws, params = params)
+  draws <- extract_params(draws, params = params)
+  colnames(draws) <- stringr::str_remove(colnames(draws), "_mean")
+  return(draws[])
 }
 
 extract_ip_params <- function(draws, params = c("inc_mean[1]", "inc_sd[1]")) {
@@ -27,6 +29,14 @@ extract_ip_params <- function(draws, params = c("inc_mean[1]", "inc_sd[1]")) {
   colnames(draws) <- purrr::map_chr(
       colnames(draws), ~ stringr::str_split(., "\\[[0-9]\\]")[[1]][1]
     )
+  return(draws)
+}
+
+extract_param_draws <- function(draws) {
+  draws <- cbind(
+    extract_pop_params(draws), 
+    extract_ip_params(draws)[, .(inc_mean, inc_sd)]
+  )
   return(draws)
 }
 
@@ -52,8 +62,8 @@ extract_coeffs <- function(draws, exponentiate = FALSE, design) {
   ]
 
   if (!missing(design)) {
-    design <- data.table::data.table(preds = colnames(design))
-    design <- design[!preds %in% "(Intercept)"]
+    design <- data.table::data.table(predictor = colnames(design))
+    design <- design[!predictor %in% "(Intercept)"]
     design[, coeff := 1:.N]
     draws <- draws[design, on = "coeff"]
   }

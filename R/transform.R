@@ -3,14 +3,14 @@ transform_to_model <- function(draws) {
 
   draws[,
     `:=`(
-      t_p = exp(t_p_mean),
-      t_s = exp(t_s_mean),
-      t_lod = exp(t_lod_mean),
+      t_p = exp(t_p),
+      t_s = exp(t_s),
+      t_lod = exp(t_lod),
       c_0 = c_0,
-      c_s = c_0 * plogis(c_s_mean)
+      c_s = c_0 * plogis(c_s)
     )
   ][,
-    c_p := c_s * plogis(c_p_mean)
+    c_p := c_s * plogis(c_p)
   ]
   return(draws[])
 }
