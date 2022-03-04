@@ -80,7 +80,6 @@ plot_obs_ct <- function(ct_dt, ct_traj, pp, traj_alpha = 0.02, onsets = TRUE,
 
 plot_ct_pp <- function(pp, sum_pp, onsets = TRUE, clod = 40, alpha = 0.05,
                        ...) {
-
   plot <- ggplot(pp) +
     aes(x = t, y = ct_value, group = interaction(.iteration, .chain), ...) +
     scale_colour_brewer(palette = "Dark2")
@@ -99,11 +98,11 @@ plot_ct_pp <- function(pp, sum_pp, onsets = TRUE, clod = 40, alpha = 0.05,
      plot <- plot +
       geom_ribbon(
         data = sum_pp,
-        aes(ymin = lo90, ymax = hi90, y = NULL, group = NULL), alpha = 0.15
+        aes(ymin = lo90, ymax = hi90, y = NULL, group = NULL, col = NULL), alpha = 0.15
       ) +
       geom_ribbon(
         data = sum_pp,
-        aes(ymin = lo60, ymax = hi60, y = NULL, group = NULL), alpha = 0.15
+        aes(ymin = lo60, ymax = hi60, y = NULL, group = NULL, col = NULL), alpha = 0.15
       )
    }
 
@@ -119,9 +118,11 @@ plot_ct_pp <- function(pp, sum_pp, onsets = TRUE, clod = 40, alpha = 0.05,
   return(plot)
 }
 
-plot_ip_pp <- function(pp, sum_pp, onsets = TRUE, alpha = 0.05) {
+plot_ip_pp <- function(pp, sum_pp, onsets = TRUE, alpha = 0.05, ...) {
   pp <- data.table::copy(pp)[, ct_value := value]
-  plot <- plot_ct_pp(pp, sum_pp, onsets = TRUE, alpha = alpha, clod = NULL) +
+  plot <- plot_ct_pp(
+    pp, sum_pp, onsets = TRUE, alpha = alpha, clod = NULL, ...
+  ) +
     labs(y = "Probability of symptom onset")
     return(plot)
 }
