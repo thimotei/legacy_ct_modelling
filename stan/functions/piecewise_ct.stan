@@ -39,7 +39,7 @@
           y = (adj_t * (cs - cp)) / ts  + cp;
         }else{
           adj_t = adj_t - ts;
-          if (adj_t  <= tlod) {
+          if (adj_t <= tlod) {
             y = (adj_t * (clod - cs)) / tlod + cs;
           }else{
             y = clod;
