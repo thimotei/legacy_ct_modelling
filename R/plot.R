@@ -47,13 +47,13 @@ plot_obs_ct <- function(ct_dt, ct_traj, pp, traj_alpha = 0.02, onsets = TRUE,
    if (!missing(pp)) {
      plot <- plot +
       geom_linerange(
-        aes(ymin = lo90, ymax = hi90, y = NULL), size = 1.1, alpha = 0.2
+        aes(ymin = lo90, ymax = hi90, y = NULL), size = 1.1, alpha = 0.15
       ) +
       geom_linerange(
-        aes(ymin = lo60, ymax = hi60, y = NULL), size = 1.1, alpha = 0.2
+        aes(ymin = lo60, ymax = hi60, y = NULL), size = 1.1, alpha = 0.15
       ) +
       geom_linerange(
-        aes(ymin = lo30, ymax = hi30, y = NULL), size = 1.1, alpha = 0.2
+        aes(ymin = lo30, ymax = hi30, y = NULL), size = 1.1, alpha = 0.15
       )
    }
 
@@ -100,15 +100,15 @@ plot_ct_pp <- function(pp, sum_pp, onsets = TRUE, clod = 40, alpha = 0.05,
      plot <- plot +
       geom_ribbon(
         data = sum_pp,
-        aes(ymin = lo90, ymax = hi90, y = NULL, group = NULL, col = NULL), alpha = 0.2
+        aes(ymin = lo90, ymax = hi90, y = NULL, group = NULL, col = NULL), alpha = 0.15
       ) +
       geom_ribbon(
         data = sum_pp,
-        aes(ymin = lo60, ymax = hi60, y = NULL, group = NULL, col = NULL), alpha = 0.2
+        aes(ymin = lo60, ymax = hi60, y = NULL, group = NULL, col = NULL), alpha = 0.15
       ) +
       geom_ribbon(
         data = sum_pp,
-        aes(ymin = lo30, ymax = hi30, y = NULL, group = NULL, col = NULL), alpha = 0.2
+        aes(ymin = lo30, ymax = hi30, y = NULL, group = NULL, col = NULL), alpha = 0.15
       )
    }
 
@@ -181,19 +181,20 @@ plot_ct_summary <- function(draws, time_range = seq(0, 60, by = 0.25),
 
   ct_pp_plot <- plot_ct_pp(
     pop_ct_draws[.draw <= samples], pop_ct_sum, alpha = traj_alpha, ...
-  )
+  ) +
+    guides(col = guide_none(), fill = guide_none())
 
   param_pp_plot <- pop_draws %>%
     transform_to_natural() %>%
     melt_draws(ids = c(".chain", ".iteration", ".draw", by)) %>%
     update_variable_labels() %>%
     plot_density(...) +
-    ggplot2::facet_wrap(~variable, nrow = 2, scales = "free_x")
+    ggplot2::facet_wrap(~variable, nrow = 2, scales = "free_x") +
+    guides(colour = guide_legend(nrow = 2), fill = guide_legend(nrow = 2))
 
-  plot <- param_pp_plot / ct_pp_plot +
+  plot <- (param_pp_plot / ct_pp_plot) +
     patchwork::plot_layout(guides = "collect") &
     theme(legend.position = "bottom")
-
   return(plot)
 }
 
@@ -212,16 +213,18 @@ plot_ip_summary <- function(draws, time_range = seq(0, 20, by = 0.25),
 
   ip_pp_plot <- plot_ip_pp(
     pop_ip_draws[.draw <= samples], pop_ip_sum, alpha = traj_alpha, ...
-  )
+  )  +
+    guides(col = guide_none(), fill = guide_none())
 
   param_pp_plot <- ip_draws %>%
     transform_ip_to_natural() %>%
     melt_draws(ids = c(".chain", ".iteration", ".draw", by)) %>%
     update_variable_labels() %>%
     plot_density(...) +
-    ggplot2::facet_wrap(~variable, nrow = 2, scales = "free_x")
+    ggplot2::facet_wrap(~variable, nrow = 2, scales = "free_x") +
+    guides(colour = guide_legend(nrow = 2), fill = guide_legend(nrow = 2))
 
-  plot <- param_pp_plot / ip_pp_plot +
+  plot <- (param_pp_plot / ip_pp_plot) +
     patchwork::plot_layout(guides = "collect") &
     theme(legend.position = "bottom")
 
@@ -241,9 +244,13 @@ plot_summary <- function(draws, ct_time_range = seq(0, 60, by = 0.25),
     ...
   )
 
-  parameter_pp <- ((ct_pp) | (ip_pp)) +
+  parameter_pp <- (
+    (ct_pp) | (
+        ip_pp & guides(col = guide_none(), fill = guide_none())
+      )
+    ) +
     patchwork::plot_layout(
-      guides = "collect", widths = c(3, 2),
+      widths = c(3, 2), guides = "collect"
     ) &
     theme(legend.position = "bottom")
   return(parameter_pp)
