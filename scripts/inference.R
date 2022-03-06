@@ -22,7 +22,7 @@ dt_2_tests <- subset_data(dt_clean, no_pos_swabs = 2)
 
 # Plot the raw data
 p1_raw <- plot_obs_ct(dt_2_tests) +
-   facet_wrap(vars(id, VOC))
+   facet_wrap(vars(factor(id), VOC))
 
 # Specify which params adjusting for (see params_avail_to_adjust() for options)
 # Here all available options (can also specify this using "all")
@@ -89,7 +89,7 @@ summarise_coeff_pp(fit, params = adj_params, exponentiate = TRUE)
 pp_plot <- plot_pp_from_fit(
   fit, obs = dt_2_tests, samples = 50, alpha = 0.025
 ) + 
-  facet_wrap(vars(id))
+  facet_wrap(vars(factor(id)))
 
 ggsave("outputs/figures/pp.png", pp_plot, height = 16, width = 16)
 
