@@ -81,8 +81,7 @@ plot_obs_ct <- function(ct_dt, ct_traj, pp, traj_alpha = 0.02, onsets = TRUE,
 plot_ct_pp <- function(pp, sum_pp, onsets = TRUE, clod = 40, alpha = 0.05,
                        ...) {
   plot <- ggplot(pp) +
-    aes(x = t, y = ct_value, group = interaction(.iteration, .chain), ...) +
-    scale_colour_brewer(palette = "Dark2")
+    aes(x = t, y = ct_value, group = interaction(.iteration, .chain), ...)
 
   if (!is.null(pp$onset_time) & onsets) {
     plot <- plot +
@@ -243,18 +242,20 @@ plot_summary <- function(draws, ct_time_range = seq(0, 60, by = 0.25),
   return(parameter_pp)
 }
 
-plot_effects <- function(effects, ...) {
+plot_effects <- function(effects,  position = "identity", ...) {
  
   eff_plot <- ggplot(effects) +
     aes(y = variable, ...) +
     geom_vline(xintercept = 1, linetype = 2) +
     geom_linerange(
       aes(xmin = lo90, xmax = hi90), 
-      size = 3, alpha = 0.3
+      size = 3, alpha = 0.3,
+      position = position
     ) +
     geom_linerange(
       aes(xmin = lo60, xmax = hi60), 
-      size = 3, alpha = 0.3
+      size = 3, alpha = 0.3,
+      position = position
     ) +
     custom_plot_theme() +
     theme(legend.position = "bottom") +
