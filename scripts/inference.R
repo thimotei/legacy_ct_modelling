@@ -61,7 +61,11 @@ stan_data <- data_to_stan(
 )
 
 # Compile model
-mod <- cmdstan_model("stan/ct_trajectory_model.stan", include_paths = "stan")
+mod <- cmdstan_model(
+  "stan/ct_trajectory_model.stan",
+  include_paths = "stan",
+  stanc_options = list("O1")
+  )
 
 # Fit
 fit <- mod$sample(
