@@ -127,9 +127,10 @@ adj_draws <- rbind(
 parameter_pp <- plot_summary(
   adj_draws, fill = predictor, colour = predictor, by = "predictor",
   simulated_samples = 1000, samples = 0,
-  ct_time_range = seq(0, 30, by = 0.25), ip_time_range = seq(0, 20, by = 0.25)
+  ct_time_range = seq(0, 30, by = 0.25), ip_time_range = seq(0, 15, by = 0.25)
 ) &
   scale_colour_brewer(palette = "Dark2") &
+  scale_fill_brewer(palette = "Dark2") &
   labs(fill = "Adjustment", colour = "Adjustment")
 
 ggsave(
