@@ -36,6 +36,22 @@ ct_model <- subject_design(
   preds_sd = 0.1
 )
 
+# Add a function mapping labels to each term
+update_predictor_labels <- function(dt) {
+  dt <- dt[,
+    predictor := factor(
+      predictor, 
+      levels =  c(
+        "no_vaccines2", "no_vaccinesunknown", "symptomsasymptomatic", "symptomsunknown",  "VOCDelta", "VOCBA2"
+      ),
+      labels = c(
+        "2 vaccines", "unknown vaccine status", "asymptomatic",
+        "unknown symptom status", "Delta", "BA.2"
+      )
+    )]
+  return(dt[])
+}
+
 # Translate data and model specification to stan format
 stan_data <- data_to_stan(
   dt_2_tests,
@@ -79,13 +95,15 @@ draws <- extract_draws(fit)
 # Extract effect sizes and make a summary plot
 eff_plot <- draws %>%
   summarise_effects(design = ct_model$design) %>%
+  update_predictor_labels() %>%
   update_variable_labels(reverse = TRUE) %>%
-  plot_effects() +
-  facet_wrap(vars(predictor))
+  plot_effects(col = predictor, position = position_dodge(width = 0.6)) +
+  scale_colour_brewer(palette = "Dark2") +
+  labs(col = "Adjustment")
 
 ggsave(
   "outputs/figures/effects_summary.png",
-  eff_plot, width = 16, height = 16,
+  eff_plot, width = 9, height = 12,
 )
 
 # Add adjusted effects to draws
@@ -94,14 +112,8 @@ adj_draws <- adjust_params(draws, design = ct_model$design)
 # Filter for just adjustments that summary shows appear to differ from base case
 adj_draws <- adj_draws[
   predictor %in% c("no_vaccines2", "symptomsasymptomatic",  "VOCDelta")
-]
-
-adj_draws[, predictor := factor(
-  predictor, 
-  levels =  c("no_vaccines2", "symptomsasymptomatic",  "VOCDelta"),
-  labels = c("2 vaccines", "asymptomatic",  "Delta")
-  )
-]
+] %>%
+  update_predictor_labels()
 
 adj_draws <- rbind(
   extract_param_draws(draws)[,
@@ -115,8 +127,9 @@ adj_draws <- rbind(
 parameter_pp <- plot_summary(
   adj_draws, fill = predictor, colour = predictor, by = "predictor",
   simulated_samples = 1000, samples = 0,
-  ct_time_range = seq(0, 40, by = 0.25), ip_time_range = seq(0, 20, by = 0.25)
+  ct_time_range = seq(0, 30, by = 0.25), ip_time_range = seq(0, 20, by = 0.25)
 ) &
+  scale_colour_brewer(palette = "Dark2") &
   labs(fill = "Adjustment", colour = "Adjustment")
 
 ggsave(
