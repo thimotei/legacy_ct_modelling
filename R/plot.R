@@ -51,6 +51,9 @@ plot_obs_ct <- function(ct_dt, ct_traj, pp, traj_alpha = 0.02, onsets = TRUE,
       ) +
       geom_linerange(
         aes(ymin = lo60, ymax = hi60, y = NULL), size = 1.1, alpha = 0.2
+      ) +
+      geom_linerange(
+        aes(ymin = lo30, ymax = hi30, y = NULL), size = 1.1, alpha = 0.2
       )
    }
 
@@ -97,11 +100,15 @@ plot_ct_pp <- function(pp, sum_pp, onsets = TRUE, clod = 40, alpha = 0.05,
      plot <- plot +
       geom_ribbon(
         data = sum_pp,
-        aes(ymin = lo90, ymax = hi90, y = NULL, group = NULL, col = NULL), alpha = 0.15
+        aes(ymin = lo90, ymax = hi90, y = NULL, group = NULL, col = NULL), alpha = 0.2
       ) +
       geom_ribbon(
         data = sum_pp,
-        aes(ymin = lo60, ymax = hi60, y = NULL, group = NULL, col = NULL), alpha = 0.15
+        aes(ymin = lo60, ymax = hi60, y = NULL, group = NULL, col = NULL), alpha = 0.2
+      ) +
+      geom_ribbon(
+        data = sum_pp,
+        aes(ymin = lo30, ymax = hi30, y = NULL, group = NULL, col = NULL), alpha = 0.2
       )
    }
 
@@ -249,12 +256,17 @@ plot_effects <- function(effects,  position = "identity", ...) {
     geom_vline(xintercept = 1, linetype = 2) +
     geom_linerange(
       aes(xmin = lo90, xmax = hi90), 
-      size = 3, alpha = 0.3,
+      size = 3, alpha = 0.2,
       position = position
     ) +
     geom_linerange(
       aes(xmin = lo60, xmax = hi60), 
-      size = 3, alpha = 0.3,
+      size = 3, alpha = 0.2,
+      position = position
+    ) +
+    geom_linerange(
+      aes(xmin = lo30, xmax = hi30), 
+      size = 3, alpha = 0.2,
       position = position
     ) +
     custom_plot_theme() +
