@@ -2,7 +2,7 @@
 # as those in the Stan model
 
 # for Ct trajectories with the long wane
-ct_hinge_long <- function(t, c0, cp, cs, clod, te, tp, ts, tlod) {
+piecewise_ct <- function(t, c0, cp, cs, clod, te, tp, ts, tlod) {
   if (t <= te) {
     y <- c0
   } else if (t > te && t <= te + tp) {
@@ -19,7 +19,7 @@ ct_hinge_long <- function(t, c0, cp, cs, clod, te, tp, ts, tlod) {
 
 
 # for Ct trajectories without the longer wane
-ct_hinge_single <- function(t, c0, cp, clod, te, tp, tlod) {
+piecewise_ct_single <- function(t, c0, cp, clod, te, tp, tlod) {
     if (t <= te) {
       y <- c0;
     } else if (t > te && t <= te + tp) {
@@ -49,7 +49,7 @@ simulate_cts <- function(params, time_range = 0:30, obs_noise = TRUE) {
     allow.cartesian = TRUE
   )[,
     tid := NULL][,
-    exp_ct := ct_hinge_long(
+    exp_ct := piecewise_ct(
         t, c0 = c_0, cp = c_p, cs = c_s, clod = c_0, te = 0,
         tp = t_p, ts = t_s, tlod = t_lod
       ),

@@ -38,7 +38,11 @@ plot_obs_ct(ct_sample) +
   facet_wrap(vars(id)) +
 
 # compiling model
-mod <- cmdstan_model("stan/ct_trajectory_model.stan", include_paths = "stan")
+mod <- cmdstan_model(
+  "stan/ct_trajectory_model.stan",
+  include_paths = "stan",
+  stanc_options = list("O1")
+)
 
 sim_stan_data <- data_to_stan(ct_sample, onset = TRUE)
 
