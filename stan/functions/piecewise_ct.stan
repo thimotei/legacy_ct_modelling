@@ -35,7 +35,7 @@
         y = (adj_t * (cp - c0)) / tp  + c0;
       }else{
         adj_t = adj_t - tp;
-        if (adj_t <= tp + ts) {
+        if (adj_t <= ts) {
           y = (adj_t * (cs - cp)) / ts  + cp;
         }else{
           adj_t = adj_t - ts;
