@@ -1,5 +1,5 @@
 functions{ 
-#include functions/ct_trajectory.stan
+#include functions/piecewise_ct.stan
 #include functions/combine_effects.stan
 #include functions/truncated_normal_rng.stan
 #include functions/censor.stan
@@ -10,14 +10,14 @@ data {
   int N; // number of tests
   real c_lod; // Ct value at limit of detection 
   real t_e; 
-  real lmean[2]; // mean of incubation period used (+ sd)
-  real lsd[2]; // standard deviation of incubation period used (+ sd)
-  int id[N]; // id of person
-  int pcr_res[N]; // boolean test result
+  array[2] real lmean; // mean of incubation period used (+ sd)
+  array[2] real lsd; // standard deviation of incubation period used (+ sd)
+  array[N] int id; // id of person
+  array[N] int pcr_res; // boolean test result
   vector[N] day_rel; // day of test (integer)
   vector[N] ct_value; // Ct value of test
   int swab_types; // Number of swab types used
-  int swab_type[N]; // Swab type per sample
+  array[N] int swab_type; // Swab type per sample
   int any_onsets;
   vector[P] onset_avail;
   vector[P] onset_time;
@@ -46,8 +46,8 @@ parameters {
   vector<lower = T_e_bound>[P] T_e;
   
   //Incubation period
-  real inc_mean[any_onsets];
-  real<lower = 0> inc_sd[any_onsets];
+  array[any_onsets] real inc_mean;
+  array[any_onsets] real<lower = 0> inc_sd;
   
   // Ct value before detection
   real<lower = c_lod> c_0; 
@@ -131,7 +131,7 @@ transformed parameters {
   diff = day_rel + T_e[id];
 
   // Expected ct value given viral load parameters
-  exp_ct = ct_hinge_vec_new(diff, c_0, c_p, c_s, c_0, t_e, t_p, t_s, 
+  exp_ct = piecewise_ct_vec(diff, c_0, c_p, c_s, c_0, t_e, t_p, t_s, 
                             t_lod_abs, id);
 
   // Adjust Swab types
@@ -266,8 +266,8 @@ generated quantities {
   }
   for(i in 1:P) {
     for(j in 1:61) {
-      ct[i, j] = ct_hinge_long(j - 1, c_0, c_p[i], c_s[i], c_0, t_e, t_p[i],  
-                               t_s[i], t_lod_abs[i]);
+      ct[i, j] = piecewise_ct(j - 1, c_0, c_p[i], c_s[i], c_0, t_e, t_p[i],  
+                              t_s[i], t_lod_abs[i]);
     }
   }
 }

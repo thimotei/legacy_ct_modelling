@@ -45,6 +45,8 @@ summarise_draws <- function(draws, by = c("id", "time")) {
       .(median = quantile(value, c(0.5), na.rm = TRUE),
         lo90 = quantile(value, c(0.05), na.rm = TRUE),
         lo60 = quantile(value, c(0.20), na.rm = TRUE),
+        lo30 = quantile(value, c(0.35), na.rm = TRUE),
+        hi30 = quantile(value, c(0.65), na.rm = TRUE),
         hi60 = quantile(value, c(0.80), na.rm = TRUE),
         hi90 = quantile(value, c(0.95), na.rm = TRUE)
       ),
