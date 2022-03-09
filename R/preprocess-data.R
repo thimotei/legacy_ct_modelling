@@ -93,7 +93,7 @@ process_data <- function(data_raw) {
 
 # Function to postprocess cleaned input data into modelling dataset
 subset_data <- function(dt_clean_in, no_pos_swabs) {
-  out <- dt_clean[,
+  out <- dt_clean_in[,
     t_first_test := as.numeric(swab_date - min(swab_date), units = "days"),
     by = c("id", "infection_id")][
     no_pos_results >= no_pos_swabs][,
