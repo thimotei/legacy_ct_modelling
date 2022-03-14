@@ -1,9 +1,9 @@
-process_data <- function(data_raw) {
+process_data <- function(dt_raw) {
 
-  data_proc <- data.table::copy(data_raw)
+  dt_proc <- data.table::copy(dt_raw)
   
   setnames(
-    data_proc, c("ORF1ab", "total infections"), c("ct", "total_infections")
+    dt_proc, c("ORF1ab", "total infections"), c("ct", "total_infections")
   )
   
   out <- data_proc, swab_date := dmy(swab_date)][
