@@ -40,7 +40,7 @@ ct_model <- subject_design(
 update_predictor_labels <- function(dt) {
   dt <- dt[,
     predictor := factor(
-      predictor, 
+      predictor,
       levels =  c(
         "no_vaccines2", "no_vaccinesunknown", "symptomsasymptomatic",
         "symptomsunknown",  "VOCDelta", "VOCBA2"
@@ -58,7 +58,8 @@ stan_data <- data_to_stan(
   dt_2_tests,
   ct_model = ct_model,
   likelihood = TRUE,
-  onsets = TRUE
+  onsets = TRUE,
+  correlation = 0.5
 )
 
 # Compile model
@@ -66,7 +67,7 @@ mod <- cmdstan_model(
   "stan/ct_trajectory_model.stan",
   include_paths = "stan",
   stanc_options = list("O1")
-  )
+)
 
 # Fit
 fit <- mod$sample(
@@ -74,8 +75,8 @@ fit <- mod$sample(
   init = stan_inits(stan_data),
   chains = 4,
   parallel_chains = 4,
-  iter_warmup = 1000,
-  iter_sampling = 1000,
+  iter_warmup = 500,
+  iter_sampling = 2000,
   adapt_delta = 0.95,
   max_treedepth = 15
 )
@@ -89,7 +90,7 @@ summarise_coeff_pp(fit, params = adj_params, exponentiate = TRUE)
 # Extract and plot posterior predictions
 pp_plot <- plot_pp_from_fit(
   fit, obs = dt_2_tests, samples = 50, alpha = 0.025
-) + 
+) +
   facet_wrap(vars(factor(id)))
 
 ggsave("outputs/figures/pp.png", pp_plot, height = 16, width = 16)

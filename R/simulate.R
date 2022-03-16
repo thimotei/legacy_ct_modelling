@@ -106,7 +106,8 @@ obs <- list(
   swab_types = 0,
   lmean = get_inc_period()$inc_mean_p,
   lsd = get_inc_period()$inc_sd_p,
-  swab_types = 0
+  swab_types = 0,
+  K = 5
 )
 
 simulate_obs <- function(obs = obs,
@@ -121,13 +122,13 @@ simulate_obs <- function(obs = obs,
       swab_type_num = 0,
       onset_time = rlnorm(obs$P, inc_mean, inc_sd),
       T_e = T_e,
-      t_p = exp(t_p_mean + t_p_var * t_p_raw),
-      t_s = exp(t_s_mean + t_s_var * t_s_raw),
-      t_lod = exp(t_lod_mean + t_lod_var * t_lod_raw),
+      t_p = exp(t_p_mean + ind_var[1] * ind_eta[1, ]),
+      t_s = exp(t_s_mean + ind_var[2] * ind_eta[2, ]),
+      t_lod = exp(t_lod_mean + ind_var[3] * ind_eta[3, ]),
       c_0 = c_0,
-      c_s = c_0 * plogis(c_s_mean + c_s_var * c_s_raw)
+      c_s = c_0 * plogis(c_s_mean + ind_var[4] * ind_eta[4, ])
     )[,
-      c_p := c_s * plogis(c_p_mean + c_p_var * c_p_raw)
+      c_p := c_s * plogis(c_p_mean + ind_var[5] * ind_eta[5, ])
     ][,
       c_lod := obs$c_lod,
     ][,
