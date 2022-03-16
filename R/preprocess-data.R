@@ -1,10 +1,13 @@
-process_data <- function(data_raw) {
+process_data <- function(dt_raw) {
 
+  dt_proc <- data.table::copy(dt_raw)
+  
   setnames(
-    data_raw, c("ORF1ab", "total infections"), c("ct", "total_infections")
+    dt_proc, c("ORF1ab", "total infections"), c("ct", "total_infections")
   )
+  
+  out <- data_proc, swab_date := dmy(swab_date)][
 
-  out <- data_raw[, swab_date := dmy(swab_date)][
     barcode %like% "49U", swab_date := swab_date - 1][
     symptom_onset_date == "unknown", symptom_onset_date := NA][,
     symptom_onset_date := dmy(symptom_onset_date)][,
@@ -128,8 +131,11 @@ process_data <- function(data_raw) {
 }
 
 # Function to postprocess cleaned input data into modelling dataset
-subset_data <- function(dt_clean_in, no_pos_swabs) {
-  out <- dt_clean_in[,
+subset_data <- function(dt_clean, no_pos_swabs) {
+  
+  dt_proc <- data.table::copy(dt_clean)
+  
+  out <- dt_proc[,
     t_first_test := as.numeric(swab_date - min(swab_date), units = "days"),
     by = c("id", "infection_id")][
     no_pos_results >= no_pos_swabs][,
