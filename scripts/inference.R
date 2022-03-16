@@ -77,7 +77,7 @@ fit <- mod$sample(
   parallel_chains = 4,
   iter_warmup = 500,
   iter_sampling = 2000,
-  adapt_delta = 0.95,
+  adapt_delta = 0.9,
   max_treedepth = 15
 )
 

@@ -20,8 +20,8 @@ obs <- list(
   c_lod = 40,
   lmean = get_inc_period()$inc_mean_p,
   lsd = get_inc_period()$inc_sd_p,
-  swab_types = 0,
   preds = 0,
+  ct_preds = 0,
   K = 5
 )
 
@@ -55,7 +55,7 @@ fit_sim <- mod$sample(
   chains = 4,
   parallel_chains = 4,
   iter_warmup = 1000,
-  iter_sampling = 1000
+  iter_sampling = 2000
 )
 
 # Extract and plot posterior predictions
