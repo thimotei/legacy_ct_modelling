@@ -143,9 +143,11 @@ stan_inits <- function(dt) {
       }
     }
 
-    if (dt$ct_preds > 0 & dt$adj_ct) {
-      inits$beta_ct_shift <- rnorm(dt$ct_preds, 0, 0.01)
-      inits$beta_ct_scale <- rnorm(dt$ct_preds, 0, 0.01)
+    if (dt$ct_preds > 0) {
+      if (dt$adj_ct > 0) {
+        inits$beta_ct_shift <- rnorm(dt$ct_preds, 0, 0.01)
+        inits$beta_ct_scale <- rnorm(dt$ct_preds, 0, 0.01)
+      }
     }
 
     if (dt$any_onsets == 1) {
