@@ -35,7 +35,7 @@ get_inc_period <- function(inc_mean = c(1.621, 0.0640),
 data_to_stan <- function(input_data,
                          ct_model = subject_design(~ 1, input_data),
                          likelihood = TRUE, clod = 40,
-                         onsets = TRUE) {
+                         onsets = TRUE, correlation = 0.5) {
 
 
   stan_data <- list(N = input_data[, .N],
@@ -53,6 +53,7 @@ data_to_stan <- function(input_data,
                     t_e = 0,
                     c_0 = clod,
                     c_lod = clod,
+                    lkj_prior = correlation,
                     lmean = get_inc_period()$inc_mean_p,
                     lsd = get_inc_period()$inc_sd_p,
                     likelihood = as.numeric(likelihood),
