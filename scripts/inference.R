@@ -48,12 +48,10 @@ update_predictor_labels <- function(dt) {
     predictor := factor(
       predictor,
       levels =  c(
-        "no_vaccines2", "no_vaccinesunknown", "symptomsasymptomatic",
-        "symptomsunknown",  "VOCDelta", "VOCBA2"
+        "no_vaccines2", "symptomsasymptomatic", "VOCDelta", "VOCBA2"
       ),
       labels = c(
-        "2 vaccines", "unknown vaccine status", "asymptomatic",
-        "unknown symptom status", "Delta", "BA.2"
+        "2 vaccines", "asymptomatic", "Delta", "BA.2"
       )
     )]
   return(dt[])
@@ -85,7 +83,7 @@ fit <- mod$sample(
   iter_warmup = 500,
   iter_sampling = 2000,
   adapt_delta = 0.9,
-  max_treedepth = 15
+  max_treedepth = 12
 )
 
 # Population level parameter summary
@@ -107,7 +105,7 @@ draws <- extract_draws(fit)
 
 # Extract effect sizes and make a summary plot
 eff_plot <- draws %>%
-  summarise_effects(design = ct_model$design) %>%
+  summarise_effects(design = ct_model$design, variables = adj_params) %>%
   update_predictor_labels() %>%
   update_variable_labels(reverse = TRUE) %>%
   plot_effects(col = predictor, position = position_dodge(width = 0.6)) +

@@ -41,14 +41,14 @@ extract_ip_params <- function(draws, params = c("inc_mean[1]", "inc_mean",
 
 extract_param_draws <- function(draws) {
   draws <- cbind(
-    extract_pop_params(draws), 
+    extract_pop_params(draws),
     extract_ip_params(draws)[, .(inc_mean, inc_sd)]
   )
   return(draws)
 }
 
-extract_coeffs <- function(draws, exponentiate = FALSE, design) {
-  beta_cols <-grep("beta_", colnames(draws), value = TRUE)
+extract_coeffs <- function(draws, exponentiate = FALSE, design, variables) {
+  beta_cols <- grep("beta_", colnames(draws), value = TRUE)
   cols <- c(".iteration", ".draw", ".chain", beta_cols)
   draws <- draws[, ..cols]
 
@@ -67,6 +67,10 @@ extract_coeffs <- function(draws, exponentiate = FALSE, design) {
       variable, ~ stringr::str_split(., "\\[[0-9]\\]")[[1]][1]
     )
   ]
+
+  if (!missing(variables)) {
+    draws <- draws[varibable %in% variables]
+  }
 
   if (!missing(design)) {
     design <- data.table::data.table(predictor = colnames(design))
