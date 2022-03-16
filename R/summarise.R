@@ -26,14 +26,14 @@ summarise_coeff_pp <- function(fit, params, exponentiate = FALSE) {
   return(draws[])
 }
 
-summarise_effects <- function(draws, design) {
+summarise_effects <- function(draws, design, variables) {
   eff_draws <- extract_coeffs(
-      draws, exponentiate = TRUE, design = design
+      draws, exponentiate = TRUE, design = design, variables
     )
-    
+
     by <- "variable"
     if (!missing(design)) {
-      by = c(by, "predictor")
+      by <- c(by, "predictor")
     }
     eff_summary <- summarise_draws(eff_draws, by = by)
     return(eff_summary)

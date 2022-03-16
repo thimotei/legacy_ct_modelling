@@ -36,17 +36,22 @@ ct_model <- subject_design(
   preds_sd = 0.1
 )
 
+adjustment_model <- test_design(
+  ~ 1 + swab_type,
+  data = dt_2_tests,
+  preds_sd = 1
+)
+
 # Add a function mapping labels to each term
 update_predictor_labels <- function(dt) {
   dt <- dt[,
     predictor := factor(
-      predictor, 
+      predictor,
       levels =  c(
-        "no_vaccines2", "no_vaccinesunknown", "symptomsasymptomatic", "symptomsunknown",  "VOCDelta", "VOCBA2"
+        "no_vaccines2", "symptomsasymptomatic", "VOCDelta", "VOCBA2"
       ),
       labels = c(
-        "2 vaccines", "unknown vaccine status", "asymptomatic",
-        "unknown symptom status", "Delta", "BA.2"
+        "2 vaccines", "asymptomatic", "Delta", "BA.2"
       )
     )]
   return(dt[])
@@ -56,8 +61,10 @@ update_predictor_labels <- function(dt) {
 stan_data <- data_to_stan(
   dt_2_tests,
   ct_model = ct_model,
+  adjustment_model  = adjustment_model,
   likelihood = TRUE,
-  onsets = TRUE
+  onsets = TRUE,
+  correlation = 0.5
 )
 
 # Compile model
@@ -65,7 +72,7 @@ mod <- cmdstan_model(
   "stan/ct_trajectory_model.stan",
   include_paths = "stan",
   stanc_options = list("O1")
-  )
+)
 
 # Fit
 fit <- mod$sample(
@@ -73,10 +80,10 @@ fit <- mod$sample(
   init = stan_inits(stan_data),
   chains = 4,
   parallel_chains = 4,
-  iter_warmup = 1000,
-  iter_sampling = 1000,
-  adapt_delta = 0.95,
-  max_treedepth = 15
+  iter_warmup = 500,
+  iter_sampling = 2000,
+  adapt_delta = 0.9,
+  max_treedepth = 12
 )
 
 # Population level parameter summary
@@ -88,7 +95,7 @@ summarise_coeff_pp(fit, params = adj_params, exponentiate = TRUE)
 # Extract and plot posterior predictions
 pp_plot <- plot_pp_from_fit(
   fit, obs = dt_2_tests, samples = 50, alpha = 0.025
-) + 
+) +
   facet_wrap(vars(factor(id)))
 
 ggsave("outputs/figures/pp.png", pp_plot, height = 16, width = 16)
@@ -98,7 +105,7 @@ draws <- extract_draws(fit)
 
 # Extract effect sizes and make a summary plot
 eff_plot <- draws %>%
-  summarise_effects(design = ct_model$design) %>%
+  summarise_effects(design = ct_model$design, variables = adj_params) %>%
   update_predictor_labels() %>%
   update_variable_labels(reverse = TRUE) %>%
   plot_effects(col = predictor, position = position_dodge(width = 0.6)) +
