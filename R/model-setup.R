@@ -9,7 +9,16 @@
     params_list <- purrr::map(params_list, ~ as.numeric(any(params %in% .)))
     return(params_list)
   }
-  
+
+  test_design <- function(formula = ~ 1, data, preds_sd = 1) {
+    design <- model.matrix(formula, data = data)
+
+    out <- list(
+      design = design, preds_sd = preds_sd
+    )
+    return(out)
+  }
+
   subject_design <- function(formula = ~ 1, data, preds_sd = 0.1,
                              params = "all") {
   params <- params_avail_to_adjust(params)
@@ -34,11 +43,9 @@ get_inc_period <- function(inc_mean = c(1.621, 0.0640),
 
 data_to_stan <- function(input_data,
                          ct_model = subject_design(~ 1, input_data),
-                         adjustment_model = subject_design(~ 1, input_data,
-                                                           preds_sd = 1),
+                         adjustment_model = test_design(~ 1, input_data),
                          likelihood = TRUE, clod = 40,
                          onsets = TRUE, correlation = 1) {
-
 
   stan_data <- list(N = input_data[, .N],
                     P = length(unique(input_data$id)),
