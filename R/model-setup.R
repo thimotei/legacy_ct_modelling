@@ -46,10 +46,16 @@ data_to_stan <- function(input_data,
                          adjustment_model = test_design(~ 1, input_data),
                          likelihood = TRUE, clod = 40,
                          onsets = TRUE, correlation = 1) {
+  input_data <- data.table::copy(input_data)
+  input_data <- input_data[order(id)]
+
+  tests_per_id <- input_data[, .(n = .N), by = "id"]$n
 
   stan_data <- list(N = input_data[, .N],
                     P = length(unique(input_data$id)),
                     id = input_data[, id],
+                    tests_per_id = tests_per_id,
+                    cum_tests_per_id = cumsum(tests_per_id),
                     day_rel = input_data[, t],
                     ct_value = ifelse(
                       is.na(input_data$ct_value), -99, input_data$ct_value
