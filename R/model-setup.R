@@ -35,7 +35,7 @@ get_inc_period <- function(inc_mean = c(1.621, 0.0640),
 data_to_stan <- function(input_data,
                          ct_model = subject_design(~ 1, input_data),
                          likelihood = TRUE, clod = 40,
-                         onsets = TRUE, correlation = 0.5) {
+                         onsets = TRUE, correlation = 1) {
 
 
   stan_data <- list(N = input_data[, .N],
@@ -53,6 +53,7 @@ data_to_stan <- function(input_data,
                     t_e = 0,
                     c_0 = clod,
                     c_lod = clod,
+                    K = 5,
                     lkj_prior = correlation,
                     lmean = get_inc_period()$inc_mean_p,
                     lsd = get_inc_period()$inc_sd_p,
@@ -107,19 +108,12 @@ stan_inits <- function(dt) {
         1, a = dt$c_lod, mean = dt$c_lod + 10, sd = 1
       ),
       c_p_mean = rnorm(1, 0, 1),
-      c_p_var = abs(rnorm(1, 0, 0.1)),
-      c_p_raw = rnorm(dt$P, 0, 0.1),
       c_s_mean = rnorm(1, 0, 1),
-      c_s_var = abs(rnorm(1, 0, 0.1)),
-      c_s_raw = rnorm(dt$P, 0, 0.1),
       t_p_mean = rnorm(1, 1.61, 0.5),
-      t_p_var = abs(rnorm(1, 0, 0.1)),
-      t_p_raw = rnorm(dt$P, 0, 0.1),
       t_s_mean = rnorm(1, 1.61, 0.5),
-      t_s_var = abs(rnorm(1, 0, 0.1)),
-      t_s_raw = rnorm(dt$P, 0, 1),
       t_lod_mean = rnorm(1, 2.3, 0.5),
-      t_lod_var = abs(rnorm(1, 0, 0.1)),
+      ind_var = abs(rnorm(dt$K, 0, 0.1)),
+      ind_eta  = matrix(rnorm(dt$P * dt$K, 0, 1), nrow = dt$K, ncol = dt$P),
       t_lod_raw = rnorm(dt$P, 0, 1),
       sigma = truncnorm::rtruncnorm(1, a = 0, mean = 5, sd = 0.5)
     )

@@ -20,7 +20,7 @@ extract_params <- function(draws, params, by) {
   return(draws[])
 }
 extract_pop_params <- function(draws, params = c("c_0", "c_p_mean", "c_p",
-                                                 "c_s_mean", "c_s", 
+                                                 "c_s_mean", "c_s",
                                                  "t_p_mean", "t_p",
                                                  "t_s_mean", "t_s",
                                                  "t_lod_mean", "t_lod"), by) {
