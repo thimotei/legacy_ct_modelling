@@ -48,10 +48,11 @@ update_predictor_labels <- function(dt) {
     predictor := factor(
       predictor,
       levels =  c(
-        "no_vaccines2", "symptomsasymptomatic", "VOCDelta", "VOCBA2"
+        "no_vaccines2", "symptomsasymptomatic", "VOCDelta", "VOCBA2",
+        "swab_typeVTM"
       ),
       labels = c(
-        "2 vaccines", "asymptomatic", "Delta", "BA.2"
+        "2 vaccines", "asymptomatic", "Delta", "BA.2", "Swab type"
       )
     )]
   return(dt[])
@@ -115,6 +116,23 @@ eff_plot <- draws %>%
 ggsave(
   "outputs/figures/effects_summary.png",
   eff_plot, width = 9, height = 12,
+)
+
+# CT shift and scale effects
+ct_eff_plot <- draws %>%
+  summarise_effects(
+    design = adjustment_model$design,
+    variables = c("ct_scale", "ct_shift")
+  ) %>%
+  update_predictor_labels() %>%
+  update_variable_labels(reverse = TRUE) %>%
+  plot_effects(col = predictor, position = position_dodge(width = 0.6)) +
+  scale_colour_brewer(palette = "Dark2") +
+  labs(col = "Adjustment")
+
+ggsave(
+  "outputs/figures/ct_effects_summary.png",
+  ct_eff_plot, width = 9, height = 6,
 )
 
 # Add adjusted effects to draws
