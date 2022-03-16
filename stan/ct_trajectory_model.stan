@@ -35,6 +35,7 @@ data {
   int adj_inc_sd; // Should incubation period standard deviation be adjusted
   int adj_ct; // Should cts be adjusted
   int ct_preds; // Number of predictors for CT adjustment
+  real ct_preds_sd; // Standard deviation of CT predictor coeffs
   matrix[P, ct_preds + 1] ct_design; // Design matrix for CT adjustment
   int likelihood;
 }
@@ -159,8 +160,8 @@ model {
     } 
   }
   if (ct_preds && adj_ct) {
-    beta_ct_shift ~ std_normal();
-    beta_ct_scale ~ std_normal();
+    beta_ct_shift ~ normal(0, ct_preds_sd);
+    beta_ct_scale ~ normal(0, ct_preds_sd);
   }
 
   if (any_onsets && likelihood) {
