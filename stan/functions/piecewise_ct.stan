@@ -23,45 +23,53 @@
     return(y);
   }
 
-  real piecewise_ct(real t, real c0, real cp, real cs, 
-                    real clod, real te, real tp, real ts,
-                    real tlod) {
-    real y;
-    real adj_t = t - te;
-    if (adj_t <= 0) {
-      y = c0;
-    }else {
-      if (adj_t <= tp) {
-        y = (adj_t * (cp - c0)) / tp  + c0;
-      }else{
-        adj_t = adj_t - tp;
-        if (adj_t <= ts) {
-          y = (adj_t * (cs - cp)) / ts  + cp;
+  vector piecewise_ct(vector t, real c0, real cp, real cs, 
+                      real clod, real te, real tp, real ts,
+                      real tlod) {
+    int N = num_elements(t);
+    vector[N] y = rep_vector(c0, N);
+    vector[N] adj_t = t - te;
+    real ugrad = (cp - c0) / tp;
+    real sgrad = (cs - cp) / ts;
+    real lgrad = (clod - cs) / tlod;
+
+    for (i in 1:N) {
+      if (adj_t[i] > 0) {
+        if (adj_t[i] <= tp) {
+          y[i] += adj_t[i] * ugrad;
         }else{
-          adj_t = adj_t - ts;
-          if (adj_t <= tlod) {
-            y = (adj_t * (clod - cs)) / tlod + cs;
+          adj_t[i] = adj_t[i] - tp;
+          if (adj_t[i] <= ts) {
+            y[i] = adj_t[i] * sgrad + cp;
           }else{
-            y = clod;
+            adj_t[i] = adj_t[i] - ts;
+            if (adj_t[i] <= tlod) {
+              y[i] = adj_t[i] * lgrad + cs;
+            }else{
+              y[i] = clod;
+            }
           }
         }
       }
-    }  
+    }
     return(y);
   }
   
-  vector piecewise_ct_vec(vector t, real c0, vector cp, vector cs, real clod, 
-                         real te, vector tp, vector ts, vector tlod,
-                         array[] int patient_ID) {
+  vector piecewise_ct_by_id(vector t, real c0, vector cp, vector cs, real clod, 
+                            real te, vector tp, vector ts, vector tlod,
+                            array[] int id, array[] int tests_per_id,
+                            array[] int cum_tests_per_id) {
+    int P = num_elements(cp);
     int N = num_elements(t);
-    vector[N] ret;
+    vector[N] ct;
 
-    for(k in 1:N){
-      ret[k] = piecewise_ct(t[k], c0, 
-                            cp[patient_ID[k]], cs[patient_ID[k]],
-                            clod, te, tp[patient_ID[k]],
-                            ts[patient_ID[k]], tlod[patient_ID[k]]);
+    for(k in 1:P) {
+      int t_start = cum_tests_per_id[k] - tests_per_id[k] + 1;
+      int t_end = cum_tests_per_id[k];
+      ct[t_start:t_end] = piecewise_ct(
+        t[t_start:t_end], c0, cp[k], cs[k], clod, te, tp[k], ts[k], tlod[k]
+      );
     }
 
-    return(ret);
+    return(ct);
   }

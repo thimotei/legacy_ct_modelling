@@ -9,7 +9,16 @@
     params_list <- purrr::map(params_list, ~ as.numeric(any(params %in% .)))
     return(params_list)
   }
-  
+
+  test_design <- function(formula = ~ 1, data, preds_sd = 1) {
+    design <- model.matrix(formula, data = data)
+
+    out <- list(
+      design = design, preds_sd = preds_sd
+    )
+    return(out)
+  }
+
   subject_design <- function(formula = ~ 1, data, preds_sd = 0.1,
                              params = "all") {
   params <- params_avail_to_adjust(params)
@@ -34,18 +43,20 @@ get_inc_period <- function(inc_mean = c(1.621, 0.0640),
 
 data_to_stan <- function(input_data,
                          ct_model = subject_design(~ 1, input_data),
+                         adjustment_model = test_design(~ 1, input_data),
                          likelihood = TRUE, clod = 40,
-                         onsets = TRUE) {
+                         onsets = TRUE, correlation = 1) {
+  input_data <- data.table::copy(input_data)
+  input_data <- input_data[order(id)]
 
+  tests_per_id <- input_data[, .(n = .N), by = "id"]$n
 
   stan_data <- list(N = input_data[, .N],
                     P = length(unique(input_data$id)),
                     id = input_data[, id],
+                    tests_per_id = tests_per_id,
+                    cum_tests_per_id = cumsum(tests_per_id),
                     day_rel = input_data[, t],
-                    swab_types = length(
-                      unique(input_data[, swab_type_num])
-                    ) - 1,
-                    swab_type = input_data[, swab_type_num] + 1,
                     ct_value = ifelse(
                       is.na(input_data$ct_value), -99, input_data$ct_value
                     ),
@@ -53,6 +64,8 @@ data_to_stan <- function(input_data,
                     t_e = 0,
                     c_0 = clod,
                     c_lod = clod,
+                    K = 5,
+                    lkj_prior = correlation,
                     lmean = get_inc_period()$inc_mean_p,
                     lsd = get_inc_period()$inc_sd_p,
                     likelihood = as.numeric(likelihood),
@@ -65,7 +78,11 @@ data_to_stan <- function(input_data,
                     adj_c_p = ct_model$params[["c_p"]],
                     adj_c_s = ct_model$params[["c_s"]],
                     adj_inc_mean = ct_model$params[["inc_mean"]],
-                    adj_inc_sd = ct_model$params[["inc_sd"]]
+                    adj_inc_sd = ct_model$params[["inc_sd"]],
+                    adj_ct = (ncol(adjustment_model$design) - 1) > 0,
+                    ct_preds = ncol(adjustment_model$design) - 1,
+                    ct_preds_sd = adjustment_model$preds_sd,
+                    ct_design = adjustment_model$design
   )
  if (is.null(input_data$onset_time) | !onsets) {
   stan_data <- c(stan_data, list(
@@ -106,44 +123,43 @@ stan_inits <- function(dt) {
         1, a = dt$c_lod, mean = dt$c_lod + 10, sd = 1
       ),
       c_p_mean = rnorm(1, 0, 1),
-      c_p_var = abs(rnorm(1, 0, 0.1)),
-      c_p_raw = rnorm(dt$P, 0, 0.1),
       c_s_mean = rnorm(1, 0, 1),
-      c_s_var = abs(rnorm(1, 0, 0.1)),
-      c_s_raw = rnorm(dt$P, 0, 0.1),
       t_p_mean = rnorm(1, 1.61, 0.5),
-      t_p_var = abs(rnorm(1, 0, 0.1)),
-      t_p_raw = rnorm(dt$P, 0, 0.1),
       t_s_mean = rnorm(1, 1.61, 0.5),
-      t_s_var = abs(rnorm(1, 0, 0.1)),
-      t_s_raw = rnorm(dt$P, 0, 1),
       t_lod_mean = rnorm(1, 2.3, 0.5),
-      t_lod_var = abs(rnorm(1, 0, 0.1)),
-      t_lod_raw = rnorm(dt$P, 0, 1),
+      ind_var = abs(rnorm(dt$K, 0, 0.1)),
+      ind_eta  = matrix(rnorm(dt$P * dt$K, 0, 1), nrow = dt$K, ncol = dt$P),
       sigma = truncnorm::rtruncnorm(1, a = 0, mean = 5, sd = 0.5)
     )
 
     if (dt$preds > 0) {
       if (dt$adj_t_p > 0) {
-        inits$beta_t_p <- rnorm(dt$preds, 0, 0.01);
+        inits$beta_t_p <- rnorm(dt$preds, 0, 0.01)
       }
       if (dt$adj_t_s > 0) {
-        inits$beta_t_s <- rnorm(dt$preds, 0, 0.01);
+        inits$beta_t_s <- rnorm(dt$preds, 0, 0.01)
       }
       if (dt$adj_t_lod > 0) {
-        inits$beta_t_lod <- rnorm(dt$preds, 0, 0.01);
+        inits$beta_t_lod <- rnorm(dt$preds, 0, 0.01)
       }
       if (dt$adj_c_p > 0) {
-        inits$beta_c_p <- rnorm(dt$preds,  0, 0.01);
+        inits$beta_c_p <- rnorm(dt$preds,  0, 0.01)
       }
       if (dt$adj_c_s > 0) {
-        inits$beta_c_s <- rnorm(dt$preds,  0, 0.01);
+        inits$beta_c_s <- rnorm(dt$preds,  0, 0.01)
       }
       if (dt$adj_inc_mean > 0) {
-        inits$beta_inc_mean <- rnorm(dt$preds, 0, 0.01);
+        inits$beta_inc_mean <- rnorm(dt$preds, 0, 0.01)
       }
       if (dt$adj_inc_sd > 0) {
-        inits$beta_inc_sd <- rnorm(dt$preds, 0, 0.01);
+        inits$beta_inc_sd <- rnorm(dt$preds, 0, 0.01)
+      }
+    }
+
+    if (dt$ct_preds > 0) {
+      if (dt$adj_ct > 0) {
+        inits$beta_ct_shift <- rnorm(dt$ct_preds, 0, 0.01)
+        inits$beta_ct_scale <- rnorm(dt$ct_preds, 0, 0.01)
       }
     }
 
@@ -153,12 +169,6 @@ stan_inits <- function(dt) {
         1, a = 0, mean = dt$lsd[1], sd = dt$lsd[2] * 0.1
       )
     }
-
-    if (dt$swab_types > 0) {
-      inits$swab_type_int <- rnorm(dt$swab_types, 0, 0.1)
-      inits$swab_type_grad <- rnorm(dt$swab_types, 1, 0.1)
-    }
-
     return(inits)
   }
 }

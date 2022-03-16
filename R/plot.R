@@ -100,15 +100,18 @@ plot_ct_pp <- function(pp, sum_pp, onsets = TRUE, clod = 40, alpha = 0.05,
      plot <- plot +
       geom_ribbon(
         data = sum_pp,
-        aes(ymin = lo90, ymax = hi90, y = NULL, group = NULL, col = NULL), alpha = 0.15
+        aes(ymin = lo90, ymax = hi90, y = NULL, group = NULL, col = NULL), 
+        alpha = 0.15
       ) +
       geom_ribbon(
         data = sum_pp,
-        aes(ymin = lo60, ymax = hi60, y = NULL, group = NULL, col = NULL), alpha = 0.15
+        aes(ymin = lo60, ymax = hi60, y = NULL, group = NULL, col = NULL),
+        alpha = 0.15
       ) +
       geom_ribbon(
         data = sum_pp,
-        aes(ymin = lo30, ymax = hi30, y = NULL, group = NULL, col = NULL), alpha = 0.15
+        aes(ymin = lo30, ymax = hi30, y = NULL, group = NULL, col = NULL),
+       alpha = 0.15
       )
    }
 
@@ -199,7 +202,8 @@ plot_ct_summary <- function(draws, time_range = seq(0, 60, by = 0.25),
 }
 
 plot_ip_summary <- function(draws, time_range = seq(0, 20, by = 0.25),
-                            samples = 100, by = c(), traj_alpha = 0.05, simulated_samples = 1000, ...) {
+                            samples = 100, by = c(), traj_alpha = 0.05,
+                            simulated_samples = 1000, ...) {
   ip_draws <- extract_ip_params(draws, by = by)
 
   pop_ip_draws <- ip_draws[.draw <= simulated_samples] %>%
@@ -231,16 +235,19 @@ plot_ip_summary <- function(draws, time_range = seq(0, 20, by = 0.25),
   return(plot)
 }
 
-plot_summary <- function(draws, ct_time_range = seq(0, 60, by = 0.25),     
+plot_summary <- function(draws, ct_time_range = seq(0, 60, by = 0.25),
                          ip_time_range = seq(0, 20, by = 0.25), samples = 100,
-                         by = c(), traj_alpha = 0.05, simulated_samples = 1000, ...) {
+                         by = c(), traj_alpha = 0.05, simulated_samples = 1000,
+                         ...) {
   ct_pp <- plot_ct_summary(
-    draws, time_range = ct_time_range, samples = samples, by = by, simulated_samples = simulated_samples, traj_alpha = traj_alpha,
+    draws, time_range = ct_time_range, samples = samples, by = by,
+    simulated_samples = simulated_samples, traj_alpha = traj_alpha,
     ...
   )
 
   ip_pp <- plot_ip_summary(
-    draws, time_range = ip_time_range, samples = samples, by = by, simulated_samples = simulated_samples, traj_alpha = traj_alpha,
+    draws, time_range = ip_time_range, samples = samples, by = by,
+    simulated_samples = simulated_samples, traj_alpha = traj_alpha,
     ...
   )
 
@@ -257,7 +264,7 @@ plot_summary <- function(draws, ct_time_range = seq(0, 60, by = 0.25),
 }
 
 plot_effects <- function(effects,  position = "identity", ...) {
- 
+
   eff_plot <- ggplot(effects) +
     aes(y = variable, ...) +
     geom_vline(xintercept = 1, linetype = 2) +

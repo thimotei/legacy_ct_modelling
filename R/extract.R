@@ -20,7 +20,7 @@ extract_params <- function(draws, params, by) {
   return(draws[])
 }
 extract_pop_params <- function(draws, params = c("c_0", "c_p_mean", "c_p",
-                                                 "c_s_mean", "c_s", 
+                                                 "c_s_mean", "c_s",
                                                  "t_p_mean", "t_p",
                                                  "t_s_mean", "t_s",
                                                  "t_lod_mean", "t_lod"), by) {
@@ -41,14 +41,14 @@ extract_ip_params <- function(draws, params = c("inc_mean[1]", "inc_mean",
 
 extract_param_draws <- function(draws) {
   draws <- cbind(
-    extract_pop_params(draws), 
+    extract_pop_params(draws),
     extract_ip_params(draws)[, .(inc_mean, inc_sd)]
   )
   return(draws)
 }
 
-extract_coeffs <- function(draws, exponentiate = FALSE, design) {
-  beta_cols <-grep("beta_", colnames(draws), value = TRUE)
+extract_coeffs <- function(draws, exponentiate = FALSE, design, variables) {
+  beta_cols <- grep("beta_", colnames(draws), value = TRUE)
   cols <- c(".iteration", ".draw", ".chain", beta_cols)
   draws <- draws[, ..cols]
 
@@ -67,6 +67,10 @@ extract_coeffs <- function(draws, exponentiate = FALSE, design) {
       variable, ~ stringr::str_split(., "\\[[0-9]\\]")[[1]][1]
     )
   ]
+
+  if (!missing(variables)) {
+    draws <- draws[variable %in% variables]
+  }
 
   if (!missing(design)) {
     design <- data.table::data.table(predictor = colnames(design))
@@ -120,7 +124,7 @@ extract_posterior_predictions <- function(fit, obs) {
 
   if (!missing(obs)) {
     simulated_cts <- merge(
-      obs[, obs := 1:.N], simulated_cts, by = "obs"
+      obs[order(id), obs := 1:.N], simulated_cts, by = "obs"
     )
   }
   return(simulated_cts[])

@@ -8,7 +8,7 @@ library(stringr)
 library(purrr)
 
 # loading all functions in package directory
-devtools::load_all() 
+devtools::load_all()
 
 # Set up simulations for 20 individuals
 # To be lazy here we are assuming that onsets are not available
@@ -20,8 +20,9 @@ obs <- list(
   c_lod = 40,
   lmean = get_inc_period()$inc_mean_p,
   lsd = get_inc_period()$inc_sd_p,
-  swab_types = 0,
-  preds = 0
+  preds = 0,
+  ct_preds = 0,
+  K = 5
 )
 
 # Simulate from the centre of the prior for all parameters
@@ -54,7 +55,7 @@ fit_sim <- mod$sample(
   chains = 4,
   parallel_chains = 4,
   iter_warmup = 1000,
-  iter_sampling = 1000
+  iter_sampling = 2000
 )
 
 # Extract and plot posterior predictions
