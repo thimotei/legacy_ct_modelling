@@ -69,7 +69,7 @@ extract_coeffs <- function(draws, exponentiate = FALSE, design, variables) {
   ]
 
   if (!missing(variables)) {
-    draws <- draws[varibable %in% variables]
+    draws <- draws[variable %in% variables]
   }
 
   if (!missing(design)) {
@@ -124,7 +124,7 @@ extract_posterior_predictions <- function(fit, obs) {
 
   if (!missing(obs)) {
     simulated_cts <- merge(
-      obs[, obs := 1:.N], simulated_cts, by = "obs"
+      obs[order(id), obs := 1:.N], simulated_cts, by = "obs"
     )
   }
   return(simulated_cts[])

@@ -8,11 +8,13 @@ functions{
 data {
   int P; // number of patients
   int N; // number of tests
+  array[N] int id; // id of person
+  array[P] int tests_per_id; // Tests per ID
+  array[P] int cum_tests_per_id; // Cumulative tests per id
   real c_lod; // Ct value at limit of detection 
   real t_e; 
   array[2] real lmean; // mean of incubation period used (+ sd)
   array[2] real lsd; // standard deviation of incubation period used (+ sd)
-  array[N] int id; // id of person
   array[N] int pcr_res; // boolean test result
   vector[N] day_rel; // day of test (integer)
   vector[N] ct_value; // Ct value of test
@@ -40,8 +42,12 @@ data {
 
 transformed data {
   vector[P] T_e_bound;
+  vector[61] sim_times;
   for (i in 1:P) {
     T_e_bound[i] = max({-onset_time[i], 0});
+  }
+  for (i in 0:60) {
+    sim_times[i + 1] = i;
   }
 }
 
@@ -98,8 +104,9 @@ transformed parameters {
   t_inf = day_rel + T_e[id];
 
   // Expected ct value given viral load parameters
-  exp_ct = piecewise_ct_vec(
-    t_inf, c_0, c_p, c_s, c_0, t_e, t_p, t_s, t_lod_abs, id
+  exp_ct = piecewise_ct_by_id(
+    t_inf, c_0, c_p, c_s, c_0, t_e, t_p, t_s, t_lod_abs, id,
+    tests_per_id, cum_tests_per_id
   );
 
   // Shift and scale ct values
@@ -216,9 +223,8 @@ generated quantities {
     sim_ct[i] = censor(sim_ct[i], c_lod);
   }
   for(i in 1:P) {
-    for(j in 1:61) {
-      ct[i, j] = piecewise_ct(j - 1, c_0, c_p[i], c_s[i], c_0, t_e, t_p[i],  
-                              t_s[i], t_lod_abs[i]);
-    }
+    ct[i, 1:61] = to_row_vector(piecewise_ct(
+      sim_times, c_0, c_p[i], c_s[i], c_0, t_e, t_p[i], t_s[i], t_lod_abs[i]
+    ));
   }
 }
