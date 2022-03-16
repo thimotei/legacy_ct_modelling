@@ -24,6 +24,7 @@ data {
   int likelihood;
   int preds; // Number of predictors
   real preds_sd; // Standard deviation of predictor coeffs
+  real lkj_prior; // LKJ prior
   matrix[P, preds + 1] design; //Design matrix
   int adj_t_p; // Should time at peak be adjusted
   int adj_t_s; // Should time at switch be adjusted
@@ -52,7 +53,9 @@ parameters {
   // Ct value before detection
   real<lower = c_lod> c_0; 
 
-  // Hyperparameters
+  // Symmetric correlation matrix
+  cholesky_factor_corr[5] L_Omega;
+
   // Ct value of viral load p
   real c_p_mean;
   real<lower = 0>c_p_var;
@@ -96,34 +99,62 @@ parameters {
 }
 
 transformed parameters {
+  matrix[5, 5] L;
   vector[P] t_p;
   vector[P] t_s;
   vector[P] t_lod;
   vector[P] c_p;
   vector[P] c_s;
+  vector[P] t_p_ind;
+  vector[P] t_s_ind;
+  vector[P] t_lod_ind;
+  vector[P] c_p_ind;
+  vector[P] c_s_ind;
   vector[P] t_lod_abs;
   vector[N] diff;
   vector[N] exp_ct;
   vector[swab_types + 1] st_int;
   vector[swab_types + 1] st_grad;
   vector[N] adj_exp_ct;
+  // correlation matrix
+  L = diag_pre_multiply(
+    to_vector({t_p_var, t_s_var, t_lod_var, c_s_var, c_p_var}),
+    L_Omega
+  );
+
+{
+  // Calculate per-person correlated effects
+  vector[5] eta;
+  for (i in 1:P) {
+    eta = to_vector(
+      {t_p_raw[i], t_s_raw[i], t_lod_raw[i], c_s_raw[i], c_p_raw[i]}
+    );
+    eta = L * eta;
+    t_p_ind[i] = eta[1];
+    t_s_ind[i] = eta[2];
+    t_lod_ind[i] = eta[3];
+    c_s_ind[i] = eta[4];
+    c_p_ind[i] = eta[5];
+  }
+}
+
   // individual-level time since infection parameters
   t_p = combine_effects(t_p_mean, beta_t_p, design);
-  t_p = exp(t_p + t_p_var * t_p_raw);
+  t_p = exp(t_p + t_p_ind);
 
   t_s = combine_effects(t_s_mean, beta_t_s, design);
-  t_s = exp(t_s + t_s_var * t_s_raw);
+  t_s = exp(t_s + t_s_ind);
 
   t_lod = combine_effects(t_lod_mean, beta_t_lod, design);
-  t_lod = exp(t_lod + t_lod_var * t_lod_raw);
+  t_lod = exp(t_lod + t_lod_ind);
 
   // Parameterise c_switch as proportion of c_0
   c_s = combine_effects(c_s_mean, beta_c_s, design);
-  c_s = c_0 * inv_logit(c_s + c_s_var * c_s_raw);
+  c_s = c_0 * inv_logit(c_s + c_s_ind);
 
   // Parameterise c_peak as proportion of c_switch
   c_p = combine_effects(c_p_mean, beta_c_p, design);
-  c_p = c_s .* inv_logit(c_p + c_p_var * c_p_raw);
+  c_p = c_s .* inv_logit(c_p + c_p_ind);
 
   // Make times absolute
   t_lod_abs = t_p + t_s + t_lod;
@@ -177,6 +208,10 @@ model {
   t_lod_mean ~ normal(2.3, 0.5); //mean at log(10) + peak + scale timing 
   t_lod_var ~ normal(0, 0.25) T[0,];
   t_lod_raw ~ std_normal();
+
+
+  /// LKJ prior on correlation between individual level dynamics
+  L_Omega ~ lkj_corr_cholesky(lkj_prior);
 
   // If multiple swab types make linear adjustments
   if (swab_types) {

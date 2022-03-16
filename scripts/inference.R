@@ -42,7 +42,8 @@ update_predictor_labels <- function(dt) {
     predictor := factor(
       predictor, 
       levels =  c(
-        "no_vaccines2", "no_vaccinesunknown", "symptomsasymptomatic", "symptomsunknown",  "VOCDelta", "VOCBA2"
+        "no_vaccines2", "no_vaccinesunknown", "symptomsasymptomatic",
+        "symptomsunknown",  "VOCDelta", "VOCBA2"
       ),
       labels = c(
         "2 vaccines", "unknown vaccine status", "asymptomatic",
