@@ -36,6 +36,12 @@ ct_model <- subject_design(
   preds_sd = 0.1
 )
 
+adjustment_model <- subject_design(
+  ~ 1 + swab_type,
+  data = dt_2_tests,
+  preds_sd = 1
+)
+
 # Add a function mapping labels to each term
 update_predictor_labels <- function(dt) {
   dt <- dt[,
@@ -57,6 +63,7 @@ update_predictor_labels <- function(dt) {
 stan_data <- data_to_stan(
   dt_2_tests,
   ct_model = ct_model,
+  adjustment_model  = adjustment_model,
   likelihood = TRUE,
   onsets = TRUE,
   correlation = 0.5
