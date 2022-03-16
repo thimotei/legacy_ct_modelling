@@ -16,8 +16,6 @@ data {
   array[N] int pcr_res; // boolean test result
   vector[N] day_rel; // day of test (integer)
   vector[N] ct_value; // Ct value of test
-  int swab_types; // Number of swab types used
-  array[N] int swab_type; // Swab type per sample
   int any_onsets;
   vector[P] onset_avail;
   vector[P] onset_time;
@@ -36,7 +34,7 @@ data {
   int adj_ct; // Should cts be adjusted
   int ct_preds; // Number of predictors for CT adjustment
   real ct_preds_sd; // Standard deviation of CT predictor coeffs
-  matrix[P, ct_preds + 1] ct_design; // Design matrix for CT adjustment
+  matrix[N, ct_preds + 1] ct_design; // Design matrix for CT adjustment
   int likelihood;
 }
 
@@ -74,9 +72,9 @@ parameters {
 }
 
 transformed parameters {
-  vector[P] t_p; vector[P] t_s; vector[P] t_lod; vector[P] c_p; vector[P] c_s;
+  vector[P] t_p; vector[P] t_s; vector[P] t_lod;
+  vector[P] c_p; vector[P] c_s;
   vector[P] t_lod_abs; vector[N] t_inf;
-  vector[swab_types + 1] st_int; vector[swab_types + 1] st_grad;
   vector[N] exp_ct; vector[N] adj_exp_ct;
 {
   // Cholesky factor of the covariance matrix
@@ -106,7 +104,7 @@ transformed parameters {
 
   // Shift and scale ct values
   adj_exp_ct = combine_effects(0, beta_ct_shift, ct_design) +
-    combine_effects(1, beta_ct_scale, ct_design) .* exp_ct;
+    exp(combine_effects(0, beta_ct_scale, ct_design)) .* exp_ct;
 }
 
 model {

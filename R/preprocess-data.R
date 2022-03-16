@@ -3,7 +3,7 @@ process_data <- function(data_raw) {
   setnames(
     data_raw, c("ORF1ab", "total infections"), c("ct", "total_infections")
   )
-  
+
   out <- data_raw[, swab_date := dmy(swab_date)][
     barcode %like% "49U", swab_date := swab_date - 1][
     symptom_onset_date == "unknown", symptom_onset_date := NA][,
@@ -80,7 +80,7 @@ process_data <- function(data_raw) {
   ]
   # Make variables factors
   facs <- c("no_vaccines", "VOC", "swab_type", "dose_1", "dose_2", "dose_3",
-            "result", "VOC_basis", "centre", "total_infections")
+            "result", "VOC_basis", "centre", "total_infections", "symptoms")
   out[, (facs) := lapply(.SD, factor), .SDcols = facs]
   out[,
     symptoms := factor(
@@ -88,6 +88,42 @@ process_data <- function(data_raw) {
       labels = c("asymptomatic", "symptomatic", "unknown")
     )
   ]
+
+  # "invalid" and "inconclusive" both have many
+  # observations consistent with positive Ct values, keeping them for now
+  # will discuss with Crick partners about this
+  out[result == "Invalid", result := "Positive"]
+  out[result == "Inconclusive", result := "Positive"]
+  out[result == "Negative", pcr_res := 0]
+  out[result == "Positive", pcr_res := 1]
+
+  # Drop infections with gaps between positive tests of more than 60 days
+  ids_spurious_gaps <- out[,
+    .(
+      spurious = any(
+        abs(time_since_first_pos) > 60) || any(abs(onset_time) > 60
+      )
+    ), by = c("id", "infection_id")
+  ]
+  ids_spurious_gaps[spurious == TRUE][]
+  out <- out[ids_spurious_gaps, on = "id"]
+  out <- out[spurious == FALSE | is.na(spurious)]
+
+  # Drop subject with ID 978 due to large mismatch between onset and positive
+  #  tests
+  out <- out[id != 978]
+
+  # Drop 1 individual with no vaccine information
+  out[no_vaccines %in% "unknown"]
+  out <- out[!no_vaccines %in% "unknown"]
+
+  # Drop 2 individuals with no symptom status (either symptomatic, asymptomatic,
+  # or unknown)
+  out[symptoms %in% "unknown"]
+  out <- out[!symptoms %in% "unknown"]
+  # Drop swab type private
+  out <- out[!swab_type %in% "Private"]
+  out[, (facs) := lapply(.SD, forcats::fct_drop), .SDcols = facs]
   return(out[])
 }
 
@@ -101,9 +137,6 @@ subset_data <- function(dt_clean_in, no_pos_swabs) {
     id := .GRP, by = c("data_id", "infection_id")][,
     swab_type_num := as.numeric(!swab_type %in% "Dry")]
 
-  # Drop swab type private
-  out <- out[!swab_type %in% "Private"]
-
   # Assume potential BA.2 are BA.2
   out <- out[VOC %in% "?BA2", VOC := "BA2"][,
    VOC := forcats::fct_drop(VOC)
@@ -116,6 +149,10 @@ subset_data <- function(dt_clean_in, no_pos_swabs) {
   ][,
     no_vaccines := forcats::fct_relevel(no_vaccines, "3")
   ]
+  # Clean up factor levels
+  facs <- c("no_vaccines", "VOC", "swab_type", "dose_1", "dose_2", "dose_3",
+            "result", "VOC_basis", "centre", "total_infections", "symptoms")
+  out[, (facs) := lapply(.SD, forcats::fct_drop), .SDcols = facs]
   return(out)
 }
 

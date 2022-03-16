@@ -36,7 +36,7 @@ ct_model <- subject_design(
   preds_sd = 0.1
 )
 
-adjustment_model <- subject_design(
+adjustment_model <- test_design(
   ~ 1 + swab_type,
   data = dt_2_tests,
   preds_sd = 1
