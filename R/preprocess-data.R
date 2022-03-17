@@ -6,8 +6,7 @@ process_data <- function(dt_raw) {
     dt_proc, c("ORF1ab", "total infections"), c("ct", "total_infections")
   )
   
-  out <- data_proc, swab_date := dmy(swab_date)][
-
+  out <- data_proc[swab_date := dmy(swab_date)][
     barcode %like% "49U", swab_date := swab_date - 1][
     symptom_onset_date == "unknown", symptom_onset_date := NA][,
     symptom_onset_date := dmy(symptom_onset_date)][,
