@@ -45,7 +45,7 @@ data_to_stan <- function(input_data,
                          ct_model = subject_design(~ 1, input_data),
                          adjustment_model = test_design(~ 1, input_data),
                          likelihood = TRUE, clod = 40,
-                         onsets = TRUE, correlation = 1) {
+                         onsets = TRUE, switch = TRUE, correlation = 1) {
   input_data <- data.table::copy(input_data)
   input_data <- input_data[order(id)]
 
@@ -72,6 +72,7 @@ data_to_stan <- function(input_data,
                     preds = ncol(ct_model$design) - 1,
                     preds_sd = ct_model$preds_sd,
                     design = ct_model$design,
+                    switch = as.numeric(switch),
                     adj_t_p = ct_model$params[["t_p"]],
                     adj_t_s = ct_model$params[["t_s"]],
                     adj_t_lod = ct_model$params[["t_lod"]],
