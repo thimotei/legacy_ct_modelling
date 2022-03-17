@@ -19,7 +19,6 @@ custom_plot_theme <- function(flip = FALSE, legend_arg = FALSE) {
   return(custom_plot_theme)
 }
 
-
 plot_obs_ct <- function(ct_dt, ct_traj, pp, traj_alpha = 0.02, onsets = TRUE,
                         clod = 40) {
 
@@ -269,17 +268,17 @@ plot_effects <- function(effects,  position = "identity", ...) {
     aes(y = variable, ...) +
     geom_vline(xintercept = 1, linetype = 2) +
     geom_linerange(
-      aes(xmin = lo90, xmax = hi90), 
+      aes(xmin = lo90, xmax = hi90),
       size = 3, alpha = 0.2,
       position = position
     ) +
     geom_linerange(
-      aes(xmin = lo60, xmax = hi60), 
+      aes(xmin = lo60, xmax = hi60),
       size = 3, alpha = 0.2,
       position = position
     ) +
     geom_linerange(
-      aes(xmin = lo30, xmax = hi30), 
+      aes(xmin = lo30, xmax = hi30),
       size = 3, alpha = 0.2,
       position = position
     ) +
