@@ -64,7 +64,7 @@ data_to_stan <- function(input_data,
                     t_e = 0,
                     c_0 = clod,
                     c_lod = clod,
-                    K = 5,
+                    K = ifelse(switch, 5, 3),
                     lkj_prior = correlation,
                     lmean = get_inc_period()$inc_mean_p,
                     lsd = get_inc_period()$inc_sd_p,
@@ -74,10 +74,10 @@ data_to_stan <- function(input_data,
                     design = ct_model$design,
                     switch = as.numeric(switch),
                     adj_t_p = ct_model$params[["t_p"]],
-                    adj_t_s = ct_model$params[["t_s"]],
+                    adj_t_s = min(ct_model$params[["t_s"]], as.numeric(switch)),
                     adj_t_lod = ct_model$params[["t_lod"]],
                     adj_c_p = ct_model$params[["c_p"]],
-                    adj_c_s = ct_model$params[["c_s"]],
+                    adj_c_s = min(ct_model$params[["c_s"]], as.numeric(switch)),
                     adj_inc_mean = ct_model$params[["inc_mean"]],
                     adj_inc_sd = ct_model$params[["inc_sd"]],
                     adj_ct = (ncol(adjustment_model$design) - 1) > 0,
@@ -124,15 +124,18 @@ stan_inits <- function(dt) {
         1, a = dt$c_lod, mean = dt$c_lod + 10, sd = 1
       ),
       c_p_mean = rnorm(1, 0, 1),
-      c_s_mean = rnorm(1, 0, 1),
       t_p_mean = rnorm(1, 1.61, 0.5),
-      t_s_mean = rnorm(1, 1.61, 0.5),
       t_lod_mean = rnorm(1, 2.3, 0.5),
       ind_var = abs(rnorm(dt$K, 0, 0.1)),
       ind_eta  = matrix(rnorm(dt$P * dt$K, 0, 1), nrow = dt$K, ncol = dt$P),
       sigma = truncnorm::rtruncnorm(1, a = 0, mean = 5, sd = 0.5)
     )
 
+    if (dt$switch > 0) {
+      inits$c_s_mean <- array(rnorm(1, 0, 1))
+      inits$t_s_mean <- array(rnorm(1, 1.61, 0.5))
+    }
+    
     if (dt$preds > 0) {
       if (dt$adj_t_p > 0) {
         inits$beta_t_p <- rnorm(dt$preds, 0, 0.01)

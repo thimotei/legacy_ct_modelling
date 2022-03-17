@@ -22,7 +22,8 @@ obs <- list(
   lsd = get_inc_period()$inc_sd_p,
   preds = 0,
   ct_preds = 0,
-  K = 5
+  K = 5,
+  switch = 1
 )
 
 # Simulate from the centre of the prior for all parameters
