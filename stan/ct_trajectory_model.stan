@@ -100,13 +100,13 @@ transformed parameters {
   if (switch) {
     t_s = exp(combine_effects(t_s_mean[1], beta_t_s, design) + eta[, 4]);
     c_s = c_0 * inv_logit(
-      combine_effects(c_s_mean, beta_c_s, design)+ eta[, 5]
+      combine_effects(c_s_mean[1], beta_c_s, design)+ eta[, 5]
     );
     c_p = c_s .* c_p;
   }else{
     c_s = rep_vector(0.0, P);
     t_s = rep_vector(0.0, P);
-    c_p = c_0 .* c_p;
+    c_p = c_0 * c_p;
   }
 }
   // Make times absolute

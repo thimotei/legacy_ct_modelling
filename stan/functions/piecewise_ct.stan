@@ -7,7 +7,7 @@
     real ugrad = (cp - c0) / tp;
     real sgrad;
     real lgrad;
-    vector[N] c_adj;
+    real c_adj;
     if (switch) {
       sgrad = (cs - cp) / ts;
       lgrad = (clod - cs) / tlod;
