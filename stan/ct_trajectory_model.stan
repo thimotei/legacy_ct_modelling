@@ -57,7 +57,7 @@ parameters {
   array[any_onsets] real inc_mean; //Incubation period mean
   array[any_onsets] real<lower = 0> inc_sd; //Incubation period sd
   real<lower = c_lod> c_0;   // Ct value before detection
-  cholesky_factor_corr[5] L_Omega; // Cholesky_factored correlation matrix
+  cholesky_factor_corr[K] L_Omega; // Cholesky_factored correlation matrix
   real c_p_mean; // Ct value of viral load p
   array[switch] real c_s_mean; // Ct value at s
   real t_p_mean; // Timing of peak

@@ -26,6 +26,10 @@ simulate_cts <- function(params, time_range = 0:30, obs_noise = TRUE) {
     params[, id := 1:.N]
   }
 
+  if (is.null(params[["t_s"]])) {
+    params[, t_s := 0]
+  }
+
   times <- data.table::data.table(
     t = time_range
   )[,

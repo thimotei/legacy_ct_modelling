@@ -18,27 +18,28 @@ dt_clean <- readRDS(here("data/processed-data.rds"))
 
 # Do additional processing to filter for the desired number of swabs
 # per positive episode
-dt_2_tests <- subset_data(dt_clean, no_pos_swabs = 2)
+obs <- subset_data(dt_clean, no_pos_swabs = 2)
 
 # Plot the raw data
-p1_raw <- plot_obs_ct(dt_2_tests) +
-   facet_wrap(vars(factor(id), VOC))
+p1_raw <- plot_obs(obs, col = factor(swab_type)) +
+  labs(col = "Swab type")
 
 # Specify which params adjusting for (see params_avail_to_adjust() for options)
 # Here all available options (can also specify this using "all")
-adj_params <- c("t_p", "t_s", "c_p", "c_s", "inc_mean", "inc_sd")
+adj_params <- c("t_p", "t_s", "t_lod", "c_p", "c_s", "inc_mean", "inc_sd")
 
-# Specify the CT model design matrix
+# Specify the CT summary parameter design matrix
 ct_model <- subject_design(
   ~ 1 + VOC + symptoms + no_vaccines,
-  data = dt_2_tests,
+  data = obs,
   params = adj_params,
   preds_sd = 0.1
 )
 
+# Specify the model to use to adjust CTs globally
 adjustment_model <- test_design(
   ~ 1 + swab_type,
-  data = dt_2_tests,
+  data = obs,
   preds_sd = 1
 )
 
@@ -60,12 +61,13 @@ update_predictor_labels <- function(dt) {
 
 # Translate data and model specification to stan format
 stan_data <- data_to_stan(
-  dt_2_tests,
+  obs,
   ct_model = ct_model,
   adjustment_model  = adjustment_model,
   likelihood = TRUE,
   onsets = TRUE,
-  correlation = 0.5
+  switch = FALSE,
+  correlation = 1
 )
 
 # Compile model
@@ -81,25 +83,29 @@ fit <- mod$sample(
   init = stan_inits(stan_data),
   chains = 4,
   parallel_chains = 4,
-  iter_warmup = 500,
+  iter_warmup = 1000,
   iter_sampling = 2000,
-  adapt_delta = 0.9,
+  adapt_delta = 0.95,
   max_treedepth = 12
 )
 
-# Population level parameter summary
-summarise_pop_pp(fit)
-
-# Population level adjustment summary
-summarise_coeff_pp(fit, params = adj_params, exponentiate = TRUE)
-
 # Extract and plot posterior predictions
-pp_plot <- plot_pp_from_fit(
-  fit, obs = dt_2_tests, samples = 50, alpha = 0.025
-) +
-  facet_wrap(vars(factor(id)))
+ind_pp <- FALSE
+if (ind_pp) {
+  ind_pp_plot <- plot_obs(
+    obs = obs,
+    ct_traj =  extract_ct_trajectories(fit),
+    pp = summarise_pp(fit, obs),
+    samples = 10, traj_alpha = 0.05,
+    col = factor(swab_type)
+  ) +
+    labs(col = "Swab type")
+    facet_wrap(vars(factor(id)))
 
-ggsave("outputs/figures/pp.png", pp_plot, height = 16, width = 16)
+  ggsave(
+    "outputs/figures/pp.png", ind_pp_plot, height = 16, width = 16
+  )
+}
 
 # Extract posterior predictions
 draws <- extract_draws(fit)
@@ -120,7 +126,7 @@ ggsave(
 )
 
 # Add adjusted effects to draws
-adj_draws <- adjust_params(draws, design = ct_model$design) 
+adj_draws <- adjust_params(draws, design = ct_model$design)
 
 # Filter for just adjustments that summary shows appear to differ from base case
 adj_draws <- adj_draws[
