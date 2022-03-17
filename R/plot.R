@@ -25,7 +25,7 @@ plot_obs_ct <- function(ct_dt, ct_traj, pp, traj_alpha = 0.02, onsets = TRUE,
 
   if (!missing(pp)) {
     ct_dt <- cbind(
-      ct_dt,
+      ct_dt[order(id)],
       data.table::copy(pp)[, c("t", "id", "pcr_res", "obs") := NULL]
     )
   }
@@ -100,7 +100,7 @@ plot_ct_pp <- function(pp, sum_pp, onsets = TRUE, clod = 40, alpha = 0.05,
      plot <- plot +
       geom_ribbon(
         data = sum_pp,
-        aes(ymin = lo90, ymax = hi90, y = NULL, group = NULL, col = NULL), 
+        aes(ymin = lo90, ymax = hi90, y = NULL, group = NULL, col = NULL),
         alpha = 0.15
       ) +
       geom_ribbon(
