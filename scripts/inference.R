@@ -92,18 +92,18 @@ fit <- mod$sample(
 # Extract and plot posterior predictions
 ind_pp <- FALSE
 if (ind_pp) {
-  ind_pp_plot <- plot_obs(
+  pp_plot <- plot_obs(
     obs = obs,
     ct_traj =  extract_ct_trajectories(fit),
     pp = summarise_pp(fit, obs),
     samples = 10, traj_alpha = 0.05,
     col = factor(swab_type)
   ) +
-    labs(col = "Swab type")
+    labs(col = "Swab type") +
     facet_wrap(vars(factor(id)))
 
   ggsave(
-    "outputs/figures/pp.png", ind_pp_plot, height = 16, width = 16
+    "outputs/figures/pp.png", pp_plot, height = 16, width = 16
   )
 }
 
