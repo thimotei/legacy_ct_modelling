@@ -169,7 +169,7 @@ plot_density <- function(draws, ...) {
 plot_ct_summary <- function(draws, time_range = seq(0, 60, by = 0.25),
                             samples = 100, by = c(), traj_alpha = 0.05,
                             simulated_samples = 1000, ...) {
-  pop_draws <- extract_pop_params(draws, by = by)
+  pop_draws <- extract_ct_params(draws, by = by, mean = FALSE)
 
   pop_ct_draws <- pop_draws[.draw <= simulated_samples] %>%
     transform_to_model() %>%
@@ -292,8 +292,7 @@ plot_effects <- function(effects,  position = "identity", trans = "log", ...) {
 plot_effect_summary <- function(draws, ct_design, adjustment_design, variables,
                                 variable_labels = function(dt, ...) {
                                   return(dt)
-                                },
-                                scale_unit = 1, ...) {
+                                }, ...) {
   ct_plot <- draws %>%
     summarise_effects(design = ct_design, variables = variables) %>%
     update_predictor_labels() %>%
@@ -302,7 +301,7 @@ plot_effect_summary <- function(draws, ct_design, adjustment_design, variables,
 
   adjustment_plot <- draws %>%
     summarise_adjustment(
-      scale_unit = scale_unit, design = adjustment_design
+      design = adjustment_design
     ) %>%
     update_predictor_labels() %>%
     variable_labels(reverse = TRUE) %>%

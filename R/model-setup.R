@@ -135,7 +135,7 @@ stan_inits <- function(dt) {
       inits$c_s_mean <- array(rnorm(1, 0, 1))
       inits$t_s_mean <- array(rnorm(1, 1.61, 0.5))
     }
-    
+
     if (dt$preds > 0) {
       if (dt$adj_t_p > 0) {
         inits$beta_t_p <- rnorm(dt$preds, 0, 0.01)

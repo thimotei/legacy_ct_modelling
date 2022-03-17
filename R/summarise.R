@@ -39,13 +39,13 @@ summarise_effects <- function(draws, design, variables, exponentiate = TRUE) {
     return(eff_summary)
 }
 
-summarise_adjustment <- function(draws, design, scale_unit = 1) {
+summarise_adjustment <- function(draws, design) {
   eff_draws <- extract_coeffs(
     draws, exponentiate = FALSE, design = design,
     variables = c("ct_shift", "ct_scale")
   )
 
-  eff_draws[variable %in% "ct_scale", value := scale_unit * exp(value)]
+  eff_draws[variable %in% "ct_scale", value := exp(value)]
 
   by <- "variable"
   if (!missing(design)) {
