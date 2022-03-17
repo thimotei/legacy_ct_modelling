@@ -110,12 +110,12 @@ simulate_obs <- function(obs = obs,
       onset_time = rlnorm(obs$P, inc_mean, inc_sd),
       T_e = T_e,
       t_p = exp(t_p_mean + ind_var[1] * ind_eta[1, ]),
-      t_s = exp(t_s_mean + ind_var[2] * ind_eta[2, ]),
-      t_lod = exp(t_lod_mean + ind_var[3] * ind_eta[3, ]),
+      t_s = exp(t_s_mean + ind_var[2] * ind_eta[4, ]),
+      t_lod = exp(t_lod_mean + ind_var[3] * ind_eta[2, ]),
       c_0 = c_0,
-      c_s = c_0 * plogis(c_s_mean + ind_var[4] * ind_eta[4, ])
+      c_s = c_0 * plogis(c_s_mean + ind_var[4] * ind_eta[5, ])
     )[,
-      c_p := c_s * plogis(c_p_mean + ind_var[5] * ind_eta[5, ])
+      c_p := c_s * plogis(c_p_mean + ind_var[5] * ind_eta[3, ])
     ][,
       c_lod := obs$c_lod,
     ][,
