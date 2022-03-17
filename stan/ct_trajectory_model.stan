@@ -80,7 +80,7 @@ parameters {
 
 transformed parameters {
   vector[P] t_p; vector[P] t_s; vector[P] t_lod;
-  vector[P] c_p; vector[switch ? P : 0] c_s;
+  vector[P] c_p; vector[P] c_s;
   vector[P] t_lod_abs; vector[N] t_inf;
   vector[N] exp_ct; vector[N] adj_exp_ct;
 {
@@ -104,6 +104,7 @@ transformed parameters {
     );
     c_p = c_s .* c_p;
   }else{
+    c_s = rep_vector(0.0, P);
     t_s = rep_vector(0.0, P);
     c_p = c_0 .* c_p;
   }
