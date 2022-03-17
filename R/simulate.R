@@ -3,6 +3,9 @@
 
 # for Ct trajectories with the long wane
 piecewise_ct <- function(t, c0, cp, cs, clod, te, tp, ts, tlod) {
+  if (ts == 0) {
+    cs <- cp
+  }
   if (t <= te) {
     y <- c0
   } else if (t > te && t <= te + tp) {
@@ -16,21 +19,6 @@ piecewise_ct <- function(t, c0, cp, cs, clod, te, tp, ts, tlod) {
   }
   return(y)
 }
-
-
-# for Ct trajectories without the longer wane
-piecewise_ct_single <- function(t, c0, cp, clod, te, tp, tlod) {
-    if (t <= te) {
-      y <- c0;
-    } else if (t > te && t <= te + tp) {
-      y <- ((t - te) * (cp - c0)) / tp  + c0;
-    } else if (t > te + tp && t <= te + tp + tlod) {
-      y <- ((t - te - tp) * (clod - cp)) / tlod  + cp;
-    } else if (t > tlod) {
-      y <- clod;
-    }
-    return(y);
-  }
 
 simulate_cts <- function(params, time_range = 0:30, obs_noise = TRUE) {
 
