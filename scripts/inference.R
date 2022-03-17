@@ -105,34 +105,18 @@ ggsave("outputs/figures/pp.png", pp_plot, height = 16, width = 16)
 draws <- extract_draws(fit)
 
 # Extract effect sizes and make a summary plot
-eff_plot <- draws %>%
-  summarise_effects(design = ct_model$design, variables = adj_params) %>%
-  update_predictor_labels() %>%
-  update_variable_labels(reverse = TRUE) %>%
-  plot_effects(col = predictor, position = position_dodge(width = 0.6)) +
-  scale_colour_brewer(palette = "Dark2") +
-  labs(col = "Adjustment")
-
-ggsave(
-  "outputs/figures/effects_summary.png",
-  eff_plot, width = 9, height = 12,
-)
-
-# CT shift and scale effects
-ct_eff_plot <- draws %>%
-  summarise_effects(
-    design = adjustment_model$design,
-    variables = c("ct_scale", "ct_shift")
-  ) %>%
-  update_predictor_labels() %>%
-  update_variable_labels(reverse = TRUE) %>%
-  plot_effects(col = predictor, position = position_dodge(width = 0.6)) +
-  scale_colour_brewer(palette = "Dark2") +
+eff_plot <- plot_effect_summary(
+  draws, ct_design = ct_model$design, variables = adj_params,
+  adjustment_design = adjustment_model$design, scale_unit = 5,
+  variable_labels = update_variable_labels,
+  col = predictor, position = position_dodge(width = 0.6)
+) &
+  scale_colour_brewer(palette = "Dark2") &
   labs(col = "Adjustment")
 
 ggsave(
   "outputs/figures/ct_effects_summary.png",
-  ct_eff_plot, width = 9, height = 6,
+  eff_plot, width = 9, height = 12,
 )
 
 # Add adjusted effects to draws
