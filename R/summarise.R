@@ -1,8 +1,8 @@
 summarise_pop_pp <- function(fit) {
   draws <- fit$summary(
     variables = c(
-      "t_p_mean", "t_s_mean", "t_lod_mean", "c_p_mean",
-      "c_s_mean", "inc_mean", "inc_sd"
+      "t_p_mean", "t_s_mean[1]", "t_lod_mean", "c_p_mean",
+      "c_s_mean[1]", "inc_mean", "inc_sd"
     )
   )
   draws <- data.table::as.data.table(draws)
@@ -53,6 +53,14 @@ summarise_adjustment <- function(draws, design) {
   }
   eff_summary <- summarise_draws(eff_draws, by = by)
   return(eff_summary)
+}
+
+summarise_pp <- function(fit, obs) {
+  ct_pp <- extract_posterior_predictions(fit, obs)
+  ct_pp <- summarise_draws(
+    ct_pp[, value := sim_ct], by = c("id", "t", "pcr_res", "obs")
+  )
+  return(ct_pp)
 }
 
 summarise_draws <- function(draws, by = c("id", "time")) {

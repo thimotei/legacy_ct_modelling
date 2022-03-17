@@ -19,21 +19,21 @@ custom_plot_theme <- function(flip = FALSE, legend_arg = FALSE) {
   return(custom_plot_theme)
 }
 
-plot_obs_ct <- function(ct_dt, ct_traj, pp, traj_alpha = 0.02, onsets = TRUE,
-                        clod = 40) {
+plot_obs <- function(obs, ct_traj, pp, traj_alpha = 0.05, onsets = TRUE,
+                     clod = 40, samples = 10, ...) {
 
   if (!missing(pp)) {
-    ct_dt <- cbind(
-      ct_dt[order(id)],
+    obs <- cbind(
+      obs[order(id)],
       data.table::copy(pp)[, c("t", "id", "pcr_res", "obs") := NULL]
     )
   }
 
-  plot <- ggplot(ct_dt) +
-    aes(x = t, y = ct_value, colour = factor(swab_type)) +
+  plot <- ggplot(obs) +
+    aes(x = t, y = ct_value, ...) +
     scale_colour_brewer(palette = "Dark2")
 
-  if (!is.null(ct_dt$onset_time) & onsets) {
+  if (!is.null(obs$onset_time) & onsets) {
     plot <- plot +
       geom_vline(aes(xintercept = onset_time), linetype = 2, alpha = 0.8)
   }
@@ -62,7 +62,7 @@ plot_obs_ct <- function(ct_dt, ct_traj, pp, traj_alpha = 0.02, onsets = TRUE,
    if (!missing(ct_traj)) {
      plot <- plot +
       geom_line(
-        data = ct_traj,
+        data = ct_traj[iteration <= ceiling(samples / max(chain))],
         aes(y = value, x = time_since_first_pos,
             group = interaction(iteration, chain)
         ),
@@ -74,7 +74,7 @@ plot_obs_ct <- function(ct_dt, ct_traj, pp, traj_alpha = 0.02, onsets = TRUE,
     custom_plot_theme() +
     theme(legend.position = "bottom") +
     labs(
-      colour = "Swab type", x = "Days since first positive test",
+      x = "Days since first positive test",
       y = "CT value"
     )
   return(plot)
@@ -135,29 +135,6 @@ plot_ip_pp <- function(pp, sum_pp, onsets = TRUE, alpha = 0.05, ...) {
     return(plot)
 }
 
-plot_pp_from_fit <- function(fit, obs, samples = 10, alpha = 0.05) {
-  ct_draws <- extract_ct_trajectories(fit)
-
-  ct_summary <- summarise_draws(
-    data.table::copy(ct_draws)[,
-      time_since_first_pos := as.integer(time_since_first_pos)
-      ],
-    by = c("id", "time_since_first_pos")
-  )
-
-  ct_pp <- extract_posterior_predictions(fit, obs)
-  ct_pp <- summarise_draws(
-    ct_pp[, value := sim_ct], by = c("id", "t", "pcr_res", "obs")
-  )
-
-  # Plotting summaries of fitted trajectories against simulated data
-  plot <- plot_obs_ct(
-    obs, ct_draws[iteration <= ceiling(samples / max(chain))],
-    ct_pp, traj_alpha = alpha
-  )
-  return(plot)
-}
-
 plot_density <- function(draws, ...) {
   plot <- ggplot(draws) +
     geom_density(aes(x = value, y = ..scaled.., ...), alpha = 0.2) +
@@ -186,9 +163,16 @@ plot_ct_summary <- function(draws, time_range = seq(0, 60, by = 0.25),
   ) +
     guides(col = guide_none(), fill = guide_none())
 
-  param_pp_plot <- pop_draws %>%
+  no_switch <- is.null(pop_draws[["t_s"]])
+
+  param_pp <- pop_draws %>%
     transform_to_natural() %>%
-    melt_draws(ids = c(".chain", ".iteration", ".draw", by)) %>%
+    melt_draws(ids = c(".chain", ".iteration", ".draw", by))
+
+  if (no_switch) {
+    param_pp <- param_pp[!variable %in% c("t_s", "c_s")]
+  }
+  param_pp_plot <- param_pp %>%
     update_variable_labels() %>%
     plot_density(...) +
     ggplot2::facet_wrap(~variable, nrow = 2, scales = "free_x") +

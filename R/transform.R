@@ -1,6 +1,13 @@
 transform_to_model <- function(draws) {
   draws <- data.table::copy(draws)
 
+  if (is.null(draws[["t_s"]])) {
+    draws[, t_s := -Inf]
+  }
+
+  if (is.null(draws[["c_s"]])) {
+    draws[, c_s := c_0]
+  }
   draws[,
     `:=`(
       t_p = exp(t_p),
