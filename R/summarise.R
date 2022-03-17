@@ -39,6 +39,22 @@ summarise_effects <- function(draws, design, variables, exponentiate = TRUE) {
     return(eff_summary)
 }
 
+summarise_adjustment <- function(draws, design, scale_unit = 1) {
+  eff_draws <- extract_coeffs(
+    draws, exponentiate = FALSE, design = design,
+    variables = c("ct_shift", "ct_scale")
+  )
+
+  eff_draws[variable %in% "ct_scale", value := scale_unit * exp(value)]
+
+  by <- "variable"
+  if (!missing(design)) {
+    by <- c(by, "predictor")
+  }
+  eff_summary <- summarise_draws(eff_draws, by = by)
+  return(eff_summary)
+}
+
 summarise_draws <- function(draws, by = c("id", "time")) {
 
   out <- draws[,

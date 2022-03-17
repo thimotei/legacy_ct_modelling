@@ -262,7 +262,7 @@ plot_summary <- function(draws, ct_time_range = seq(0, 60, by = 0.25),
   return(parameter_pp)
 }
 
-plot_effects <- function(effects,  position = "identity", ...) {
+plot_effects <- function(effects,  position = "identity", trans = "log", ...) {
 
   eff_plot <- ggplot(effects) +
     aes(y = variable, ...) +
@@ -284,7 +284,34 @@ plot_effects <- function(effects,  position = "identity", ...) {
     ) +
     custom_plot_theme() +
     theme(legend.position = "bottom") +
-    scale_x_continuous(trans = "log") +
+    scale_x_continuous(trans = trans) +
     labs(x = "Effect size", y = "Variable modified")
   return(eff_plot)
+}
+
+plot_effect_summary <- function(draws, ct_design, adjustment_design, variables,
+                                variable_labels = function(dt, ...) {
+                                  return(dt)
+                                },
+                                scale_unit = 1, ...) {
+  ct_plot <- draws %>%
+    summarise_effects(design = ct_design, variables = variables) %>%
+    update_predictor_labels() %>%
+    variable_labels(reverse = TRUE) %>%
+    plot_effects(...)
+
+  adjustment_plot <- draws %>%
+    summarise_adjustment(
+      scale_unit = scale_unit, design = adjustment_design
+    ) %>%
+    update_predictor_labels() %>%
+    variable_labels(reverse = TRUE) %>%
+    plot_effects(
+      trans = "identity", ...
+    )
+
+  summary <- (ct_plot + adjustment_plot) +
+   patchwork::plot_layout(heights = c(4, 1))
+
+  return(summary)
 }
