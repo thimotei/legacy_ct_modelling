@@ -96,7 +96,7 @@ transformed parameters {
   t_p = exp(combine_effects(t_p_mean, beta_t_p, design)+ eta[, 1]);
   t_lod = exp(combine_effects(t_lod_mean, beta_t_lod, design) + eta[, 2]);
   c_p = inv_logit(combine_effects(c_p_mean, beta_c_p, design)+ eta[, 3]);
-
+  // Optional effects if a second breakpoint is used
   if (switch) {
     t_s = exp(combine_effects(t_s_mean[1], beta_t_s, design) + eta[, 4]);
     c_s = c_0 * inv_logit(

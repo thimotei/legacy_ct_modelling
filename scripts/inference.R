@@ -26,7 +26,7 @@ p1_raw <- plot_obs_ct(dt_2_tests) +
 
 # Specify which params adjusting for (see params_avail_to_adjust() for options)
 # Here all available options (can also specify this using "all")
-adj_params <- c("t_p", "t_s", "t_lod", "c_p", "c_s", "inc_mean", "inc_sd")
+adj_params <- c("t_p", "t_s", "c_p", "c_s", "inc_mean", "inc_sd")
 
 # Specify the CT model design matrix
 ct_model <- subject_design(
@@ -107,7 +107,7 @@ draws <- extract_draws(fit)
 # Extract effect sizes and make a summary plot
 eff_plot <- plot_effect_summary(
   draws, ct_design = ct_model$design, variables = adj_params,
-  adjustment_design = adjustment_model$design, scale_unit = 5,
+  adjustment_design = adjustment_model$design,
   variable_labels = update_variable_labels,
   col = predictor, position = position_dodge(width = 0.6)
 ) &
@@ -115,12 +115,12 @@ eff_plot <- plot_effect_summary(
   labs(col = "Adjustment")
 
 ggsave(
-  "outputs/figures/ct_effects_summary.png",
+  "outputs/figures/effects.png",
   eff_plot, width = 9, height = 12,
 )
 
 # Add adjusted effects to draws
-adj_draws <- adjust_params(draws, design = ct_model$design)
+adj_draws <- adjust_params(draws, design = ct_model$design) 
 
 # Filter for just adjustments that summary shows appear to differ from base case
 adj_draws <- adj_draws[

@@ -19,13 +19,16 @@ extract_params <- function(draws, params, by) {
   draws <- draws[, ..cols]
   return(draws[])
 }
-extract_pop_params <- function(draws, params = c("c_0", "c_p_mean", "c_p",
-                                                 "c_s_mean", "c_s",
-                                                 "t_p_mean", "t_p",
-                                                 "t_s_mean", "t_s",
-                                                 "t_lod_mean", "t_lod"), by) {
+extract_ct_params <- function(draws, params = c("c_0", "c_p_mean",
+                                                 "c_s_mean[1]", "t_p_mean",
+                                                 "t_s_mean[1]", "t_lod_mean"),
+                              mean = TRUE, by) {
+  if (!mean) {
+    params <- stringr::str_remove(params, "_mean")
+    params <- stringr::str_remove(params, "\\[1\\]")
+  }
   draws <- extract_params(draws, params = params, by)
-  colnames(draws) <- stringr::str_remove(colnames(draws), "_mean")
+
   return(draws[])
 }
 
@@ -41,7 +44,7 @@ extract_ip_params <- function(draws, params = c("inc_mean[1]", "inc_mean",
 
 extract_param_draws <- function(draws) {
   draws <- cbind(
-    extract_pop_params(draws),
+    extract_ct_params(draws),
     extract_ip_params(draws)[, .(inc_mean, inc_sd)]
   )
   return(draws)
