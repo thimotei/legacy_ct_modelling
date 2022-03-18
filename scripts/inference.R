@@ -66,8 +66,8 @@ stan_data <- data_to_stan(
   adjustment_model  = adjustment_model,
   likelihood = TRUE,
   onsets = TRUE,
-  switch = FALSE,
-  correlation = 1
+  switch = TRUE,
+  correlation = NA
 )
 
 # Compile model
