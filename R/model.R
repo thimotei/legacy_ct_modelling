@@ -123,7 +123,7 @@ epict_to_stan <- function(obs,
 epict_inits <- function(dt) {
   function() {
     inits <- list(
-      T_e = purrr::map_dbl(
+      t_inf = purrr::map_dbl(
         1:dt$P,
         ~ truncnorm::rtruncnorm(
           1, a = max(-dt$onset_time[.], 0),

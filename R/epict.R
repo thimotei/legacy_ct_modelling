@@ -4,7 +4,7 @@ epict <- function(obs,
                   inits = epict_inits,
                   ct_model = subject_design(~ 1, obs),
                   adjustment_model = test_design(~ 1, obs),
-                  individual_variation = TRUE, individual_correlation = 1,
+                  individual_variation = 0.2, individual_correlation = 1,
                   censoring_threshold = 40, switch = TRUE,
                   onsets = TRUE, incubation_period = get_inc_period(),
                   likelihood = TRUE, output_loglik = FALSE, ...) {
