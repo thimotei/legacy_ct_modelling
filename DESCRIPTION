@@ -16,9 +16,7 @@ License: MIT + file LICENSE
 Imports:
     cmdstanr,
     cowplot,
-    encryptr,
     lubridate,
-    rstan,
     data.table,
     ggplot2,
     reshape2,
