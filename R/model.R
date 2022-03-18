@@ -51,6 +51,7 @@ epict_to_stan <- function(obs,
                          likelihood = TRUE, output_loglik = FALSE) {
   obs <- data.table::copy(obs)
   obs <- obs[order(id)]
+  obs[, obs := 1:.N]
 
   tests_per_id <- obs[, .(n = .N), by = "id"]$n
 
@@ -63,7 +64,10 @@ epict_to_stan <- function(obs,
                     ct_value = ifelse(
                       is.na(obs$ct_value), -99, obs$ct_value
                     ),
-                    pcr_res = obs[, pcr_res],
+                    ncensored = length(obs[uncensored == 0, obs]),
+                    censored = obs[uncensored == 0, obs],
+                    nuncensored = length(obs[uncensored == 1, obs]),
+                    uncensored = obs[uncensored == 1, obs],
                     t_e = 0,
                     c_0 = censoring_threshold,
                     c_lod = censoring_threshold,

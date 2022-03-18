@@ -58,7 +58,7 @@ summarise_adjustment <- function(draws, design) {
 summarise_pp <- function(fit, obs) {
   ct_pp <- extract_posterior_predictions(fit, obs)
   ct_pp <- summarise_draws(
-    ct_pp[, value := sim_ct], by = c("id", "t", "pcr_res", "obs")
+    ct_pp[, value := sim_ct], by = c("id", "t", "obs")
   )
   return(ct_pp)
 }

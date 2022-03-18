@@ -56,7 +56,7 @@ simulate_cts <- function(params, time_range = 0:30, obs_noise = TRUE) {
     ][ct_value >= c_lod,
       ct_value := c_lod
     ][,
-      pcr_res := ifelse(ct_value < c_lod, 1, 0)
+      uncensored := ifelse(ct_value < c_lod, 1, 0)
     ]
   }else{
     ct_trajs[, ct_value := exp_ct]

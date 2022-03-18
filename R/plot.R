@@ -25,7 +25,7 @@ plot_obs <- function(obs, ct_traj, pp, traj_alpha = 0.05, onsets = TRUE,
   if (!missing(pp)) {
     obs <- cbind(
       obs[order(id)],
-      data.table::copy(pp)[, c("t", "id", "pcr_res", "obs") := NULL]
+      data.table::copy(pp)[, c("t", "id", "obs") := NULL]
     )
   }
 
