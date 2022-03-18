@@ -13,7 +13,7 @@ data {
   array[P] int tests_per_id; // Tests per ID
   array[P] int cum_tests_per_id; // Cumulative tests per id
   real c_lod; // Ct value at limit of detection 
-  real t_e; 
+  real t_inf; 
   array[2] real lmean; // mean of incubation period used (+ sd)
   array[2] real lsd; // standard deviation of incubation period used (+ sd)
   array[N] int pcr_res; // boolean test result
@@ -132,7 +132,7 @@ transformed parameters {
 
   // Expected ct value given viral load parameters
   exp_ct = piecewise_ct_by_id(
-    inf_rel, c_0, c_p, c_s, c_0, t_e, t_p, t_s, t_lod_abs, id,
+    inf_rel, c_0, c_p, c_s, c_0, t_inf, t_p, t_s, t_lod_abs, id,
     tests_per_id, cum_tests_per_id, switch
   );
 

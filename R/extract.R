@@ -103,8 +103,8 @@ extract_ct_trajectories <- function(fit, variable = "ct", inf_time = TRUE) {
    order(id, time)]
 
   if (inf_time) {
-    inf_time_draws <- extract_draws(fit, params = "T_e", format = "array")[,
-      id := str_remove(variable, "T_e\\[")][,
+    inf_time_draws <- extract_draws(fit, params = "t_inf", format = "array")[,
+      id := str_remove(variable, "t_inf\\[")][,
       id := str_remove(id, "\\]")][,
       .(id, inf_time = value, iteration, chain)]
 
