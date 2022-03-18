@@ -23,6 +23,7 @@ data {
   vector[P] onset_time;
   int K; //Number of parameters with individual level variation
   int switch; //Should a secondary breakpoint in the CT curve be modelled
+  int ind_corr; // Should individual variation be modelled with correlation
   real lkj_prior; // LKJ prior for individual level variation
   int preds; // Number of predictors
   real preds_sd; // Standard deviation of predictor coeffs
@@ -58,7 +59,8 @@ parameters {
   array[any_onsets] real inc_mean; //Incubation period mean
   array[any_onsets] real<lower = 0> inc_sd; //Incubation period sd
   real<lower = c_lod> c_0;   // Ct value before detection
-  cholesky_factor_corr[K] L_Omega; // Cholesky_factored correlation matrix
+  // Cholesky_factored correlation matrix
+  cholesky_factor_corr[ind_corr ? K : 0] L_Omega;
   real c_p_mean; // Ct value of viral load p
   array[switch] real c_s_mean; // Ct value at s
   real t_p_mean; // Timing of peak
@@ -85,13 +87,19 @@ transformed parameters {
   vector[P] t_lod_abs; vector[N] t_inf;
   vector[N] exp_ct; vector[N] adj_exp_ct;
 {
-  // Cholesky factor of the covariance matrix
-  matrix[K, K] L;
-  L = diag_pre_multiply(ind_var, L_Omega);
-
-  // Calculate per-person correlated effects
   matrix[P, K] eta;
-  eta = (L * ind_eta)';
+  if (ind_corr) {
+    // Cholesky factor of the covariance matrix
+    matrix[K, K] L;
+    L = diag_pre_multiply(ind_var, L_Omega);
+
+    // Calculate per-person correlated effects
+    eta = (L * ind_eta)';
+  }else{
+    for (i in 1:K) {
+      eta[P, i] = ind_eta[i, P] * ind_var[i];
+    }
+  }
 
   // Combine effects for each CT parameter and transform to required scale
   t_p = exp(combine_effects(t_p_mean, beta_t_p, design)+ eta[, 1]);
@@ -149,7 +157,9 @@ model {
   ind_var ~ normal(0, 0.25);
 
   // LKJ prior on correlation between individual level dynamics
-  L_Omega ~ lkj_corr_cholesky(lkj_prior);
+  if (ind_corr) {
+    L_Omega ~ lkj_corr_cholesky(lkj_prior);
+  }
 
   // Variation in observation model
   sigma ~ normal(0, 2) T[0,];
@@ -241,5 +251,8 @@ generated quantities {
       sim_times, c_0, c_p[i], c_s[i], c_0, t_e, t_p[i], t_s[i], t_lod_abs[i],
       switch
     ));
+  }
+  if (output_loglik) {
+
   }
 }
