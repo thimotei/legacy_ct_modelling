@@ -67,6 +67,7 @@ stan_data <- data_to_stan(
   likelihood = TRUE,
   onsets = TRUE,
   switch = TRUE,
+  individual_variation = FALSE,
   correlation = NA
 )
 
