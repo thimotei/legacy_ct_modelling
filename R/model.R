@@ -44,7 +44,7 @@ get_inc_period <- function(inc_mean = c(1.621, 0.0640),
 epict_to_stan <- function(obs,
                          ct_model = subject_design(~ 1, obs),
                          adjustment_model = test_design(~ 1, obs),
-                         individual_variation = TRUE,
+                         individual_variation = 0.2,
                          individual_correlation = 1,
                          censoring_threshold = 40, switch = TRUE,
                          onsets = TRUE, incubation_period = get_inc_period(),
@@ -68,8 +68,10 @@ epict_to_stan <- function(obs,
                     c_0 = censoring_threshold,
                     c_lod = censoring_threshold,
                     K = ifelse(switch, 5, 3),
-                    ind_var_m = as.numeric(individual_variation),
-                    ind_corr = as.numeric(!is.na(individual_correlation)),
+                    ind_var_sd = individual_variation,
+                    ind_var_m = individual_variation != 0,
+                    ind_corr = as.numeric(!is.na(individual_correlation)) ||
+                      individual_variation != 0,
                     lkj_prior = ifelse(
                       is.na(individual_correlation), 0, individual_correlation
                     ),
@@ -134,8 +136,8 @@ epict_inits <- function(dt) {
       c_p_mean = rnorm(1, 0, 1),
       t_p_mean = rnorm(1, 1.61, 0.5),
       t_lod_mean = rnorm(1, 2.3, 0.5),
-      ind_var = abs(rnorm(dt$K, 0, 0.1)),
-      ind_eta  = matrix(rnorm(dt$P * dt$K, 0, 1), nrow = dt$K, ncol = dt$P),
+      ind_var = abs(rnorm(dt$K, 0, dt$ind_var_sd * 0.1)),
+      ind_eta  = matrix(rnorm(dt$P * dt$K, 0, 0.1), nrow = dt$K, ncol = dt$P),
       sigma = truncnorm::rtruncnorm(1, a = 0, mean = 5, sd = 0.5)
     )
 
