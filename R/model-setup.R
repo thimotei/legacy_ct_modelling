@@ -44,8 +44,10 @@ get_inc_period <- function(inc_mean = c(1.621, 0.0640),
 data_to_stan <- function(input_data,
                          ct_model = subject_design(~ 1, input_data),
                          adjustment_model = test_design(~ 1, input_data),
-                         likelihood = TRUE, output_loglik = FALSE, clod = 40,
-                         onsets = TRUE, switch = TRUE, correlation = 1) {
+                         individual_variation = TRUE, correlation = 1,
+                         clod = 40, switch = TRUE,
+                         onsets = TRUE, incubation_period = get_inc_period(),
+                         likelihood = TRUE, output_loglik = FALSE) {
   input_data <- data.table::copy(input_data)
   input_data <- input_data[order(id)]
 
@@ -65,10 +67,11 @@ data_to_stan <- function(input_data,
                     c_0 = clod,
                     c_lod = clod,
                     K = ifelse(switch, 5, 3),
+                    ind_var_m = as.numeric(individual_variation),
                     ind_corr = as.numeric(!is.na(correlation)),
                     lkj_prior = ifelse(is.na(correlation), 0, correlation),
-                    lmean = get_inc_period()$inc_mean_p,
-                    lsd = get_inc_period()$inc_sd_p,
+                    lmean = incubation_period$inc_mean_p,
+                    lsd = incubation_period$inc_sd_p,
                     likelihood = as.numeric(likelihood),
                     output_loglik = as.numeric(output_loglik),
                     preds = ncol(ct_model$design) - 1,

@@ -23,6 +23,7 @@ data {
   vector[P] onset_time;
   int K; //Number of parameters with individual level variation
   int switch; //Should a secondary breakpoint in the CT curve be modelled
+  int ind_var_m; // Should inividual variation be modelled
   int ind_corr; // Should individual variation be modelled with correlation
   real lkj_prior; // LKJ prior for individual level variation
   int preds; // Number of predictors
@@ -66,8 +67,8 @@ parameters {
   real t_p_mean; // Timing of peak
   array[switch] real t_s_mean; // Timing of switch
   real t_lod_mean; // Time viral load hits lower limit of detection
-  vector<lower = 0>[K] ind_var; // SD of individual level variation
-  matrix[K, P] ind_eta; // Individual level variation
+  vector<lower = 0>[ind_var_m ? K : 0] ind_var; // SD of individual variation
+  matrix[ind_var_m ? K : 0, P] ind_eta; // Individual level variation
   real<lower = 0> sigma; // Variance parameter for oobservation model
   // Coefficients
   vector[preds && adj_t_p ? preds : 0] beta_t_p;
@@ -96,8 +97,12 @@ transformed parameters {
     // Calculate per-person correlated effects
     eta = (L * ind_eta)';
   }else{
-    for (i in 1:K) {
-      eta[1:P, i] = to_vector(ind_eta[i, 1:P]) * ind_var[i];
+    if (ind_var_m) {
+      for (i in 1:K) {
+        eta[1:P, i] = to_vector(ind_eta[i, 1:P]) * ind_var[i];
+      }
+    }else{
+      eta = rep_matrix(0, P, K);
     }
   }
 
@@ -109,7 +114,7 @@ transformed parameters {
   if (switch) {
     t_s = exp(combine_effects(t_s_mean[1], beta_t_s, design) + eta[, 4]);
     c_s = c_0 * inv_logit(
-      combine_effects(c_s_mean[1], beta_c_s, design)+ eta[, 5]
+      combine_effects(c_s_mean[1], beta_c_s, design) + eta[, 5]
     );
     c_p = c_s .* c_p;
   }else{
@@ -153,8 +158,10 @@ model {
   }
 
   // Individual level variation
-  to_vector(ind_eta) ~ std_normal();
-  ind_var ~ normal(0, 0.25);
+  if (ind_var_m) {
+    to_vector(ind_eta) ~ std_normal();
+    ind_var ~ normal(0, 0.25);
+  }
 
   // LKJ prior on correlation between individual level dynamics
   if (ind_corr) {
