@@ -245,7 +245,6 @@ model {
 }
 
 generated quantities {
-  matrix[P, 61] ct;
   vector[N] sim_ct;
   matrix[ind_corr ? K : 0, ind_corr ? K : 0] correlation;
   if (ind_corr) {
@@ -254,12 +253,6 @@ generated quantities {
   for (i in 1:N) {
     sim_ct[i] = truncated_normal_rng(adj_exp_ct[i], sigma, 0, c_0);
     sim_ct[i] = censor(sim_ct[i], c_lod);
-  }
-  for(i in 1:P) {
-    ct[i, 1:61] = to_row_vector(piecewise_ct(
-      sim_times, c_0, c_p[i], c_s[i], c_0, t_e, t_p[i], t_s[i], t_lod_abs[i],
-      switch
-    ));
   }
   if (output_loglik) {
 
