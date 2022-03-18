@@ -39,6 +39,7 @@ data {
   real ct_preds_sd; // Standard deviation of CT predictor coeffs
   matrix[N, ct_preds + 1] ct_design; // Design matrix for CT adjustment
   int likelihood;
+  int output_loglik;
 }
 
 transformed data {
