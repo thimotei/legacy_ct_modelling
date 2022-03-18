@@ -7,7 +7,7 @@ epict <- function(obs,
                   individual_variation = TRUE, individual_correlation = 1,
                   censoring_threshold = 40, switch = TRUE,
                   onsets = TRUE, incubation_period = get_inc_period(),
-                  likelihood = TRUE, output_loglik = FALSE) {
+                  likelihood = TRUE, output_loglik = FALSE, ...) {
   stan_data <- as_data_list(
     obs,
     ct_model = ct_model,

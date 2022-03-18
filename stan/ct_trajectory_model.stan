@@ -24,6 +24,7 @@ data {
   int K; //Number of parameters with individual level variation
   int switch; //Should a secondary breakpoint in the CT curve be modelled
   int ind_var_m; // Should inividual variation be modelled
+  real ind_var_sd; // Standard deviation of inividual variation to be modelled
   int ind_corr; // Should individual variation be modelled with correlation
   real lkj_prior; // LKJ prior for individual level variation
   int preds; // Number of predictors
@@ -160,7 +161,7 @@ model {
   // Individual level variation
   if (ind_var_m) {
     to_vector(ind_eta) ~ std_normal();
-    ind_var ~ normal(0, 0.25);
+    ind_var ~ normal(0, ind_var_sd);
   }
 
   // LKJ prior on correlation between individual level dynamics

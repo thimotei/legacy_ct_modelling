@@ -55,7 +55,8 @@ update_predictor_labels <- function(dt) {
       labels = c(
         "2 vaccines", "asymptomatic", "Delta", "BA.2", "Swab type"
       )
-    )]
+    )
+  ]
   return(dt[])
 }
 
@@ -67,8 +68,8 @@ fit <- epict(
   likelihood = TRUE,
   onsets = TRUE,
   switch = TRUE,
-  individual_variation = FALSE,
-  correlation = NA,
+  individual_variation = 0.1,
+  individual_correlation = 2,
   chains = 4,
   parallel_chains = 4,
   iter_warmup = 1000,
