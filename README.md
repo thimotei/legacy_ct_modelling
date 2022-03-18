@@ -1,4 +1,4 @@
-# Piecewise linear regression modelling of COVID-19 Cycle Thresholds
+# Individual level modelling of Cycle Thresholds
 
 **Authors:**
 

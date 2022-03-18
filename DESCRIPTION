@@ -1,5 +1,5 @@
-Package: ct.modelling
-Title: Viral Load Curve Estimation
+Package: epict
+Title: Individual level Cycle Threshold Modelling
 Version: 0.1.0
 Authors@R: 
     c(person(given = "Tim",
@@ -11,7 +11,7 @@ Authors@R:
              role = c("aut", "cre"),
              comment = c(ORCID = "0000-0001-8057-8037"),
              email = "sam.abbott@lshtm.ac.uk"))
-Description: Viral load curve estimation
+Description: Individual level Cycle Threshold Modelling
 License: MIT + file LICENSE
 Imports:
     cmdstanr,

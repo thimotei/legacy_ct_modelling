@@ -59,8 +59,8 @@ update_predictor_labels <- function(dt) {
   return(dt[])
 }
 
-# Translate data and model specification to stan format
-stan_data <- data_to_stan(
+# Fit the model
+fit <- epict(
   obs,
   ct_model = ct_model,
   adjustment_model  = adjustment_model,
@@ -68,20 +68,7 @@ stan_data <- data_to_stan(
   onsets = TRUE,
   switch = TRUE,
   individual_variation = FALSE,
-  correlation = NA
-)
-
-# Compile model
-mod <- cmdstan_model(
-  "stan/ct_trajectory_model.stan",
-  include_paths = "stan",
-  stanc_options = list("O1")
-)
-
-# Fit
-fit <- mod$sample(
-  data = stan_data,
-  init = stan_inits(stan_data),
+  correlation = NA,
   chains = 4,
   parallel_chains = 4,
   iter_warmup = 1000,
