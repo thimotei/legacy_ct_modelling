@@ -97,7 +97,7 @@ transformed parameters {
     eta = (L * ind_eta)';
   }else{
     for (i in 1:K) {
-      eta[P, i] = ind_eta[i, P] * ind_var[i];
+      eta[1:P, i] = to_vector(ind_eta[i, 1:P]) * ind_var[i];
     }
   }
 
@@ -240,8 +240,10 @@ model {
 generated quantities {
   matrix[P, 61] ct;
   vector[N] sim_ct;
-  matrix[5, 5] correlation;
-  correlation = L_Omega * L_Omega';
+  matrix[ind_corr ? K : 0, ind_corr ? K : 0] correlation;
+  if (ind_corr) {
+    correlation = L_Omega * L_Omega';
+  }
   for (i in 1:N) {
     sim_ct[i] = truncated_normal_rng(adj_exp_ct[i], sigma, 0, c_0);
     sim_ct[i] = censor(sim_ct[i], c_lod);
