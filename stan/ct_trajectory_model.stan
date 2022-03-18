@@ -2,8 +2,6 @@ functions{
 #include functions/piecewise_ct.stan
 #include functions/combine_effects.stan
 #include functions/onsets_lmpf.stan
-#include functions/truncated_normal_rng.stan
-#include functions/censor.stan
 }
 
 data {
@@ -21,10 +19,12 @@ data {
   int nuncensored; // Number of uncensored tests
   array[nuncensored] int uncensored; // Which tests have not been censored
   vector[N] day_rel; // day of test (integer)
-  vector[N] ct_value; // Ct value of test
-  int any_onsets;
-  vector[P] onset_avail;
-  vector[P] onset_time;
+  vector<lower = 0>[N] ct_value; // Ct value of test
+  int any_onsets; // Are there any symptom onsets
+  int nonsets; // Number of onsets
+  vector[P] onset_avail; // Onsets available per ID
+  vector[P] onset_time; // Time of onset per ID
+  array[nonsets] int ids_with_onsets; // IDs that have onsets
   int K; //Number of parameters with individual level variation
   int switch; //Should a secondary breakpoint in the CT curve be modelled
   int ind_var_m; // Should inividual variation be modelled
@@ -88,12 +88,10 @@ parameters {
 }
 
 transformed parameters {
-  vector[P] t_p; vector[P] t_s; vector[P] t_lod;
-  vector[P] c_p; vector[P] c_s;
-  vector[P] t_lod_abs; vector[N] inf_rel;
-  vector[N] exp_ct; vector[N] adj_exp_ct;
-  array[any_onsets] real onsets_star;
-  vector[any_onsets ? P :0] onsets_log_lik;
+  vector[P] t_p, t_s, t_lod, c_p, c_s, t_lod_abs;
+  vector[N] inf_rel, exp_ct, adj_exp_ct;
+  array[nonsets] real onsets_star;
+  vector[nonsets ? P :0] onsets_log_lik;
 {
   matrix[P, K] eta;
   if (ind_corr) {
@@ -101,14 +99,16 @@ transformed parameters {
     matrix[K, K] L;
     L = diag_pre_multiply(ind_var, L_Omega);
 
-    // Calculate per-person correlated effects
+    // Calculate per-infection correlated effects
     eta = (L * ind_eta)';
   }else{
     if (ind_var_m) {
+      // All effects are independent
       for (i in 1:K) {
         eta[1:P, i] = to_vector(ind_eta[i, 1:P]) * ind_var[i];
       }
     }else{
+      // No infection level differences
       eta = rep_matrix(0, P, K);
     }
   }
@@ -145,12 +145,13 @@ transformed parameters {
   adj_exp_ct = combine_effects(0, beta_ct_shift, ct_design) +
     exp(combine_effects(0, beta_ct_scale, ct_design)) .* exp_ct;
 
+  // Model symptom onset likelihood: see onsets_lmpf.stan
   if (any_onsets) {
     vector[P] onsets_ttar;
   
     onsets_ttar = onsets_lmpf(
       inc_mean[1], inc_sd[1], beta_inc_mean, beta_inc_sd, design, onset_avail,
-      onset_time, t_inf
+      onset_time, t_inf, ids_with_onsets
     );
     onsets_star[1] = sum(onsets_ttar);
     if (output_loglik) {
@@ -164,9 +165,9 @@ model {
   // positive test or symtom onset.
   // Assumes that the first positive test is not a false positive.
   for (i in 1:P) {
-    t_inf[i] ~ normal(t_inf_bound[i] + 5, 5) T[t_inf_bound[i],];
+    t_inf[i] ~ normal(t_inf_bound[i] + 5, 5) T[t_inf_bound[i], ]; 
   }
-
+  
   // CT piecewise linear intercept parameters
   c_0 ~ normal(c_lod + 10, 5) T[c_lod, ];
   c_p_mean ~ normal(0, 1); //mean at 50% of switch value
@@ -226,16 +227,19 @@ model {
     inc_sd[1] ~ normal(lsd[1], lsd[2]) T[0, ];
  
     if (likelihood) {
+      // Component of likelihood for symptom onsets see onsets_lpmf.stan
       target += onsets_star[1];
     }
   }
 
   if (likelihood) {
     // Component of likelihood for expected ct values
-    // If non-censored result: P(observed ct | expected ct)
+    // If non-censored: P(observed ct | expected ct)
     ct_value[uncensored] ~ normal(adj_exp_ct[uncensored], sigma);
-    // If censored the log of probability expected greater than censoring value
+    // If censored: P(expected ct >= censored ct)
     target += normal_lccdf(c_lod | adj_exp_ct[censored], sigma);
+    // All CTs are truncated above 0. P(0 <= expected ct)
+    target += -normal_lccdf(0 | adj_exp_ct, sigma);
   }
 }
 
@@ -246,14 +250,12 @@ generated quantities {
   if (ind_corr) {
     correlation = L_Omega * L_Omega';
   }
-  for (i in 1:N) {
-    sim_ct[i] = truncated_normal_rng(adj_exp_ct[i], sigma, 0, c_0);
-    sim_ct[i] = censor(sim_ct[i], c_lod);
-  }
+  // Posterior predictions
+  sim_ct = to_vector(normal_rng(adj_exp_ct, sigma));
+  sim_ct = fmin(sim_ct, c_lod);
   if (output_loglik) {
     log_lik = rep_vector(0, P);
- 
-    if (any_onsets) {
+    if (nonsets) {
       log_lik = onsets_log_lik;
     }
   }

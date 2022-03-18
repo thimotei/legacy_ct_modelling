@@ -73,9 +73,9 @@ epict_to_stan <- function(obs,
                     c_lod = censoring_threshold,
                     K = ifelse(switch, 5, 3),
                     ind_var_sd = individual_variation,
-                    ind_var_m = individual_variation != 0,
-                    ind_corr = as.numeric(!is.na(individual_correlation)) ||
-                      individual_variation != 0,
+                    ind_var_m = as.numeric(individual_variation != 0),
+                    ind_corr = as.numeric(!is.na(individual_correlation) &&
+                      individual_variation != 0),
                     lkj_prior = ifelse(
                       is.na(individual_correlation), 0, individual_correlation
                     ),
@@ -94,7 +94,9 @@ epict_to_stan <- function(obs,
                     adj_c_s = min(ct_model$params[["c_s"]], as.numeric(switch)),
                     adj_inc_mean = ct_model$params[["inc_mean"]],
                     adj_inc_sd = ct_model$params[["inc_sd"]],
-                    adj_ct = (ncol(adjustment_model$design) - 1) > 0,
+                    adj_ct = as.numeric(
+                      (ncol(adjustment_model$design) - 1) > 0
+                    ),
                     ct_preds = ncol(adjustment_model$design) - 1,
                     ct_preds_sd = adjustment_model$preds_sd,
                     ct_design = adjustment_model$design
@@ -108,7 +110,7 @@ epict_to_stan <- function(obs,
  }else{
   onset_dt <- suppressWarnings(
     obs[,
-    .(onset_time = min(onset_time, na.rm = TRUE)), by = "id"
+    .(onset_time = min(onset_time, na.rm = TRUE), id), by = "id"
     ][
       is.infinite(onset_time), onset_time := NA
     ]
@@ -116,6 +118,8 @@ epict_to_stan <- function(obs,
   stan_data <- c(stan_data, list(
           any_onsets = 1,
           onset_avail = as.numeric(!is.na(onset_dt$onset_time)),
+          nonsets = sum(as.numeric(!is.na(onset_dt$onset_time))),
+          ids_with_onsets = onset_dt[!is.na(onset_time), id],
           onset_time = onset_dt$onset_time %>%
             tidyr::replace_na(0)
         ))

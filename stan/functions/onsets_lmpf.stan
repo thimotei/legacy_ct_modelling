@@ -1,11 +1,14 @@
 vector onsets_lmpf(real inc_mean, real inc_sd, vector beta_im, vector beta_is,
                    matrix design, vector onset_avail, vector onset_time, 
-                   vector inf_time) {
+                   vector inf_time, array[] int ids) {
   int P = num_elements(onset_avail);
   vector[P] inc_mean_p;
   vector[P] inc_sd_p;
   vector[P] tar = rep_vector(0, P);
   int adj_inc_sd = num_elements(beta_is);
+  int nonsets = num_elements(ids);
+  vector[nonsets] onset_from_inf;
+  vector[nonsets] onset_window;
 
   inc_mean_p = combine_effects(inc_mean, beta_im, design);
   if (adj_inc_sd) {
@@ -14,19 +17,19 @@ vector onsets_lmpf(real inc_mean, real inc_sd, vector beta_im, vector beta_is,
     inc_sd_p = rep_vector(inc_sd, P);
   }
 
-   // Component of likelihood for time of exposure
-   for(j in 1:P) {
-   // likelihood for time of exposure using the CDF of the incubation period
-   // and known symptom onset day
-   // What is the probability onsets on observed day
-    if (onset_avail[j]) {
-      real onset_from_inf = onset_time[j] + inf_time[j];
-      real onset_window = max({0, onset_from_inf - 1});
-        tar[j] = log_diff_exp(
-          lognormal_lcdf(onset_from_inf | inc_mean_p[j], inc_sd_p[j]),
-          lognormal_lcdf(onset_window | inc_mean_p[j], inc_sd_p[j])
-        );
-    }
+  // What is the probability of onset on observed day
+  onset_from_inf = onset_time[ids] + inf_time[ids];
+  onset_window = fmax(rep_vector(0, nonsets), onset_from_inf - 1);
+  for (i in 1:nonsets) {
+    tar[ids[i]] = log_diff_exp(
+      lognormal_lcdf(
+        onset_from_inf[i] | inc_mean_p[ids[i]], inc_sd_p[ids[i]]
+      ),
+      lognormal_lcdf(
+        onset_window[i] | inc_mean_p[ids[i]], inc_sd_p[ids[i]]
+      )
+    );
   }
+
   return(tar);
 }
