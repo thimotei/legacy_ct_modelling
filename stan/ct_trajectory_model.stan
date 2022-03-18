@@ -16,7 +16,10 @@ data {
   real t_e; 
   array[2] real lmean; // mean of incubation period used (+ sd)
   array[2] real lsd; // standard deviation of incubation period used (+ sd)
-  array[N] int pcr_res; // boolean test result
+  int ncensored; // Number of censored tests
+  array[ncensored] int censored; // Which tests have been censored
+  int nuncensored; // Number of uncensored tests
+  array[nuncensored] int uncensored; // Which tests have not been censored
   vector[N] day_rel; // day of test (integer)
   vector[N] ct_value; // Ct value of test
   int any_onsets;
@@ -89,6 +92,8 @@ transformed parameters {
   vector[P] c_p; vector[P] c_s;
   vector[P] t_lod_abs; vector[N] inf_rel;
   vector[N] exp_ct; vector[N] adj_exp_ct;
+  array[any_onsets] real onsets_star;
+  vector[any_onsets ? P :0] onsets_log_lik;
 {
   matrix[P, K] eta;
   if (ind_corr) {
@@ -139,6 +144,19 @@ transformed parameters {
   // Shift and scale ct values
   adj_exp_ct = combine_effects(0, beta_ct_shift, ct_design) +
     exp(combine_effects(0, beta_ct_scale, ct_design)) .* exp_ct;
+
+  if (any_onsets) {
+    vector[P] onsets_ttar;
+  
+    onsets_ttar = onsets_lmpf(
+      inc_mean[1], inc_sd[1], beta_inc_mean, beta_inc_sd, design, onset_avail,
+      onset_time, t_inf
+    );
+    onsets_star[1] = sum(onsets_ttar);
+    if (output_loglik) {
+      onsets_log_lik = onsets_ttar;
+    }
+  }
 }
 
 model {
@@ -202,29 +220,22 @@ model {
     beta_ct_scale ~ normal(0, ct_preds_sd);
   }
 
-  if (any_onsets && likelihood) {
+  if (any_onsets) {
     // Priors on the incubation period
     inc_mean ~ normal(lmean[1], lmean[2]);
     inc_sd[1] ~ normal(lsd[1], lsd[2]) T[0, ];
-
-    target += sum(onsets_lmpf(
-      inc_mean[1], inc_sd[1], beta_inc_mean, beta_inc_sd, design, onset_avail,
-      onset_time, t_inf
-    ));
+ 
+    if (likelihood) {
+      target += onsets_star[1];
+    }
   }
 
   if (likelihood) {
     // Component of likelihood for expected ct values
-    for(j in 1:N) {
-      // If non-censored result: P(observed ct | expected ct)
-      // Truncated above 0 and below latent limit of detection
-      if(pcr_res[j]) {
-        ct_value[j] ~ normal(adj_exp_ct[j], sigma) T[0, c_0];
-      } else{
-      // if censored result: P(Ct not detected | expected ct)
-        target += normal_lccdf(c_lod | adj_exp_ct[j], sigma);
-      }
-    }
+    // If non-censored result: P(observed ct | expected ct)
+    ct_value[uncensored] ~ normal(adj_exp_ct[uncensored], sigma);
+    // If censored the log of probability expected greater than censoring value
+    target += normal_lccdf(c_lod | adj_exp_ct[censored], sigma);
   }
 }
 
@@ -243,10 +254,7 @@ generated quantities {
     log_lik = rep_vector(0, P);
  
     if (any_onsets) {
-      log_lik = onsets_lmpf(
-        inc_mean[1], inc_sd[1], beta_inc_mean, beta_inc_sd, design, onset_avail,
-        onset_time, t_inf
-      );
+      log_lik = onsets_log_lik;
     }
   }
 }
