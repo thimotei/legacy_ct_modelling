@@ -1,8 +1,7 @@
 functions{ 
 #include functions/piecewise_ct.stan
 #include functions/combine_effects.stan
-#include functions/truncated_normal_rng.stan
-#include functions/censor.stan
+#include functions/onsets_lmpf.stan
 }
 
 data {
@@ -15,14 +14,22 @@ data {
   real t_e; 
   array[2] real lmean; // mean of incubation period used (+ sd)
   array[2] real lsd; // standard deviation of incubation period used (+ sd)
-  array[N] int pcr_res; // boolean test result
+  int ncensored; // Number of censored tests
+  array[ncensored] int censored; // Which tests have been censored
+  int nuncensored; // Number of uncensored tests
+  array[nuncensored] int uncensored; // Which tests have not been censored
   vector[N] day_rel; // day of test (integer)
-  vector[N] ct_value; // Ct value of test
-  int any_onsets;
-  vector[P] onset_avail;
-  vector[P] onset_time;
+  vector<lower = 0>[N] ct_value; // Ct value of test
+  int any_onsets; // Are there any symptom onsets
+  int nonsets; // Number of onsets
+  vector[P] onset_avail; // Onsets available per ID
+  vector[P] onset_time; // Time of onset per ID
+  array[nonsets] int ids_with_onsets; // IDs that have onsets
   int K; //Number of parameters with individual level variation
   int switch; //Should a secondary breakpoint in the CT curve be modelled
+  int ind_var_m; // Should inividual variation be modelled
+  real ind_var_sd; // Standard deviation of inividual variation to be modelled
+  int ind_corr; // Should individual variation be modelled with correlation
   real lkj_prior; // LKJ prior for individual level variation
   int preds; // Number of predictors
   real preds_sd; // Standard deviation of predictor coeffs
@@ -39,13 +46,14 @@ data {
   real ct_preds_sd; // Standard deviation of CT predictor coeffs
   matrix[N, ct_preds + 1] ct_design; // Design matrix for CT adjustment
   int likelihood;
+  int output_loglik;
 }
 
 transformed data {
-  vector[P] T_e_bound;
+  vector[P] t_inf_bound;
   vector[61] sim_times;
   for (i in 1:P) {
-    T_e_bound[i] = max({-onset_time[i], 0});
+    t_inf_bound[i] = max({-onset_time[i], 0});
   }
   for (i in 0:60) {
     sim_times[i + 1] = i;
@@ -53,18 +61,19 @@ transformed data {
 }
 
 parameters {
-  vector<lower = T_e_bound>[P] T_e; // Inferred time of infection
+  vector<lower = t_inf_bound>[P] t_inf; // Inferred time of infection
   array[any_onsets] real inc_mean; //Incubation period mean
   array[any_onsets] real<lower = 0> inc_sd; //Incubation period sd
   real<lower = c_lod> c_0;   // Ct value before detection
-  cholesky_factor_corr[K] L_Omega; // Cholesky_factored correlation matrix
+  // Cholesky_factored correlation matrix
+  cholesky_factor_corr[ind_corr ? K : 0] L_Omega;
   real c_p_mean; // Ct value of viral load p
   array[switch] real c_s_mean; // Ct value at s
   real t_p_mean; // Timing of peak
   array[switch] real t_s_mean; // Timing of switch
   real t_lod_mean; // Time viral load hits lower limit of detection
-  vector<lower = 0>[K] ind_var; // SD of individual level variation
-  matrix[K, P] ind_eta; // Individual level variation
+  vector<lower = 0>[ind_var_m ? K : 0] ind_var; // SD of individual variation
+  matrix[ind_var_m ? K : 0, P] ind_eta; // Individual level variation
   real<lower = 0> sigma; // Variance parameter for oobservation model
   // Coefficients
   vector[preds && adj_t_p ? preds : 0] beta_t_p;
@@ -79,28 +88,40 @@ parameters {
 }
 
 transformed parameters {
-  vector[P] t_p; vector[P] t_s; vector[P] t_lod;
-  vector[P] c_p; vector[P] c_s;
-  vector[P] t_lod_abs; vector[N] t_inf;
-  vector[N] exp_ct; vector[N] adj_exp_ct;
+  vector[P] t_p, t_s, t_lod, c_p, c_s, t_lod_abs;
+  vector[N] inf_rel, exp_ct, adj_exp_ct;
+  array[nonsets] real onsets_star;
+  vector[nonsets ? P :0] onsets_log_lik;
 {
-  // Cholesky factor of the covariance matrix
-  matrix[K, K] L;
-  L = diag_pre_multiply(ind_var, L_Omega);
-
-  // Calculate per-person correlated effects
   matrix[P, K] eta;
-  eta = (L * ind_eta)';
+  if (ind_corr) {
+    // Cholesky factor of the covariance matrix
+    matrix[K, K] L;
+    L = diag_pre_multiply(ind_var, L_Omega);
+
+    // Calculate per-infection correlated effects
+    eta = (L * ind_eta)';
+  }else{
+    if (ind_var_m) {
+      // All effects are independent
+      for (i in 1:K) {
+        eta[1:P, i] = to_vector(ind_eta[i, 1:P]) * ind_var[i];
+      }
+    }else{
+      // No infection level differences
+      eta = rep_matrix(0, P, K);
+    }
+  }
 
   // Combine effects for each CT parameter and transform to required scale
-  t_p = exp(combine_effects(t_p_mean, beta_t_p, design)+ eta[, 1]);
+  t_p = exp(combine_effects(t_p_mean, beta_t_p, design) + eta[, 1]);
   t_lod = exp(combine_effects(t_lod_mean, beta_t_lod, design) + eta[, 2]);
-  c_p = inv_logit(combine_effects(c_p_mean, beta_c_p, design)+ eta[, 3]);
+  c_p = inv_logit(combine_effects(c_p_mean, beta_c_p, design) + eta[, 3]);
   // Optional effects if a second breakpoint is used
   if (switch) {
     t_s = exp(combine_effects(t_s_mean[1], beta_t_s, design) + eta[, 4]);
     c_s = c_0 * inv_logit(
-      combine_effects(c_s_mean[1], beta_c_s, design)+ eta[, 5]
+      combine_effects(c_s_mean[1], beta_c_s, design) + eta[, 5]
     );
     c_p = c_s .* c_p;
   }else{
@@ -112,17 +133,31 @@ transformed parameters {
   // Make times absolute
   t_lod_abs = t_p + t_s + t_lod;
   // Adjust observed times since first test to be time since infection
-  t_inf = day_rel + T_e[id];
+  inf_rel = day_rel + t_inf[id];
 
   // Expected ct value given viral load parameters
   exp_ct = piecewise_ct_by_id(
-    t_inf, c_0, c_p, c_s, c_0, t_e, t_p, t_s, t_lod_abs, id,
+    inf_rel, c_0, c_p, c_s, c_0, t_e, t_p, t_s, t_lod_abs, id,
     tests_per_id, cum_tests_per_id, switch
   );
 
   // Shift and scale ct values
   adj_exp_ct = combine_effects(0, beta_ct_shift, ct_design) +
     exp(combine_effects(0, beta_ct_scale, ct_design)) .* exp_ct;
+
+  // Model symptom onset likelihood: see onsets_lmpf.stan
+  if (any_onsets) {
+    vector[P] onsets_ttar;
+  
+    onsets_ttar = onsets_lmpf(
+      inc_mean[1], inc_sd[1], beta_inc_mean, beta_inc_sd, design, onset_avail,
+      onset_time, t_inf, ids_with_onsets
+    );
+    onsets_star[1] = sum(onsets_ttar);
+    if (output_loglik) {
+      onsets_log_lik = onsets_ttar;
+    }
+  }
 }
 
 model {
@@ -130,11 +165,11 @@ model {
   // positive test or symtom onset.
   // Assumes that the first positive test is not a false positive.
   for (i in 1:P) {
-    T_e[i] ~ normal(T_e_bound[i] + 5, 5) T[T_e_bound[i],];
+    t_inf[i] ~ normal(t_inf_bound[i] + 5, 5) T[t_inf_bound[i], ]; 
   }
-
+  
   // CT piecewise linear intercept parameters
-  c_0 ~ normal(c_lod + 10, 5) T[0, ];
+  c_0 ~ normal(c_lod + 10, 5) T[c_lod, ];
   c_p_mean ~ normal(0, 1); //mean at 50% of switch value
   t_p_mean ~ normal(1.61, 0.5); //mean at log(5)
   t_lod_mean ~ normal(2.3, 0.5); //mean at log(10) + peak + scale timing 
@@ -144,11 +179,15 @@ model {
   }
 
   // Individual level variation
-  to_vector(ind_eta) ~ std_normal();
-  ind_var ~ normal(0, 0.25);
+  if (ind_var_m) {
+    to_vector(ind_eta) ~ std_normal();
+    ind_var ~ normal(0, ind_var_sd);
+  }
 
   // LKJ prior on correlation between individual level dynamics
-  L_Omega ~ lkj_corr_cholesky(lkj_prior);
+  if (ind_corr) {
+    L_Omega ~ lkj_corr_cholesky(lkj_prior);
+  }
 
   // Variation in observation model
   sigma ~ normal(0, 2) T[0,];
@@ -182,63 +221,42 @@ model {
     beta_ct_scale ~ normal(0, ct_preds_sd);
   }
 
-  if (any_onsets && likelihood) {
-    vector[P] inc_mean_p;
-    vector[P] inc_sd_p;
+  if (any_onsets) {
     // Priors on the incubation period
-    inc_mean[1] ~ normal(lmean[1], lmean[2]);
-    inc_mean_p = combine_effects(inc_mean[1], beta_inc_mean, design);
+    inc_mean ~ normal(lmean[1], lmean[2]);
     inc_sd[1] ~ normal(lsd[1], lsd[2]) T[0, ];
-    if (adj_inc_sd) {
-      inc_sd_p = exp(combine_effects(log(inc_sd[1]), beta_inc_sd, design));
-    }else{
-      inc_sd_p = rep_vector(inc_sd[1], P);
-    }
-
-   // Component of likelihood for time of exposure
-   for(j in 1:P) {
-   // likelihood for time of exposure using the CDF of the incubation period
-   // and known symptom onset day
-   // What is the probability onsets on observed day
-    if (onset_avail[j]) {
-      real onset_from_inf = onset_time[j] + T_e[j];
-      real onset_window = max({0, onset_from_inf - 1});
-        target += log_diff_exp(
-          lognormal_lcdf(onset_from_inf | inc_mean_p[j], inc_sd_p[j]),
-          lognormal_lcdf(onset_window | inc_mean_p[j], inc_sd_p[j])
-        );
-     }
+ 
+    if (likelihood) {
+      // Component of likelihood for symptom onsets see onsets_lpmf.stan
+      target += onsets_star[1];
     }
   }
 
   if (likelihood) {
     // Component of likelihood for expected ct values
-    for(j in 1:N) {
-      // If non-censored result: P(observed ct | expected ct)
-      // Truncated above 0 and below latent limit of detection
-      if(pcr_res[j]) {
-        ct_value[j] ~ normal(adj_exp_ct[j], sigma) T[0, c_0];
-      } else{
-      // if censored result: P(Ct not detected | expected ct)
-        target += normal_lccdf(c_lod | adj_exp_ct[j], sigma);
-      }
-    }
+    // If non-censored: P(observed ct | expected ct)
+    ct_value[uncensored] ~ normal(adj_exp_ct[uncensored], sigma);
+    // If censored: P(expected ct >= censored ct)
+    target += normal_lccdf(c_lod | adj_exp_ct[censored], sigma);
+    // All CTs are truncated above 0. P(0 <= expected ct)
+    target += -normal_lccdf(0 | adj_exp_ct, sigma);
   }
 }
 
 generated quantities {
-  matrix[P, 61] ct;
   vector[N] sim_ct;
-  matrix[5, 5] correlation;
-  correlation = L_Omega * L_Omega';
-  for (i in 1:N) {
-    sim_ct[i] = truncated_normal_rng(adj_exp_ct[i], sigma, 0, c_0);
-    sim_ct[i] = censor(sim_ct[i], c_lod);
+  matrix[ind_corr ? K : 0, ind_corr ? K : 0] correlation;
+  vector[output_loglik ? P : 0] log_lik;
+  if (ind_corr) {
+    correlation = L_Omega * L_Omega';
   }
-  for(i in 1:P) {
-    ct[i, 1:61] = to_row_vector(piecewise_ct(
-      sim_times, c_0, c_p[i], c_s[i], c_0, t_e, t_p[i], t_s[i], t_lod_abs[i],
-      switch
-    ));
+  // Posterior predictions
+  sim_ct = to_vector(normal_rng(adj_exp_ct, sigma));
+  sim_ct = fmin(sim_ct, c_lod);
+  if (output_loglik) {
+    log_lik = rep_vector(0, P);
+    if (nonsets) {
+      log_lik = onsets_log_lik;
+    }
   }
 }

@@ -3,7 +3,6 @@ library(data.table)
 library(ggplot2)
 library(truncnorm)
 library(cmdstanr)
-library(cowplot)
 library(stringr)
 library(purrr)
 
