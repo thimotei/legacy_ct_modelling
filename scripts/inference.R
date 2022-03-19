@@ -18,27 +18,28 @@ dt_clean <- readRDS(here("data/processed-data.rds"))
 
 # Do additional processing to filter for the desired number of swabs
 # per positive episode
-dt_2_tests <- subset_data(dt_clean, no_pos_swabs = 2)
+obs <- subset_data(dt_clean, no_pos_swabs = 2)
 
 # Plot the raw data
-p1_raw <- plot_obs_ct(dt_2_tests) +
-   facet_wrap(vars(factor(id), VOC))
+p1_raw <- plot_obs(obs, col = factor(swab_type)) +
+  labs(col = "Swab type")
 
 # Specify which params adjusting for (see params_avail_to_adjust() for options)
 # Here all available options (can also specify this using "all")
 adj_params <- c("t_p", "t_s", "t_lod", "c_p", "c_s", "inc_mean", "inc_sd")
 
-# Specify the CT model design matrix
+# Specify the CT summary parameter design matrix
 ct_model <- subject_design(
   ~ 1 + VOC + symptoms + no_vaccines,
-  data = dt_2_tests,
+  data = obs,
   params = adj_params,
   preds_sd = 0.1
 )
 
+# Specify the model to use to adjust CTs globally
 adjustment_model <- test_design(
   ~ 1 + swab_type,
-  data = dt_2_tests,
+  data = obs,
   preds_sd = 1
 )
 
@@ -48,72 +49,65 @@ update_predictor_labels <- function(dt) {
     predictor := factor(
       predictor,
       levels =  c(
-        "no_vaccines2", "symptomsasymptomatic", "VOCDelta", "VOCBA2"
+        "no_vaccines2", "symptomsasymptomatic", "VOCDelta", "VOCBA2",
+        "swab_typeVTM"
       ),
       labels = c(
-        "2 vaccines", "asymptomatic", "Delta", "BA.2"
+        "2 vaccines", "asymptomatic", "Delta", "BA.2", "Swab type"
       )
-    )]
+    )
+  ]
   return(dt[])
 }
 
-# Translate data and model specification to stan format
-stan_data <- data_to_stan(
-  dt_2_tests,
+# Fit the model
+fit <- epict(
+  obs,
   ct_model = ct_model,
   adjustment_model  = adjustment_model,
   likelihood = TRUE,
   onsets = TRUE,
-  correlation = 0.5
-)
-
-# Compile model
-mod <- cmdstan_model(
-  "stan/ct_trajectory_model.stan",
-  include_paths = "stan",
-  stanc_options = list("O1")
-)
-
-# Fit
-fit <- mod$sample(
-  data = stan_data,
-  init = stan_inits(stan_data),
+  switch = FALSE,
+  individual_variation = 0.2,
+  individual_correlation = 2,
   chains = 4,
   parallel_chains = 4,
-  iter_warmup = 500,
+  iter_warmup = 1000,
   iter_sampling = 2000,
-  adapt_delta = 0.9,
+  adapt_delta = 0.95,
   max_treedepth = 12
 )
 
-# Population level parameter summary
-summarise_pop_pp(fit)
-
-# Population level adjustment summary
-summarise_coeff_pp(fit, params = adj_params, exponentiate = TRUE)
-
 # Extract and plot posterior predictions
-pp_plot <- plot_pp_from_fit(
-  fit, obs = dt_2_tests, samples = 50, alpha = 0.025
+pp_plot <- plot_obs(
+  obs = obs,
+  pp = summarise_pp(fit, obs),
+  samples = 10, traj_alpha = 0.05,
+  col = factor(swab_type)
 ) +
+  labs(col = "Swab type") +
   facet_wrap(vars(factor(id)))
 
-ggsave("outputs/figures/pp.png", pp_plot, height = 16, width = 16)
+ggsave(
+  "outputs/figures/pp.png", pp_plot, height = 16, width = 16
+)
+
 
 # Extract posterior predictions
 draws <- extract_draws(fit)
 
 # Extract effect sizes and make a summary plot
-eff_plot <- draws %>%
-  summarise_effects(design = ct_model$design, variables = adj_params) %>%
-  update_predictor_labels() %>%
-  update_variable_labels(reverse = TRUE) %>%
-  plot_effects(col = predictor, position = position_dodge(width = 0.6)) +
-  scale_colour_brewer(palette = "Dark2") +
+eff_plot <- plot_effect_summary(
+  draws, ct_design = ct_model$design, variables = adj_params,
+  adjustment_design = adjustment_model$design,
+  variable_labels = update_variable_labels,
+  col = predictor, position = position_dodge(width = 0.6)
+) &
+  scale_colour_brewer(palette = "Dark2") &
   labs(col = "Adjustment")
 
 ggsave(
-  "outputs/figures/effects_summary.png",
+  "outputs/figures/effects.png",
   eff_plot, width = 9, height = 12,
 )
 

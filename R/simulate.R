@@ -3,6 +3,9 @@
 
 # for Ct trajectories with the long wane
 piecewise_ct <- function(t, c0, cp, cs, clod, te, tp, ts, tlod) {
+  if (ts == 0) {
+    cs <- cp
+  }
   if (t <= te) {
     y <- c0
   } else if (t > te && t <= te + tp) {
@@ -17,25 +20,14 @@ piecewise_ct <- function(t, c0, cp, cs, clod, te, tp, ts, tlod) {
   return(y)
 }
 
-
-# for Ct trajectories without the longer wane
-piecewise_ct_single <- function(t, c0, cp, clod, te, tp, tlod) {
-    if (t <= te) {
-      y <- c0;
-    } else if (t > te && t <= te + tp) {
-      y <- ((t - te) * (cp - c0)) / tp  + c0;
-    } else if (t > te + tp && t <= te + tp + tlod) {
-      y <- ((t - te - tp) * (clod - cp)) / tlod  + cp;
-    } else if (t > tlod) {
-      y <- clod;
-    }
-    return(y);
-  }
-
 simulate_cts <- function(params, time_range = 0:30, obs_noise = TRUE) {
 
   if (is.null(params[["id"]])) {
     params[, id := 1:.N]
+  }
+
+  if (is.null(params[["t_s"]])) {
+    params[, t_s := 0]
   }
 
   times <- data.table::data.table(
@@ -64,7 +56,7 @@ simulate_cts <- function(params, time_range = 0:30, obs_noise = TRUE) {
     ][ct_value >= c_lod,
       ct_value := c_lod
     ][,
-      pcr_res := ifelse(ct_value < c_lod, 1, 0)
+      uncensored := ifelse(ct_value < c_lod, 1, 0)
     ]
   }else{
     ct_trajs[, ct_value := exp_ct]
@@ -108,14 +100,14 @@ simulate_obs <- function(obs = obs,
       id = 1:obs$P,
       swab_type = "Dry",
       onset_time = rlnorm(obs$P, inc_mean, inc_sd),
-      T_e = T_e,
+      t_inf = t_inf,
       t_p = exp(t_p_mean + ind_var[1] * ind_eta[1, ]),
-      t_s = exp(t_s_mean + ind_var[2] * ind_eta[2, ]),
-      t_lod = exp(t_lod_mean + ind_var[3] * ind_eta[3, ]),
+      t_s = exp(t_s_mean + ind_var[2] * ind_eta[4, ]),
+      t_lod = exp(t_lod_mean + ind_var[3] * ind_eta[2, ]),
       c_0 = c_0,
-      c_s = c_0 * plogis(c_s_mean + ind_var[4] * ind_eta[4, ])
+      c_s = c_0 * plogis(c_s_mean + ind_var[4] * ind_eta[5, ])
     )[,
-      c_p := c_s * plogis(c_p_mean + ind_var[5] * ind_eta[5, ])
+      c_p := c_s * plogis(c_p_mean + ind_var[5] * ind_eta[3, ])
     ][,
       c_lod := obs$c_lod,
     ][,

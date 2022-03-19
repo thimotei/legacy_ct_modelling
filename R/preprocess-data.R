@@ -1,12 +1,12 @@
 process_data <- function(dt_raw) {
 
   dt_proc <- data.table::copy(dt_raw)
-  
+
   setnames(
     dt_proc, c("ORF1ab", "total infections"), c("ct", "total_infections")
   )
-  
-  out <- data_proc[swab_date := dmy(swab_date)][
+
+  out <- dt_proc[, swab_date := dmy(swab_date)][
     barcode %like% "49U", swab_date := swab_date - 1][
     symptom_onset_date == "unknown", symptom_onset_date := NA][,
     symptom_onset_date := dmy(symptom_onset_date)][,
@@ -96,8 +96,8 @@ process_data <- function(dt_raw) {
   # will discuss with Crick partners about this
   out[result == "Invalid", result := "Positive"]
   out[result == "Inconclusive", result := "Positive"]
-  out[result == "Negative", pcr_res := 0]
-  out[result == "Positive", pcr_res := 1]
+  out[result == "Negative", uncensored := 0]
+  out[result == "Positive", uncensored := 1]
 
   # Drop infections with gaps between positive tests of more than 60 days
   ids_spurious_gaps <- out[,
@@ -158,12 +158,12 @@ subset_data <- function(dt_clean, no_pos_swabs) {
   facs <- c("no_vaccines", "VOC", "swab_type", "dose_1", "dose_2", "dose_3",
             "result", "VOC_basis", "centre", "total_infections", "symptoms")
   out[, (facs) := lapply(.SD, forcats::fct_drop), .SDcols = facs]
-  return(out)
+  return(out[])
 }
 
 index_by_first_positive <- function(dt) {
   pos_test <- dt[
-    pcr_res == 1, .SD[t == min(t)], by = "id"][,
+    uncensored == 1, .SD[t == min(t)], by = "id"][,
     .(id, t_first_pos = t)
   ]
   dt <- dt[pos_test, on = "id"]

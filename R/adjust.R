@@ -2,7 +2,7 @@ adjust_params <- function(draws, design) {
   param_draws <- extract_param_draws(draws)
   param_draws <- melt_draws(param_draws)
   eff_draws <- extract_coeffs(
-    draws, design = design, variables = params_avail_to_adjust()
+    draws, design = design, variables = names(params_avail_to_adjust())
   )
   data.table::setnames(eff_draws, "value", "mod")
 

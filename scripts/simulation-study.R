@@ -3,7 +3,6 @@ library(data.table)
 library(ggplot2)
 library(truncnorm)
 library(cmdstanr)
-library(cowplot)
 library(stringr)
 library(purrr)
 
@@ -22,7 +21,8 @@ obs <- list(
   lsd = get_inc_period()$inc_sd_p,
   preds = 0,
   ct_preds = 0,
-  K = 5
+  K = 5,
+  switch = 1
 )
 
 # Simulate from the centre of the prior for all parameters
@@ -35,7 +35,7 @@ ct_sample <- simulate_obs(
 )
 
 # plot of subset of data
-plot_obs_ct(ct_sample) +
+plot_obs(ct_sample) +
   facet_wrap(vars(factor(id)))
 
 # compiling model
@@ -59,9 +59,15 @@ fit_sim <- mod$sample(
 )
 
 # Extract and plot posterior predictions
-sim_pp_plot <- plot_pp_from_fit(
-  fit_sim, obs = ct_sample, samples = 50, alpha = 0.025
+sim_pp_plot <- pp_plot <- plot_obs(
+  obs = ct_sample,
+  ct_traj =  extract_ct_trajectories(fit_sim),
+  pp = summarise_pp(fit_sim, ct_sample),
+  samples = 10, traj_alpha = 0.05,
+  col = factor(swab_type)
 ) +
+  labs(col = "Swab type")
+  facet_wrap(vars(factor(id)))
   facet_wrap(vars(factor(id))) +
 
 ggsave("outputs/figures/sim_pp.png", sim_pp_plot, height = 10, width = 10)
