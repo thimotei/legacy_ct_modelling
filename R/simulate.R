@@ -56,7 +56,7 @@ simulate_cts <- function(params, time_range = 0:30, obs_noise = TRUE) {
     ][ct_value >= c_lod,
       ct_value := c_lod
     ][,
-      pcr_res := ifelse(ct_value < c_lod, 1, 0)
+      uncensored := ifelse(ct_value < c_lod, 1, 0)
     ]
   }else{
     ct_trajs[, ct_value := exp_ct]
@@ -100,7 +100,7 @@ simulate_obs <- function(obs = obs,
       id = 1:obs$P,
       swab_type = "Dry",
       onset_time = rlnorm(obs$P, inc_mean, inc_sd),
-      T_e = T_e,
+      t_inf = t_inf,
       t_p = exp(t_p_mean + ind_var[1] * ind_eta[1, ]),
       t_s = exp(t_s_mean + ind_var[2] * ind_eta[4, ]),
       t_lod = exp(t_lod_mean + ind_var[3] * ind_eta[2, ]),

@@ -55,32 +55,21 @@ update_predictor_labels <- function(dt) {
       labels = c(
         "2 vaccines", "asymptomatic", "Delta", "BA.2", "Swab type"
       )
-    )]
+    )
+  ]
   return(dt[])
 }
 
-# Translate data and model specification to stan format
-stan_data <- data_to_stan(
+# Fit the model
+fit <- epict(
   obs,
   ct_model = ct_model,
   adjustment_model  = adjustment_model,
   likelihood = TRUE,
   onsets = TRUE,
   switch = FALSE,
-  correlation = 1
-)
-
-# Compile model
-mod <- cmdstan_model(
-  "stan/ct_trajectory_model.stan",
-  include_paths = "stan",
-  stanc_options = list("O1")
-)
-
-# Fit
-fit <- mod$sample(
-  data = stan_data,
-  init = stan_inits(stan_data),
+  individual_variation = 0.2,
+  individual_correlation = 2,
   chains = 4,
   parallel_chains = 4,
   iter_warmup = 1000,
@@ -90,22 +79,19 @@ fit <- mod$sample(
 )
 
 # Extract and plot posterior predictions
-ind_pp <- FALSE
-if (ind_pp) {
-  pp_plot <- plot_obs(
-    obs = obs,
-    ct_traj =  extract_ct_trajectories(fit),
-    pp = summarise_pp(fit, obs),
-    samples = 10, traj_alpha = 0.05,
-    col = factor(swab_type)
-  ) +
-    labs(col = "Swab type") +
-    facet_wrap(vars(factor(id)))
+pp_plot <- plot_obs(
+  obs = obs,
+  pp = summarise_pp(fit, obs),
+  samples = 10, traj_alpha = 0.05,
+  col = factor(swab_type)
+) +
+  labs(col = "Swab type") +
+  facet_wrap(vars(factor(id)))
 
-  ggsave(
-    "outputs/figures/pp.png", pp_plot, height = 16, width = 16
-  )
-}
+ggsave(
+  "outputs/figures/pp.png", pp_plot, height = 16, width = 16
+)
+
 
 # Extract posterior predictions
 draws <- extract_draws(fit)

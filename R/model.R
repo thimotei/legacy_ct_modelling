@@ -1,4 +1,4 @@
-  params_avail_to_adjust <- function(params = "all") {
+params_avail_to_adjust <- function(params = "all") {
     choices <- c("t_p", "t_s", "t_lod", "c_p", "c_s", "inc_mean", "inc_sd")
     params <- match.arg(params, c(choices, "all"), several.ok = TRUE)
     if (any(params %in% "all")) {
@@ -19,7 +19,7 @@
     return(out)
   }
 
-  subject_design <- function(formula = ~ 1, data, preds_sd = 0.1,
+subject_design <- function(formula = ~ 1, data, preds_sd = 0.1,
                              params = "all") {
   params <- params_avail_to_adjust(params)
 
@@ -41,34 +41,48 @@ get_inc_period <- function(inc_mean = c(1.621, 0.0640),
   )
 }
 
-data_to_stan <- function(input_data,
-                         ct_model = subject_design(~ 1, input_data),
-                         adjustment_model = test_design(~ 1, input_data),
-                         likelihood = TRUE, clod = 40,
-                         onsets = TRUE, switch = TRUE, correlation = 1) {
-  input_data <- data.table::copy(input_data)
-  input_data <- input_data[order(id)]
+epict_to_stan <- function(obs,
+                         ct_model = subject_design(~ 1, obs),
+                         adjustment_model = test_design(~ 1, obs),
+                         individual_variation = 0.2,
+                         individual_correlation = 1,
+                         censoring_threshold = 40, switch = TRUE,
+                         onsets = TRUE, incubation_period = get_inc_period(),
+                         likelihood = TRUE, output_loglik = FALSE) {
+  obs <- data.table::copy(obs)
+  obs <- obs[order(id)]
+  obs[, obs := 1:.N]
 
-  tests_per_id <- input_data[, .(n = .N), by = "id"]$n
+  tests_per_id <- obs[, .(n = .N), by = "id"]$n
 
-  stan_data <- list(N = input_data[, .N],
-                    P = length(unique(input_data$id)),
-                    id = input_data[, id],
+  stan_data <- list(N = obs[, .N],
+                    P = length(unique(obs$id)),
+                    id = obs[, id],
                     tests_per_id = tests_per_id,
                     cum_tests_per_id = cumsum(tests_per_id),
-                    day_rel = input_data[, t],
+                    day_rel = obs[, t],
                     ct_value = ifelse(
-                      is.na(input_data$ct_value), -99, input_data$ct_value
+                      is.na(obs$ct_value), -99, obs$ct_value
                     ),
-                    pcr_res = input_data[, pcr_res],
+                    ncensored = length(obs[uncensored == 0, obs]),
+                    censored = obs[uncensored == 0, obs],
+                    nuncensored = length(obs[uncensored == 1, obs]),
+                    uncensored = obs[uncensored == 1, obs],
                     t_e = 0,
-                    c_0 = clod,
-                    c_lod = clod,
+                    c_0 = censoring_threshold,
+                    c_lod = censoring_threshold,
                     K = ifelse(switch, 5, 3),
-                    lkj_prior = correlation,
-                    lmean = get_inc_period()$inc_mean_p,
-                    lsd = get_inc_period()$inc_sd_p,
+                    ind_var_sd = individual_variation,
+                    ind_var_m = as.numeric(individual_variation != 0),
+                    ind_corr = as.numeric(!is.na(individual_correlation) &&
+                      individual_variation != 0),
+                    lkj_prior = ifelse(
+                      is.na(individual_correlation), 0, individual_correlation
+                    ),
+                    lmean = incubation_period$inc_mean_p,
+                    lsd = incubation_period$inc_sd_p,
                     likelihood = as.numeric(likelihood),
+                    output_loglik = as.numeric(output_loglik),
                     preds = ncol(ct_model$design) - 1,
                     preds_sd = ct_model$preds_sd,
                     design = ct_model$design,
@@ -80,12 +94,14 @@ data_to_stan <- function(input_data,
                     adj_c_s = min(ct_model$params[["c_s"]], as.numeric(switch)),
                     adj_inc_mean = ct_model$params[["inc_mean"]],
                     adj_inc_sd = ct_model$params[["inc_sd"]],
-                    adj_ct = (ncol(adjustment_model$design) - 1) > 0,
+                    adj_ct = as.numeric(
+                      (ncol(adjustment_model$design) - 1) > 0
+                    ),
                     ct_preds = ncol(adjustment_model$design) - 1,
                     ct_preds_sd = adjustment_model$preds_sd,
                     ct_design = adjustment_model$design
   )
- if (is.null(input_data$onset_time) | !onsets) {
+ if (is.null(obs$onset_time) | !onsets) {
   stan_data <- c(stan_data, list(
           any_onsets = 0,
           onset_avail = rep(0, stan_data$P),
@@ -93,8 +109,8 @@ data_to_stan <- function(input_data,
         ))
  }else{
   onset_dt <- suppressWarnings(
-    input_data[,
-    .(onset_time = min(onset_time, na.rm = TRUE)), by = "id"
+    obs[,
+    .(onset_time = min(onset_time, na.rm = TRUE), id), by = "id"
     ][
       is.infinite(onset_time), onset_time := NA
     ]
@@ -102,6 +118,8 @@ data_to_stan <- function(input_data,
   stan_data <- c(stan_data, list(
           any_onsets = 1,
           onset_avail = as.numeric(!is.na(onset_dt$onset_time)),
+          nonsets = sum(as.numeric(!is.na(onset_dt$onset_time))),
+          ids_with_onsets = onset_dt[!is.na(onset_time), id],
           onset_time = onset_dt$onset_time %>%
             tidyr::replace_na(0)
         ))
@@ -110,10 +128,10 @@ data_to_stan <- function(input_data,
   return(stan_data)
 }
 
-stan_inits <- function(dt) {
+epict_inits <- function(dt) {
   function() {
     inits <- list(
-      T_e = purrr::map_dbl(
+      t_inf = purrr::map_dbl(
         1:dt$P,
         ~ truncnorm::rtruncnorm(
           1, a = max(-dt$onset_time[.], 0),
@@ -126,8 +144,8 @@ stan_inits <- function(dt) {
       c_p_mean = rnorm(1, 0, 1),
       t_p_mean = rnorm(1, 1.61, 0.5),
       t_lod_mean = rnorm(1, 2.3, 0.5),
-      ind_var = abs(rnorm(dt$K, 0, 0.1)),
-      ind_eta  = matrix(rnorm(dt$P * dt$K, 0, 1), nrow = dt$K, ncol = dt$P),
+      ind_var = abs(rnorm(dt$K, 0, dt$ind_var_sd * 0.1)),
+      ind_eta  = matrix(rnorm(dt$P * dt$K, 0, 0.1), nrow = dt$K, ncol = dt$P),
       sigma = truncnorm::rtruncnorm(1, a = 0, mean = 5, sd = 0.5)
     )
 
@@ -175,4 +193,13 @@ stan_inits <- function(dt) {
     }
     return(inits)
   }
+}
+
+load_epict_model <- function() {
+  mod <- cmdstan_model(
+    "stan/ct_trajectory_model.stan",
+    include_paths = "stan",
+    stanc_options = list("O1")
+ )
+ return(mod)
 }
