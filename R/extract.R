@@ -19,13 +19,17 @@ extract_params <- function(draws, params, by) {
   draws <- draws[, ..cols]
   return(draws[])
 }
-extract_pop_params <- function(draws, params = c("c_0", "c_p_mean", "c_p",
-                                                 "c_s_mean", "c_s",
-                                                 "t_p_mean", "t_p",
-                                                 "t_s_mean", "t_s",
-                                                 "t_lod_mean", "t_lod"), by) {
+extract_ct_params <- function(draws, params = c("c_0", "c_p_mean",
+                                                 "c_s_mean[1]", "t_p_mean",
+                                                 "t_s_mean[1]", "t_lod_mean"),
+                              mean = TRUE, by) {
+  if (!mean) {
+    params <- stringr::str_remove(params, "_mean")
+    params <- stringr::str_remove(params, "\\[1\\]")
+  }
   draws <- extract_params(draws, params = params, by)
   colnames(draws) <- stringr::str_remove(colnames(draws), "_mean")
+  colnames(draws) <- stringr::str_remove(colnames(draws), "\\[1\\]")
   return(draws[])
 }
 
@@ -41,7 +45,7 @@ extract_ip_params <- function(draws, params = c("inc_mean[1]", "inc_mean",
 
 extract_param_draws <- function(draws) {
   draws <- cbind(
-    extract_pop_params(draws),
+    extract_ct_params(draws),
     extract_ip_params(draws)[, .(inc_mean, inc_sd)]
   )
   return(draws)
@@ -88,7 +92,7 @@ melt_draws <- function(draws, ids = c(".chain", ".iteration", ".draw")) {
 extract_ct_trajectories <- function(fit, variable = "ct", inf_time = TRUE) {
   dt_draws <- extract_draws(fit, params = variable, format = "array")
 
-  ct_dt_out <- dt_draws[,
+  obs_out <- dt_draws[,
    c("id", "time") := tstrsplit(variable, ",")
   ][,
    id := str_remove(id, paste0("ct", "\\["))][,
@@ -99,17 +103,17 @@ extract_ct_trajectories <- function(fit, variable = "ct", inf_time = TRUE) {
    order(id, time)]
 
   if (inf_time) {
-    inf_time_draws <- extract_draws(fit, params = "T_e", format = "array")[,
-      id := str_remove(variable, "T_e\\[")][,
+    inf_time_draws <- extract_draws(fit, params = "t_inf", format = "array")[,
+      id := str_remove(variable, "t_inf\\[")][,
       id := str_remove(id, "\\]")][,
       .(id, inf_time = value, iteration, chain)]
 
-    ct_dt_out <- ct_dt_out[inf_time_draws, on = c("id", "iteration", "chain")]
+    obs_out <- obs_out[inf_time_draws, on = c("id", "iteration", "chain")]
   }
-  ct_dt_out[, time_since_first_pos := time - inf_time]
+  obs_out[, time_since_first_pos := time - inf_time]
   cols <- c("chain", "iteration")
-  ct_dt_out[, (cols) := lapply(.SD, as.numeric), .SDcols = cols]
-  return(ct_dt_out[])
+  obs_out[, (cols) := lapply(.SD, as.numeric), .SDcols = cols]
+  return(obs_out[])
 }
 
 extract_posterior_predictions <- function(fit, obs) {

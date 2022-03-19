@@ -19,22 +19,21 @@ custom_plot_theme <- function(flip = FALSE, legend_arg = FALSE) {
   return(custom_plot_theme)
 }
 
-
-plot_obs_ct <- function(ct_dt, ct_traj, pp, traj_alpha = 0.02, onsets = TRUE,
-                        clod = 40) {
+plot_obs <- function(obs, ct_traj, pp, traj_alpha = 0.05, onsets = TRUE,
+                     clod = 40, samples = 10, ...) {
 
   if (!missing(pp)) {
-    ct_dt <- cbind(
-      ct_dt,
-      data.table::copy(pp)[, c("t", "id", "pcr_res", "obs") := NULL]
+    obs <- cbind(
+      obs[order(id)],
+      data.table::copy(pp)[, c("t", "id", "obs") := NULL]
     )
   }
 
-  plot <- ggplot(ct_dt) +
-    aes(x = t, y = ct_value, colour = factor(swab_type)) +
+  plot <- ggplot(obs) +
+    aes(x = t, y = ct_value, ...) +
     scale_colour_brewer(palette = "Dark2")
 
-  if (!is.null(ct_dt$onset_time) & onsets) {
+  if (!is.null(obs$onset_time) & onsets) {
     plot <- plot +
       geom_vline(aes(xintercept = onset_time), linetype = 2, alpha = 0.8)
   }
@@ -63,7 +62,7 @@ plot_obs_ct <- function(ct_dt, ct_traj, pp, traj_alpha = 0.02, onsets = TRUE,
    if (!missing(ct_traj)) {
      plot <- plot +
       geom_line(
-        data = ct_traj,
+        data = ct_traj[iteration <= ceiling(samples / max(chain))],
         aes(y = value, x = time_since_first_pos,
             group = interaction(iteration, chain)
         ),
@@ -75,7 +74,7 @@ plot_obs_ct <- function(ct_dt, ct_traj, pp, traj_alpha = 0.02, onsets = TRUE,
     custom_plot_theme() +
     theme(legend.position = "bottom") +
     labs(
-      colour = "Swab type", x = "Days since first positive test",
+      x = "Days since first positive test",
       y = "CT value"
     )
   return(plot)
@@ -100,7 +99,7 @@ plot_ct_pp <- function(pp, sum_pp, onsets = TRUE, clod = 40, alpha = 0.05,
      plot <- plot +
       geom_ribbon(
         data = sum_pp,
-        aes(ymin = lo90, ymax = hi90, y = NULL, group = NULL, col = NULL), 
+        aes(ymin = lo90, ymax = hi90, y = NULL, group = NULL, col = NULL),
         alpha = 0.15
       ) +
       geom_ribbon(
@@ -136,29 +135,6 @@ plot_ip_pp <- function(pp, sum_pp, onsets = TRUE, alpha = 0.05, ...) {
     return(plot)
 }
 
-plot_pp_from_fit <- function(fit, obs, samples = 10, alpha = 0.05) {
-  ct_draws <- extract_ct_trajectories(fit)
-
-  ct_summary <- summarise_draws(
-    data.table::copy(ct_draws)[,
-      time_since_first_pos := as.integer(time_since_first_pos)
-      ],
-    by = c("id", "time_since_first_pos")
-  )
-
-  ct_pp <- extract_posterior_predictions(fit, obs)
-  ct_pp <- summarise_draws(
-    ct_pp[, value := sim_ct], by = c("id", "t", "pcr_res", "obs")
-  )
-
-  # Plotting summaries of fitted trajectories against simulated data
-  plot <- plot_obs_ct(
-    obs, ct_draws[iteration <= ceiling(samples / max(chain))],
-    ct_pp, traj_alpha = alpha
-  )
-  return(plot)
-}
-
 plot_density <- function(draws, ...) {
   plot <- ggplot(draws) +
     geom_density(aes(x = value, y = ..scaled.., ...), alpha = 0.2) +
@@ -170,7 +146,7 @@ plot_density <- function(draws, ...) {
 plot_ct_summary <- function(draws, time_range = seq(0, 60, by = 0.25),
                             samples = 100, by = c(), traj_alpha = 0.05,
                             simulated_samples = 1000, ...) {
-  pop_draws <- extract_pop_params(draws, by = by)
+  pop_draws <- extract_ct_params(draws, by = by, mean = FALSE)
 
   pop_ct_draws <- pop_draws[.draw <= simulated_samples] %>%
     transform_to_model() %>%
@@ -187,9 +163,16 @@ plot_ct_summary <- function(draws, time_range = seq(0, 60, by = 0.25),
   ) +
     guides(col = guide_none(), fill = guide_none())
 
-  param_pp_plot <- pop_draws %>%
+  no_switch <- is.null(pop_draws[["t_s"]])
+
+  param_pp <- pop_draws %>%
     transform_to_natural() %>%
-    melt_draws(ids = c(".chain", ".iteration", ".draw", by)) %>%
+    melt_draws(ids = c(".chain", ".iteration", ".draw", by))
+
+  if (no_switch) {
+    param_pp <- param_pp[!variable %in% c("t_s", "c_s")]
+  }
+  param_pp_plot <- param_pp %>%
     update_variable_labels() %>%
     plot_density(...) +
     ggplot2::facet_wrap(~variable, nrow = 2, scales = "free_x") +
@@ -263,29 +246,55 @@ plot_summary <- function(draws, ct_time_range = seq(0, 60, by = 0.25),
   return(parameter_pp)
 }
 
-plot_effects <- function(effects,  position = "identity", ...) {
+plot_effects <- function(effects,  position = "identity", trans = "log", ...) {
 
   eff_plot <- ggplot(effects) +
     aes(y = variable, ...) +
     geom_vline(xintercept = 1, linetype = 2) +
     geom_linerange(
-      aes(xmin = lo90, xmax = hi90), 
+      aes(xmin = lo90, xmax = hi90),
       size = 3, alpha = 0.2,
       position = position
     ) +
     geom_linerange(
-      aes(xmin = lo60, xmax = hi60), 
+      aes(xmin = lo60, xmax = hi60),
       size = 3, alpha = 0.2,
       position = position
     ) +
     geom_linerange(
-      aes(xmin = lo30, xmax = hi30), 
+      aes(xmin = lo30, xmax = hi30),
       size = 3, alpha = 0.2,
       position = position
     ) +
     custom_plot_theme() +
     theme(legend.position = "bottom") +
-    scale_x_continuous(trans = "log") +
+    scale_x_continuous(trans = trans) +
     labs(x = "Effect size", y = "Variable modified")
   return(eff_plot)
+}
+
+plot_effect_summary <- function(draws, ct_design, adjustment_design, variables,
+                                variable_labels = function(dt, ...) {
+                                  return(dt)
+                                }, ...) {
+  ct_plot <- draws %>%
+    summarise_effects(design = ct_design, variables = variables) %>%
+    update_predictor_labels() %>%
+    variable_labels(reverse = TRUE) %>%
+    plot_effects(...)
+
+  adjustment_plot <- draws %>%
+    summarise_adjustment(
+      design = adjustment_design
+    ) %>%
+    update_predictor_labels() %>%
+    variable_labels(reverse = TRUE) %>%
+    plot_effects(
+      trans = "identity", ...
+    )
+
+  summary <- (ct_plot + adjustment_plot) +
+   patchwork::plot_layout(heights = c(4, 1))
+
+  return(summary)
 }

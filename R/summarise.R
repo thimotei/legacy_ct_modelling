@@ -1,8 +1,8 @@
 summarise_pop_pp <- function(fit) {
   draws <- fit$summary(
     variables = c(
-      "t_p_mean", "t_s_mean", "t_lod_mean", "c_p_mean",
-      "c_s_mean", "inc_mean", "inc_sd"
+      "t_p_mean", "t_s_mean[1]", "t_lod_mean", "c_p_mean",
+      "c_s_mean[1]", "inc_mean", "inc_sd"
     )
   )
   draws <- data.table::as.data.table(draws)
@@ -26,9 +26,9 @@ summarise_coeff_pp <- function(fit, params, exponentiate = FALSE) {
   return(draws[])
 }
 
-summarise_effects <- function(draws, design, variables) {
+summarise_effects <- function(draws, design, variables, exponentiate = TRUE) {
   eff_draws <- extract_coeffs(
-      draws, exponentiate = TRUE, design = design, variables
+      draws, exponentiate = exponentiate, design = design, variables
     )
 
     by <- "variable"
@@ -37,6 +37,30 @@ summarise_effects <- function(draws, design, variables) {
     }
     eff_summary <- summarise_draws(eff_draws, by = by)
     return(eff_summary)
+}
+
+summarise_adjustment <- function(draws, design) {
+  eff_draws <- extract_coeffs(
+    draws, exponentiate = FALSE, design = design,
+    variables = c("ct_shift", "ct_scale")
+  )
+
+  eff_draws[variable %in% "ct_scale", value := exp(value)]
+
+  by <- "variable"
+  if (!missing(design)) {
+    by <- c(by, "predictor")
+  }
+  eff_summary <- summarise_draws(eff_draws, by = by)
+  return(eff_summary)
+}
+
+summarise_pp <- function(fit, obs) {
+  ct_pp <- extract_posterior_predictions(fit, obs)
+  ct_pp <- summarise_draws(
+    ct_pp[, value := sim_ct], by = c("id", "t", "obs")
+  )
+  return(ct_pp)
 }
 
 summarise_draws <- function(draws, by = c("id", "time")) {
