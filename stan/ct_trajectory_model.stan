@@ -164,10 +164,9 @@ model {
   // Prior over possible infection times relative to first
   // positive test or symtom onset.
   // Assumes that the first positive test is not a false positive.
-  for (i in 1:P) {
-    t_inf[i] ~ normal(t_inf_bound[i] + 5, 5) T[t_inf_bound[i], ]; 
-  }
-  
+  t_inf ~ normal(t_inf_bound + 5, 5); 
+  target += -normal_lccdf(t_inf_bound | t_inf, 5);
+
   // CT piecewise linear intercept parameters
   c_0 ~ normal(c_lod + 10, 5) T[c_lod, ];
   c_p_mean ~ normal(0, 1); //mean at 50% of switch value
