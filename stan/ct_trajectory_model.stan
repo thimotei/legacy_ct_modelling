@@ -24,6 +24,7 @@ data {
   int nonsets; // Number of onsets
   vector[P] onset_avail; // Onsets available per ID
   vector[P] onset_time; // Time of onset per ID
+  vector[P] onset_window; // Window in which onsets could have occurred per ID
   array[nonsets] int ids_with_onsets; // IDs that have onsets
   int K; //Number of parameters with individual level variation
   int switch; //Should a secondary breakpoint in the CT curve be modelled
@@ -151,7 +152,7 @@ transformed parameters {
   
     onsets_ttar = onsets_lmpf(
       inc_mean[1], inc_sd[1], beta_inc_mean, beta_inc_sd, design, onset_avail,
-      onset_time, t_inf, ids_with_onsets
+      onset_time, onset_window, t_inf, ids_with_onsets
     );
     onsets_star[1] = sum(onsets_ttar);
     if (output_loglik) {
