@@ -18,6 +18,7 @@ data {
   array[ncensored] int censored; // Which tests have been censored
   int nuncensored; // Number of uncensored tests
   array[nuncensored] int uncensored; // Which tests have not been censored
+  array[N] int uncensored_by_test; // Uncensored by test
   vector[N] day_rel; // day of test (integer)
   vector<lower = 0>[N] ct_value; // Ct value of test
   int any_onsets; // Are there any symptom onsets
@@ -253,10 +254,23 @@ generated quantities {
   // Posterior predictions
   sim_ct = to_vector(normal_rng(adj_exp_ct, sigma));
   sim_ct = fmin(sim_ct, c_lod);
+  // Output by infection log-likelihood
   if (output_loglik) {
     log_lik = rep_vector(0, P);
     if (nonsets) {
       log_lik = onsets_log_lik;
+    }
+    for (i in 1:P) {
+      int t_start = cum_tests_per_id[i] - tests_per_id[i] + 1;
+      int t_end = cum_tests_per_id[i];
+      for (j in t_start:t_end) {
+        if (uncensored_by_test[j] == 1) {
+          log_lik[i] += normal_lpdf(ct_value[j] | adj_exp_ct[j], sigma);
+        }else{
+          log_lik[i] += normal_lccdf(c_lod | adj_exp_ct[j], sigma);
+        }
+      }
+      log_lik[i] += -normal_lccdf(0 | adj_exp_ct[t_start:t_end], sigma);
     }
   }
 }
