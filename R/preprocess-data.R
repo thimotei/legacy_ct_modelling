@@ -166,12 +166,12 @@ subset_data <- function(dt_clean, no_pos_swabs) {
   dt_proc <- data.table::copy(dt_clean)
   
   out <- dt_proc[,
-                 t_first_test := as.numeric(swab_date - min(swab_date), units = "days"),
-                 by = c("id", "infection_id")][
-                   no_pos_results >= no_pos_swabs][,
-                                                   data_id := id][,
-                                                                  id := .GRP, by = c("data_id", "infection_id")][,
-                                                                                                                 swab_type_num := as.numeric(!swab_type %in% "Dry")]
+  t_first_test := as.numeric(swab_date - min(swab_date), units = "days"),
+  by = c("id", "infection_id")][
+  no_pos_results >= no_pos_swabs][,
+  data_id := id][,
+  id := .GRP, by = c("data_id", "infection_id")][,
+  swab_type_num := as.numeric(!swab_type %in% "Dry")]
   
   # Assume potential BA.2 are BA.2
   out <- out[VOC %in% "?BA2", VOC := "BA2"][,
