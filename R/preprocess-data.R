@@ -17,7 +17,7 @@ process_data <- function(dt_raw) {
     ct := as.numeric(ct)][
     result == "Negative", ct := 40][
     swab_type == "VTM" & result == "Negative", ct_adjusted := 40][,
-    ,ct_adjusted := ct]
+    ct_adjusted := ct]
   
   #--- conditioning on only tests performed in the Crick, leaving out
   #--- UCLH swabs for now
@@ -219,20 +219,20 @@ time_since_last_dose <- function(dt, imm_delay = 14) {
   
 }
 
-time_since_last_dose <- function(dt) {
+time_since_last_dose <- function(dt, imm_delay) {
   
   dt[!is.na(dose_1) & !is.na(date_dose_1) & 
-       date_dose_2 + 14 > first_pos_test_date,
+       date_dose_2 + imm_delay > first_pos_test_date,
      time_since_last_dose := as.numeric(first_pos_test_date - date_dose_1, units = "days"),
      by = c("id", "infection_id")]
   
   dt[!is.na(dose_2) & !is.na(date_dose_2) & 
-       date_dose_2 + 14 <= first_pos_test_date,
+       date_dose_2 + imm_delay <= first_pos_test_date,
      time_since_last_dose := as.numeric(first_pos_test_date - date_dose_2, units = "days"),
      by = c("id", "infection_id")]
   
   dt[!is.na(dose_3) & !is.na(date_dose_3) &
-       date_dose_3 + 14 <= first_pos_test_date, 
+       date_dose_3 + imm_delay <= first_pos_test_date, 
      time_since_last_dose := as.numeric(first_pos_test_date - date_dose_3, units = "days"),
      by = c("id", "infection_id")]
   
