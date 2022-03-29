@@ -33,7 +33,7 @@ ct_model <- subject_design(
   ~ 1 + VOC + symptoms + no_vaccines + time_since_last_dose,
   data = obs,
   params = adj_params,
-  preds_sd = 0.4
+  preds_sd = 0.2
 )
 
 # Specify the model to use to adjust CTs globally
