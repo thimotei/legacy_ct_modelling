@@ -101,12 +101,9 @@ process_data <- function(dt_raw) {
   
   # Drop infections with gaps between positive tests of more than 60 days
   ids_spurious_gaps <- out[,
-                           .(
-                             spurious = any(
-                               abs(time_since_first_pos) > 60) || any(abs(onset_time) > 60
-                               )
-                           ), by = c("id", "infection_id")
-  ]
+    .(spurious = any(
+      abs(time_since_first_pos) > 60) || any(abs(onset_time) > 60)),
+    by = c("id", "infection_id")]
   ids_spurious_gaps[spurious == TRUE][]
   out <- out[ids_spurious_gaps, on = "id"]
   out <- out[spurious == FALSE | is.na(spurious)]
@@ -130,9 +127,9 @@ process_data <- function(dt_raw) {
 }
 
 voc_status_attribution <- function(dt,
-                                   group_all = T) {
+                                   group_all = TRUE) {
   
-  if(group_all == TRUE) {
+  if(group_all) {
     # assuming that all "variant-like" samples are the same
     dt[VOC == "Delta (B.1.617.2-like)" | VOC == "Delta (AY.4-like)",
        VOC := "Delta"]
@@ -157,7 +154,7 @@ voc_status_attribution <- function(dt,
     
     dt[, VOC := factor(VOC)]
   }
-  return(dt)
+  return(dt[])
 }
 
 # Function to postprocess cleaned input data into modelling dataset
@@ -166,20 +163,20 @@ subset_data <- function(dt_clean, no_pos_swabs) {
   dt_proc <- data.table::copy(dt_clean)
   
   out <- dt_proc[,
-  t_first_test := as.numeric(swab_date - min(swab_date), units = "days"),
-  by = c("id", "infection_id")][
-  no_pos_results >= no_pos_swabs][,
-  data_id := id][,
-  id := .GRP, by = c("data_id", "infection_id")][,
-  swab_type_num := as.numeric(!swab_type %in% "Dry")]
+    t_first_test := as.numeric(swab_date - min(swab_date), units = "days"),
+    by = c("id", "infection_id")][
+    no_pos_results >= no_pos_swabs][,
+    data_id := id][,
+    id := .GRP, by = c("data_id", "infection_id")][,
+    swab_type_num := as.numeric(!swab_type %in% "Dry")]
   
   # Assume potential BA.2 are BA.2
   out <- out[VOC %in% "?BA2", VOC := "BA2"][,
-                                            VOC := forcats::fct_drop(VOC)
+    VOC := forcats::fct_drop(VOC)
   ]
   # Set baselines for factors
   out <- out[,
-             VOC := forcats::fct_relevel(VOC, "Omicron")
+    VOC := forcats::fct_relevel(VOC, "Omicron")
   ][,
     symptoms := forcats::fct_relevel(symptoms, "symptomatic")
   ][,
@@ -196,7 +193,7 @@ time_since_last_dose <- function(dt, imm_delay = 14) {
   
   dt[!is.na(dose_1) & !is.na(date_dose_1) & 
        date_dose_2 + imm_delay > first_pos_test_date,
-     time_since_last_dose := as.numeric(first_pos_test_date - date_dose_1, units = "days"),
+       time_since_last_dose := as.numeric(first_pos_test_date - date_dose_1, units = "days"),
      by = c("id", "infection_id")]
   
   dt[!is.na(dose_2) & !is.na(date_dose_2) & 
@@ -219,33 +216,10 @@ time_since_last_dose <- function(dt, imm_delay = 14) {
   
 }
 
-time_since_last_dose <- function(dt, imm_delay) {
-  
-  dt[!is.na(dose_1) & !is.na(date_dose_1) & 
-       date_dose_2 + imm_delay > first_pos_test_date,
-     time_since_last_dose := as.numeric(first_pos_test_date - date_dose_1, units = "days"),
-     by = c("id", "infection_id")]
-  
-  dt[!is.na(dose_2) & !is.na(date_dose_2) & 
-       date_dose_2 + imm_delay <= first_pos_test_date,
-     time_since_last_dose := as.numeric(first_pos_test_date - date_dose_2, units = "days"),
-     by = c("id", "infection_id")]
-  
-  dt[!is.na(dose_3) & !is.na(date_dose_3) &
-       date_dose_3 + imm_delay <= first_pos_test_date, 
-     time_since_last_dose := as.numeric(first_pos_test_date - date_dose_3, units = "days"),
-     by = c("id", "infection_id")]
-  
-  dt <- dt[!(is.na(date_dose_1) | is.na(date_dose_2) | is.na(date_dose_3))]
-  
-  return(dt)
-  
-}
-
 index_by_first_positive <- function(dt) {
   pos_test <- dt[
     uncensored == 1, .SD[t == min(t)], by = "id"][,
-                                                  .(id, t_first_pos = t)
+      .(id, t_first_pos = t)
     ]
   dt <- dt[pos_test, on = "id"]
   dt[, t := t - t_first_pos]
