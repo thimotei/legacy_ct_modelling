@@ -9,7 +9,7 @@ library(here)
 # loading all functions in package directory
 devtools::load_all()
 
-dt_raw <- fread("data/ct_values_19_03_2022.csv")
+dt_raw <- fread("data/raw_data.csv")
 
 # processing data, adding machine readable dates, moving dates
 # back for certain swabs, based on data collection advice and adjusting
