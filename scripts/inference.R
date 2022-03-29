@@ -30,10 +30,10 @@ adj_params <- c("t_p", "t_s", "t_lod", "c_p", "c_s", "inc_mean", "inc_sd")
 
 # Specify the CT summary parameter design matrix
 ct_model <- subject_design(
-  ~ 1 + VOC + symptoms + no_vaccines,
+  ~ 1 + VOC + symptoms + no_vaccines + time_since_last_dose,
   data = obs,
   params = adj_params,
-  preds_sd = 0.1
+  preds_sd = 0.2
 )
 
 # Specify the model to use to adjust CTs globally
@@ -49,11 +49,12 @@ update_predictor_labels <- function(dt) {
     predictor := factor(
       predictor,
       levels =  c(
-        "no_vaccines2", "symptomsasymptomatic", "VOCDelta", "VOCBA2",
-        "swab_typeVTM"
+        "no_vaccines2", "symptomsasymptomatic", "VOCDelta", "VOCBA.2",
+        "swab_typeVTM", "time_since_last_dose"
       ),
       labels = c(
-        "2 vaccines", "asymptomatic", "Delta", "BA.2", "Swab type"
+        "2 vaccines", "asymptomatic", "Delta", "BA.2",
+        "Swab type", "Time since last dose"
       )
     )
   ]
