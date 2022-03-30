@@ -18,12 +18,14 @@ data {
   array[ncensored] int censored; // Which tests have been censored
   int nuncensored; // Number of uncensored tests
   array[nuncensored] int uncensored; // Which tests have not been censored
+  array[N] int uncensored_by_test; // Uncensored by test
   vector[N] day_rel; // day of test (integer)
   vector<lower = 0>[N] ct_value; // Ct value of test
   int any_onsets; // Are there any symptom onsets
   int nonsets; // Number of onsets
   vector[P] onset_avail; // Onsets available per ID
   vector[P] onset_time; // Time of onset per ID
+  vector[P] onset_window; // Window in which onsets could have occurred per ID
   array[nonsets] int ids_with_onsets; // IDs that have onsets
   int K; //Number of parameters with individual level variation
   int switch; //Should a secondary breakpoint in the CT curve be modelled
@@ -151,7 +153,7 @@ transformed parameters {
   
     onsets_ttar = onsets_lmpf(
       inc_mean[1], inc_sd[1], beta_inc_mean, beta_inc_sd, design, onset_avail,
-      onset_time, t_inf, ids_with_onsets
+      onset_time, onset_window, t_inf, ids_with_onsets
     );
     onsets_star[1] = sum(onsets_ttar);
     if (output_loglik) {
@@ -164,10 +166,9 @@ model {
   // Prior over possible infection times relative to first
   // positive test or symtom onset.
   // Assumes that the first positive test is not a false positive.
-  for (i in 1:P) {
-    t_inf[i] ~ normal(t_inf_bound[i] + 5, 5) T[t_inf_bound[i], ]; 
-  }
-  
+  t_inf ~ normal(t_inf_bound + 5, 5); 
+  target += -normal_lccdf(t_inf_bound | t_inf, 5);
+
   // CT piecewise linear intercept parameters
   c_0 ~ normal(c_lod + 10, 5) T[c_lod, ];
   c_p_mean ~ normal(0, 1); //mean at 50% of switch value
@@ -253,10 +254,23 @@ generated quantities {
   // Posterior predictions
   sim_ct = to_vector(normal_rng(adj_exp_ct, sigma));
   sim_ct = fmin(sim_ct, c_lod);
+  // Output by infection log-likelihood
   if (output_loglik) {
     log_lik = rep_vector(0, P);
     if (nonsets) {
       log_lik = onsets_log_lik;
+    }
+    for (i in 1:P) {
+      int t_start = cum_tests_per_id[i] - tests_per_id[i] + 1;
+      int t_end = cum_tests_per_id[i];
+      for (j in t_start:t_end) {
+        if (uncensored_by_test[j] == 1) {
+          log_lik[i] += normal_lpdf(ct_value[j] | adj_exp_ct[j], sigma);
+        }else{
+          log_lik[i] += normal_lccdf(c_lod | adj_exp_ct[j], sigma);
+        }
+      }
+      log_lik[i] += -normal_lccdf(0 | adj_exp_ct[t_start:t_end], sigma);
     }
   }
 }
