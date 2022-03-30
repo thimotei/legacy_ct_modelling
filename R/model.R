@@ -61,13 +61,12 @@ epict_to_stan <- function(obs,
                     tests_per_id = tests_per_id,
                     cum_tests_per_id = cumsum(tests_per_id),
                     day_rel = obs[, t],
-                    ct_value = ifelse(
-                      is.na(obs$ct_value), -99, obs$ct_value
-                    ),
+                    ct_value = obs$ct_value,
                     ncensored = length(obs[uncensored == 0, obs]),
                     censored = obs[uncensored == 0, obs],
                     nuncensored = length(obs[uncensored == 1, obs]),
                     uncensored = obs[uncensored == 1, obs],
+                    uncensored_by_test = obs[, uncensored],
                     t_e = 0,
                     c_0 = censoring_threshold,
                     c_lod = censoring_threshold,
@@ -105,7 +104,8 @@ epict_to_stan <- function(obs,
   stan_data <- c(stan_data, list(
           any_onsets = 0,
           onset_avail = rep(0, stan_data$P),
-          onset_time = rep(0, stan_data$P)
+          onset_time = rep(0, stan_data$P),
+          onset_window = rep(0, stan_data$P)
         ))
  }else{
   onset_dt <- suppressWarnings(
@@ -121,7 +121,8 @@ epict_to_stan <- function(obs,
           nonsets = sum(as.numeric(!is.na(onset_dt$onset_time))),
           ids_with_onsets = onset_dt[!is.na(onset_time), id],
           onset_time = onset_dt$onset_time %>%
-            tidyr::replace_na(0)
+            tidyr::replace_na(0),
+          onset_window = rep(1, stan_data$P)
         ))
  }
 
