@@ -76,7 +76,8 @@ fit <- epict(
   iter_warmup = 1000,
   iter_sampling = 2000,
   adapt_delta = 0.95,
-  max_treedepth = 12
+  max_treedepth = 12,
+  output_loglik = TRUE
 )
 
 # Extract and plot posterior predictions
