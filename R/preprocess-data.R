@@ -35,7 +35,7 @@ process_data <- function(dt_raw) {
   
   setnames(
     out,
-    c("N", "number_vaccines (14 days pre ix)"),
+    c("N", "number_vaccines"),
     c("no_pos_results", "no_vaccines")
   )
   out[result == "Inconclusive"]
