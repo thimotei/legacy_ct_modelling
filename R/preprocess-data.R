@@ -19,6 +19,14 @@ process_data <- function(dt_raw) {
   out <- out[,(cols) := lapply(.SD, lubridate::dmy), .SDcols = cols
              ][, ct := as.numeric(ct)]
   
+  # "invalid" and "inconclusive" results are being re-assigned to 
+  # positive based on discussions with researchers at the crick
+  # that generated the Ct value data
+  out[result == "Invalid", result := "Positive"]
+  out[result == "Inconclusive", result := "Positive"]
+  out[result == "Negative", uncensored := 0]
+  out[result == "Positive", uncensored := 1]
+  
   # People with 49U barcodes need swab date moving back 1 day
   out <- out[barcode %like% "49U", swab_date := swab_date - 1]
   
@@ -85,19 +93,6 @@ process_data <- function(dt_raw) {
         labels = c("asymptomatic", "symptomatic", "unknown")
       )
   ]
-  
-  # "invalid" and "inconclusive" both have many
-  # observations consistent with positive Ct values, keeping them for now
-  # will discuss with Crick partners about this
-  
-  # We should re-check this!
-  # Also if we are keeping this is we need to move it up the script
-  # to some point before we start filtering by positive
-  # results
-  out[result == "Invalid", result := "Positive"]
-  out[result == "Inconclusive", result := "Positive"]
-  out[result == "Negative", uncensored := 0]
-  out[result == "Positive", uncensored := 1]
   
   # Drop infections with gaps between positive tests of more than 60 days
   ids_spurious_gaps <- out[result == "Positive" & 
