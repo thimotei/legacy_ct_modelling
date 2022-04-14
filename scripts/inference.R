@@ -9,6 +9,9 @@ library(lubridate)
 library(patchwork)
 library(tidyr)
 library(here)
+library(ggnewscale)
+library(cowplot)
+library(forcats)
 
 # loading all functions in package directory
 devtools::load_all()

@@ -5,6 +5,7 @@ library(purrr)
 library(lubridate)
 library(tidyr)
 library(here)
+library(forcats)
 
 # loading all functions in package directory
 devtools::load_all()
