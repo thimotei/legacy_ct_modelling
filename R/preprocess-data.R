@@ -161,18 +161,15 @@ subset_data <- function(dt_clean, no_pos_swabs) {
   
   dt_proc <- data.table::copy(dt_clean)
   
-  out <- dt_proc[,
-    t_first_test := as.numeric(swab_date - min(swab_date), units = "days"),
-    by = c("id", "infection_id")][
-    no_pos_results >= no_pos_swabs][,
-    data_id := id][,
-    id := .GRP, by = c("data_id", "infection_id")][,
-    swab_type_num := as.numeric(!swab_type %in% "Dry")]
+  # Filter for number of positive swabs
+  out <- dt_proc[no_pos_results >= no_pos_swabs]
   
-  # Assume potential BA.2 are BA.2
-  out <- out[VOC %in% "?BA2", VOC := "BA2"][,
-    VOC := forcats::fct_drop(VOC)
-  ]
+  # Rename some columns
+  out <- out[, t_first_test := time_since_first_pos
+    ][, data_id := id
+      ][, id := .GRP, by = c("data_id", "infection_id")
+        ][, swab_type_num := ifelse(swab_type == "Dry", 0, 1)]
+  
   # Set baselines for factors
   out <- out[,
     VOC := forcats::fct_relevel(VOC, "Omicron")
@@ -181,11 +178,13 @@ subset_data <- function(dt_clean, no_pos_swabs) {
   ][,
     no_vaccines := forcats::fct_relevel(no_vaccines, "3")
   ]
+  
   # Clean up factor levels
   facs <- c("no_vaccines", "VOC", "swab_type", "dose_1", "dose_2", "dose_3",
             "result", "centre", "total_infections", "symptoms")
   out[, (facs) := lapply(.SD, forcats::fct_drop), .SDcols = facs]
-  return(out[])
+  
+  return(out)
 }
 
 time_since_last_dose <- function(dt, imm_delay = 14) {
