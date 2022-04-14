@@ -37,9 +37,17 @@ process_data <- function(dt_raw) {
   # Remove NA ct values
   out <- out[!is.na(ct_value)]
   
-  #--- counting number of positive swabs by individual
+  #--- counting number of positive swabs (and number of test days) by individual
   no_pos_cts <- out[(result == "Positive" | result == "Inconclusive"), 
-                    .(no_pos_results = .N), by = c("ID", "infection_ID")]
+                    .(no_pos_results = .N, 
+                      ndays = length(unique(swab_date))), 
+                    by = c("ID", "infection_ID")]
+  
+  # We are interested in number of timepoints, not number of swabs
+  # Some people did > 1 swab on one day
+  no_pos_cts[, no_pos_results := min(no_pos_results, ndays), 
+             c("ID", "infection_ID")
+             ][, ndays := NULL]
   
   out <- merge(
     out, no_pos_cts, by = c("ID", "infection_ID")
