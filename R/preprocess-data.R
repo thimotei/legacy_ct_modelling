@@ -6,60 +6,55 @@ process_data <- function(dt_raw) {
     dt_proc, c("ORF1ab", "total infections"), c("ct", "total_infections")
   )
   
-  out <- dt_proc[, swab_date := dmy(swab_date)][
-    barcode %like% "49U", swab_date := swab_date - 1][
-    symptom_onset_date == "unknown", symptom_onset_date := NA][,
-    symptom_onset_date := dmy(symptom_onset_date)][,
-    date_dose_1 := dmy(date_dose_1)][,
-    date_dose_2 := dmy(date_dose_2)][,
-    date_dose_3 := dmy(date_dose_3)][
-    ct != "unknown"][,
-    ct := as.numeric(ct)][
-    result == "Negative", ct := 40][
-    swab_type == "VTM" & result == "Negative", ct_adjusted := 40][,
-    ct_adjusted := ct]
+  #--- Filtering for only crick tests and tests with ct values + known age
+  # Drop private swab types
+  out <- dt_proc[centre == "crick" & 
+                   ct != "unknown" & 
+                   age != "unknown" & 
+                   barcode != "LFT" &
+                   swab_type != "Private"]
   
-  #--- conditioning on only tests performed in the Crick, leaving out
-  #--- UCLH swabs for now
-  out <- out[centre == "crick"] # nolint
+  # Re-format dates and ct values
+  cols <- c("swab_date", "symptom_onset_date",  paste0("date_dose_",1:3))
+  out <- out[,(cols) := lapply(.SD, lubridate::dmy), .SDcols = cols
+             ][, ct := as.numeric(ct)]
+  
+  # People with 49U barcodes need swab date moving back 1 day
+  out <- out[barcode %like% "49U", swab_date := swab_date - 1]
+  
+  # Set Ct values for negative results
+  out <- out[, ct_value := ct
+             ][result == "Negative", ct_value := 40]
+  
+  # Remove NA ct values
+  out <- out[!is.na(ct_value)]
   
   #--- counting number of positive swabs by individual
-  no_pos_cts <- out[
-    (result == "Positive" | result == "Inconclusive") &
-      is.na(ct_adjusted) == FALSE][,
-                                   .N, by = c("ID", "infection_ID")]
+  no_pos_cts <- out[(result == "Positive" | result == "Inconclusive"), 
+                    .(no_pos_results = .N), by = c("ID", "infection_ID")]
   
   out <- merge(
     out, no_pos_cts, by = c("ID", "infection_ID")
   )
   
+  # Change some column names
   setnames(
     out,
-    c("N", "number_vaccines"),
-    c("no_pos_results", "no_vaccines")
-  )
-  out[result == "Inconclusive"]
-  
-  setnames(
-    out,
-    c("ID", "infection_ID", "ct", "ct_adjusted"),
-    c("id", "infection_id", "ct_unadjusted", "ct_value")
+    c("ID", "infection_ID", "ct", "number_vaccines"),
+    c("id", "infection_id", "ct_unadjusted", "no_vaccines")
   )
   
-  #--- conditioning out observations with NA Ct values (how can we use these?)
-  out <- out[!is.na(ct_unadjusted)]
   
   #--- adding time since first positive test by individual
-  first_pos_test_date_dt <- out[
-    result == "Positive",
+  first_pos_test_date_dt <- out[result == "Positive",
     .(first_pos_test_date = min(swab_date)),
-    by = c("id", "infection_id")
-  ]
+    by = c("id", "infection_id")]
   
   out <- merge(
     out, first_pos_test_date_dt, by = c("id", "infection_id")
   )
   
+  # Calculate number of days since first positive test for subsequent tests
   out[,
       time_since_first_pos := as.numeric(
         swab_date - first_pos_test_date, units = "days"
@@ -73,13 +68,13 @@ process_data <- function(dt_raw) {
   
   # add time at onset
   out[,
-      onset_time := as.numeric(symptom_onset_date - first_pos_test_date)
+      onset_time := as.numeric(symptom_onset_date - first_pos_test_date, units = "days")
   ]
   
   # Deal with people missing symptom status but having an onset date
-  out[!symptoms %in% c("0", "1", "unknown"),
-      symptoms := ifelse(!is.na(symptom_onset_date), "1", "unknown")
-  ]
+  out[is.na(symptoms),
+      symptoms := ifelse(!is.na(symptom_onset_date), "1", "unknown")]
+  
   # Make variables factors
   facs <- c("no_vaccines", "VOC", "swab_type", "dose_1", "dose_2", "dose_3",
             "result", "centre", "total_infections", "symptoms")
@@ -94,36 +89,40 @@ process_data <- function(dt_raw) {
   # "invalid" and "inconclusive" both have many
   # observations consistent with positive Ct values, keeping them for now
   # will discuss with Crick partners about this
+  
+  # We should re-check this!
+  # Also if we are keeping this is we need to move it up the script
+  # to some point before we start filtering by positive
+  # results
   out[result == "Invalid", result := "Positive"]
   out[result == "Inconclusive", result := "Positive"]
   out[result == "Negative", uncensored := 0]
   out[result == "Positive", uncensored := 1]
   
   # Drop infections with gaps between positive tests of more than 60 days
-  ids_spurious_gaps <- out[,
-    .(spurious = any(
-      abs(time_since_first_pos) > 60) || any(abs(onset_time) > 60)),
-    by = c("id", "infection_id")]
-  ids_spurious_gaps[spurious == TRUE][]
-  out <- out[ids_spurious_gaps, on = "id"]
-  out <- out[spurious == FALSE | is.na(spurious)]
+  ids_spurious_gaps <- out[result == "Positive" & 
+                             (abs(time_since_first_pos) > 60 | 
+                                abs(onset_time) > 60), id]
+  
+  out <- out[!(id %in% ids_spurious_gaps)]
   
   # Drop subject with ID 978 due to large mismatch between onset and positive
   #  tests
   out <- out[id != 978]
   
   # Drop 1 individual with no vaccine information
-  out[no_vaccines %in% "unknown"]
-  out <- out[!no_vaccines %in% "unknown"]
+  # out[no_vaccines %in% "unknown"]
+  out <- out[!(no_vaccines %in% "unknown")]
   
-  # Drop 2 individuals with no symptom status (either symptomatic, asymptomatic,
+  # Drop 10 individuals with no symptom status (either symptomatic, asymptomatic,
   # or unknown)
-  out[symptoms %in% "unknown"]
-  out <- out[!symptoms %in% "unknown"]
-  # Drop swab type private
-  out <- out[!swab_type %in% "Private"]
+  # out[symptoms %in% "unknown"]
+  out <- out[!(symptoms %in% "unknown")]
+
+  # Drop unused factor levels
   out[, (facs) := lapply(.SD, forcats::fct_drop), .SDcols = facs]
-  return(out[])
+  
+  return(out)
 }
 
 voc_status_attribution <- function(dt,
