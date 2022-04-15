@@ -35,6 +35,9 @@ process_data <- function(dt_raw) {
   out <- out[,(cols) := lapply(.SD, lubridate::dmy), .SDcols = cols
              ][, ct_unadjusted := as.numeric(ct_unadjusted)]
   
+  # Fix onset date for this test
+  out[barcode == "RLNB620101", symptom_onset_date := lubridate::dmy("18-02-2022")]
+  
   # "invalid" and "inconclusive" results are being re-assigned to 
   # positive based on discussions with researchers at the crick
   # that generated the Ct value data
@@ -227,4 +230,18 @@ index_by_first_positive <- function(dt) {
   dt <- dt[pos_test, on = "id"]
   dt[, t := t - t_first_pos]
   return(dt[])
+}
+
+create_stan_data <- function(dt){
+  dt[, new.id := .GRP, c("id", "infection_id")]
+  dt[, test.id := 1:.N]
+  out <- dt[, .(id = new.id, 
+                test.id,
+                ct_value,
+                test_date = swab_date,
+                t,
+                onset_date = symptom_onset_date,
+                onset_t = onset_time,
+                censored = uncensored)]
+  return(out)
 }
