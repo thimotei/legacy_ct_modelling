@@ -188,37 +188,39 @@ subset_data <- function(dt_clean, no_pos_swabs) {
   return(out)
 }
 
-time_since_last_dose <- function(dt, imm_delay = 14) {
+t_last_dose <- function(dt, imm_delay = 14) {
+  
+  dt_proc <- data.table::copy(dt)
   
   # Some people have dose dates entered for some tests but not all tests. 
   # We can fill in these missing dose dates so they don't get filtered out 
-  dt[, date_dose_1 := max(date_dose_1, na.rm = TRUE), c("id", "infection_id")]
-  dt[, date_dose_2 := max(date_dose_2, na.rm = TRUE), c("id", "infection_id")]
-  dt[, date_dose_3 := max(date_dose_3, na.rm = TRUE), c("id", "infection_id")]
+  dt_proc[, date_dose_1 := ifelse(any(!is.na(date_dose_1)), 
+                             max(date_dose_1, na.rm = TRUE),
+                             NA), c("id", "infection_id")]
+  dt_proc[, date_dose_2 := ifelse(any(!is.na(date_dose_2)), 
+                             max(date_dose_2, na.rm = TRUE),
+                             NA), c("id", "infection_id")]
+  dt_proc[, date_dose_3 := ifelse(any(!is.na(date_dose_3)), 
+                             max(date_dose_3, na.rm = TRUE),
+                             NA), c("id", "infection_id")]
   
-  # Filter out people without dose date (currently 1 individual)
-  dt <- dt[!(is.na(date_dose_1) | is.na(date_dose_2) | is.na(date_dose_3))]
-  
-  # Infected after third dose  
-  dt[date_dose_3 + imm_delay <= first_pos_test_date, 
-     time_since_last_dose := as.numeric(first_pos_test_date - date_dose_3 - imm_delay, 
-                                        units = "days")]
-  
-  # Infected after second dose but before third
-  dt[is.na(time_since_last_dose) & date_dose_2 + imm_delay <= first_pos_test_date, 
-     time_since_last_dose := as.numeric(first_pos_test_date - date_dose_2 - imm_delay, 
-                                        units = "days")]
-  
-  #Infected after first dose but before second
-  dt[is.na(time_since_last_dose) & date_dose_1 + imm_delay <= first_pos_test_date, 
-     time_since_last_dose := as.numeric(first_pos_test_date - date_dose_1 - imm_delay, 
-                                        units = "days")]
+  fz <- function(x, imm_delay){
+    m <- unique(x$first_pos_test_date)
+    v <- unique(c(x$date_dose_1, x$date_dose_2, x$date_dose_3))
+    # remove NA dose dates
+    v <- v[!is.na(v)]
+    # remove doses after first positive test
+    v <- v[v + imm_delay <= m]
+    # return time since dose
+    out <- as.numeric(m - max(v) - imm_delay)
+    return(out)
+  }
   
   # rescaling time since last dose data to roughly match the scale of the
   # standard deviation of the effect size parameters
-  dt[, time_since_last_dose := time_since_last_dose/400]
+  dt_proc[, time_since_last_dose := fz(.SD, imm_delay = imm_delay) / 400, c("id", "infection_id")]
   
-  return(dt)
+  return(dt_proc)
   
 }
 

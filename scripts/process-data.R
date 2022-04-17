@@ -20,7 +20,7 @@ dt_clean <- process_data(dt_raw)
 
 # adding time between last vaccine dose and first positive test calculation
 # for each individual
-dt_clean <- time_since_last_dose(dt_clean, imm_delay = 14)
+dt_clean <- t_last_dose(dt_clean, imm_delay = 14)
 
 # choosing whether to pool all VOC subvariants together 
 # (e.g. B.1.617.2-like and AY.4-like are both considered "Delta") or
