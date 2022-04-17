@@ -123,6 +123,11 @@ process_data <- function(dt_raw) {
   # Drop unused factor levels
   out[, (facs) := lapply(.SD, forcats::fct_drop), .SDcols = facs]
   
+  # Add age groups
+  out[, age.group := cut(x = as.numeric(age), 
+                         breaks = c(20, 34, 49, 64, 100), 
+                         labels = c("20-34", "35-49", "50-64", "65+"))]
+  
   return(out)
 }
 
