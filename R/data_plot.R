@@ -36,16 +36,19 @@ min_ct_plot <- function(dt){
   
   obs[, iid := .GRP, c("id", "infection_id")]
   
-  pdat <- obs[t >=0 , .(iid, t, age.group, no_vaccines, VOC, symptoms, ct_value, time_since_last_dose)]
+  pdat <- obs[t >=0 , .(iid, t, age.group, no_vaccines, VOC, symptoms, ct_value, time_since_last_dose, t_onset = t - onset_time)]
   
-  p <- pdat[, .(no_vaccines = no_vaccines[1], 
-           voc = VOC[1], 
-           symptoms = symptoms[1], 
-           min_ct = min(ct_value), 
-           tsld = time_since_last_dose[1],
-           age.group = age.group[1]), "iid"] %>%
-    ggplot(aes(x = age.group, y = min_ct, fill = symptoms)) +
-    geom_dotplot(binaxis = "y", stackdir = "center", binwidth = 0.75) + 
+  pdat <- pdat[, .(no_vaccines = no_vaccines[1], 
+                   voc = VOC[1], 
+                   symptoms = symptoms[1], 
+                   min_ct = min(ct_value), 
+                   tsld = time_since_last_dose[1],
+                   age.group = age.group[1]), "iid"]
+  
+  
+  p <- ggplot(data = pdat, aes(x = age.group, y = min_ct, fill = symptoms)) +
+    geom_dotplot(binaxis = "y", stackdir = "center", binwidth = 2/3, dotsize = 1.5,
+                 position = position_dodge(0.5)) + 
     facet_grid(voc ~ no_vaccines) +
     theme_light() + 
     labs(x = "Age group", y = "Minimum observed Ct value") +
