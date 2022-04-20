@@ -136,18 +136,15 @@ voc_status_attribution <- function(dt,
   
   if(group_all) {
     # assuming that all "variant-like" samples are the same
-    dt[VOC == "Delta (B.1.617.2-like)" | VOC == "Delta (AY.4-like)",
-       VOC := "Delta"]
+    dt[VOC %like% "Delta", VOC := "Delta"]
     dt[VOC == "Omicron (BA.1-like)",
        VOC := "Omicron"]
     dt[VOC == "Omicron (BA.2-like)" | VOC == "Omicron-BA2",
        VOC := "BA.2"]
-    dt[VOC == "BA2",
-       VOC := "BA.2"]
     
     dt[, VOC := factor(VOC,
-                       levels = c("Omicron", "Delta", "BA.2", "unknown"),
-                       labels = c("Omicron", "Delta", "BA.2", "Unknown"))]
+                       levels = c("Omicron", "Delta", "BA.2"),
+                       labels = c("Omicron", "Delta", "BA.2"))]
   }
   else {
     # assuming that all "variant-like" samples are the same
