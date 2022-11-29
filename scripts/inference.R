@@ -22,5 +22,4 @@ fit <- epict(
 
 # saves fitted object - usually results in a very large file (> 100Mbs)
 # if the full model is fit
-saveRDS(fit, "outputs/fits/fit_full.rds")
-
+fit$save_object("outputs/fits/fit_full.rds")
