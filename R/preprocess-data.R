@@ -184,31 +184,6 @@ process_data <- function(dt) {
 
 voc_status_attribution <- function(dt) {
   
-<<<<<<< Updated upstream
-  if(group_all) {
-    # assuming that all "variant-like" samples are the same
-    dt[VOC %like% "Delta", VOC := "Delta"]
-    dt[VOC == "Omicron (BA.1-like)",
-       VOC := "Omicron"]
-    dt[VOC == "Omicron (BA.2-like)" | VOC == "Omicron-BA2",
-       VOC := "BA.2"]
-    
-    dt[, VOC := factor(VOC,
-                       levels = c("Omicron", "Delta", "BA.2"),
-                       labels = c("Omicron", "Delta", "BA.2"))]
-  }
-  else {
-    # assuming that all "variant-like" samples are the same
-    
-    dt[VOC == "Omicron (BA.2-like)" | VOC == "Omicron-BA2",
-       VOC := "Omicron (BA.2-like)"]
-    dt[VOC == "BA2",
-       VOC := "BA.2"]
-    
-    dt[, VOC := factor(VOC)]
-  }
-  return(dt[])
-=======
   out <- data.table::copy(dt)
   
   # assuming that all "variant-like" samples are the same
@@ -231,7 +206,6 @@ voc_status_attribution <- function(dt) {
   out <- out[!is.na(VOC)]
   
   return(out[])
->>>>>>> Stashed changes
 }
 
 # Function to postprocess cleaned input data into modelling dataset
