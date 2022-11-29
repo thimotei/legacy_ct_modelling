@@ -56,7 +56,7 @@ simulate_cts <- function(params, time_range = 0:30, obs_noise = TRUE) {
         t, c0 = c_0, cp = c_p, cs = c_s, clod = c_0, te = 0,
         tp = t_p, ts = t_s, tlod = t_lod
       ),
-    by = c("id", "t", "sample")
+    by = c("id", "t", ".draw")
   ]
 
   if (obs_noise) {
