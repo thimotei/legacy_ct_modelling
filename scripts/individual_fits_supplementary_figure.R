@@ -22,8 +22,8 @@ dt_ind_wide <- spread_draws(fit$draws(),
   data.table()
 
 # putting timings on absolute scale, rather than relative
-dt_ind_wide[, t_p_abs := t_p + t_inf, by = id]
-dt_ind_wide[, t_lod_abs := t_lod + t_p + t_inf, by = id]
+# dt_ind_wide[, t_p_abs := t_p + t_inf, by = id]
+# dt_ind_wide[, t_lod_abs := t_lod + t_p, by = id]
 
 # adding c_lod, which we assume is the same as c_0 
 dt_ind_wide[, c_lod := c_0]
@@ -32,7 +32,13 @@ dt_ind_wide[, c_lod := c_0]
 dt_ind_wide <- merge(dt_ind_wide, onset_data, all.x = TRUE, by = "id")
 
 # adjusting onset dates so they are relative to inferred infection times
-dt_ind_wide[, onset_time_abs := abs(onset_time) + quantile(t_inf, 0.5), by = id]
+# dt_ind_wide[, onset_time_abs := abs(onset_time) + quantile(t_inf, 0.5), by = id]
+dt_ind_wide[, onset_time_abs := onset_time - quantile(t_inf, 0.5), by = id]
+
+# Make timing of peak relative to first positive test
+dt_ind_wide[, t_p := t_p - t_inf]
+dt_ind_wide[, t_lod := t_lod - t_inf]
+dt_ind_wide[, t_inf_plot := -t_inf]
 
 # metling for plotting
 dt_ind_long <- melt(dt_ind_wide,
@@ -43,18 +49,18 @@ dt_ind_long <- merge(dt_ind_long, voc_data, all.x = TRUE, by = "id")
 
 
 # timing posteriors plot
-dt_t_plot <- dt_ind_long[variable %in% c("t_inf",
-                                       "t_p_abs",
-                                       "t_lod_abs",
-                                       "onset_time_abs")][,
+dt_t_plot <- dt_ind_long[variable %in% c("t_inf_plot",
+                                       "t_p",
+                                       "t_lod",
+                                       "onset_time")][,
   VOC := fct_relevel(VOC, c("Delta",
                             "Omicron (BA.1)",
                             "Omicron (BA.2)"))][,
   variable := factor(variable,
-                     levels = c("t_inf",
-                                "t_p_abs",
-                                "t_lod_abs",
-                                "onset_time_abs"),
+                     levels = c("t_inf_plot",
+                                "t_p",
+                                "t_lod",
+                                "onset_time"),
                      labels = c("Time of infection",
                                 "Time of peak",
                                 "Time LOD reached",
@@ -71,8 +77,8 @@ p_t_all <- ggplot() +
   scale_fill_brewer(palette = "Set1") +
   theme(legend.position = "bottom",
         legend.title = element_blank()) +
-  lims(x = c(NA, 40)) +
-  labs(x = "Value", y = "Density")
+  # lims(x = c(NA, 40)) +
+  labs(x = "Time relative to first positive test", y = "Density")
 
 ggsave("outputs/figures/pdfs/individual_t_posteriors.pdf",
        p_t_all,
