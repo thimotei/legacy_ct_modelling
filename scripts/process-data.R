@@ -20,15 +20,13 @@ dt_clean <- process_data(dt_raw)
 
 # adding time between last vaccine dose and first positive test calculation
 # for each individual
-dt_clean <- t_last_dose(dt_clean, imm_delay = 14)
+dt_clean <- t_last_exposure(dt_clean, imm_delay = 14)
 
 # choosing whether to pool all VOC subvariants together 
 # (e.g. B.1.617.2-like and AY.4-like are both considered "Delta") or
 # whether we consider them as separate groups. Main analysis considers
 # them as grouped. Supplementary analysis considers them separately
-dt_clean <- voc_status_attribution(dt_clean,
-                                   group_all = TRUE)
+dt_clean <- voc_status_attribution(dt_clean)
 
-summary(dt_clean)
-
+# saving processed data as R object file
 saveRDS(dt_clean, here("data", "processed-data.rds"))

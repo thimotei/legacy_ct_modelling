@@ -39,11 +39,11 @@ data {
   int adj_t_p; // Should time at peak be adjusted
   int adj_t_s; // Should time at switch be adjusted
   int adj_t_lod; // Should time at LOD be adjusted
-  int adj_c_p; // Should CT at peak be adjusted
-  int adj_c_s; // Should CT at switch be adjusted
-  int adj_inc_mean; // Should incubation period mean be adjusted
+  int adj_c_p; // Should Ct at peak be adjusted
+  int adj_c_s; // Should Ct at switch be adjusted
+  int adj_inc_mean;// Should incubation period mean be adjusted
   int adj_inc_sd; // Should incubation period standard deviation be adjusted
-  int adj_ct; // Should cts be adjusted
+  int adj_ct; // Should Cts be adjusted
   int ct_preds; // Number of predictors for CT adjustment
   real ct_preds_sd; // Standard deviation of CT predictor coeffs
   matrix[N, ct_preds + 1] ct_design; // Design matrix for CT adjustment
@@ -63,20 +63,23 @@ transformed data {
 }
 
 parameters {
+  
   vector<lower = t_inf_bound>[P] t_inf; // Inferred time of infection
   array[any_onsets] real inc_mean; //Incubation period mean
   array[any_onsets] real<lower = 0> inc_sd; //Incubation period sd
   real<lower = c_lod> c_0;   // Ct value before detection
-  // Cholesky_factored correlation matrix
+  
+  // Cholesky factored correlation matrix
   cholesky_factor_corr[ind_corr ? K : 0] L_Omega;
-  real c_p_mean; // Ct value of viral load p
-  array[switch] real c_s_mean; // Ct value at s
+  real c_p_mean; // Ct value at peak
+  array[switch] real c_s_mean; // Ct value at switch
   real t_p_mean; // Timing of peak
   array[switch] real t_s_mean; // Timing of switch
   real t_lod_mean; // Time viral load hits lower limit of detection
   vector<lower = 0>[ind_var_m ? K : 0] ind_var; // SD of individual variation
   matrix[ind_var_m ? K : 0, P] ind_eta; // Individual level variation
-  real<lower = 0> sigma; // Variance parameter for oobservation model
+  real<lower = 0> sigma; // Variance parameter for observation model
+  
   // Coefficients
   vector[preds && adj_t_p ? preds : 0] beta_t_p;
   vector[preds && adj_t_s ? preds : 0] beta_t_s;
@@ -90,10 +93,15 @@ parameters {
 }
 
 transformed parameters {
+  
+  // individual-level Ct dynamics parameters
   vector[P] t_p, t_s, t_lod, c_p, c_s, t_lod_abs;
   vector[N] inf_rel, exp_ct, adj_exp_ct;
+  
+  // likelihoods for onset and incubation periods
   array[nonsets] real onsets_star;
   vector[nonsets ? P :0] onsets_log_lik;
+  
 {
   matrix[P, K] eta;
   if (ind_corr) {
@@ -134,6 +142,7 @@ transformed parameters {
 }
   // Make times absolute
   t_lod_abs = t_p + t_s + t_lod;
+  
   // Adjust observed times since first test to be time since infection
   inf_rel = day_rel + t_inf[id];
 
@@ -150,7 +159,7 @@ transformed parameters {
   // Model symptom onset likelihood: see onsets_lmpf.stan
   if (any_onsets) {
     vector[P] onsets_ttar;
-  
+
     onsets_ttar = onsets_lmpf(
       inc_mean[1], inc_sd[1], beta_inc_mean, beta_inc_sd, design, onset_avail,
       onset_time, onset_window, t_inf, ids_with_onsets

@@ -29,7 +29,7 @@ obs <- list(
 # based on initial conditions used for the stan model.
 ct_sample <- simulate_obs(
   obs = obs,
-  parameters = stan_inits(obs)(),
+  parameters = epict_inits(obs)(),
   time_range = -1:30,
   sample_density = 4:12
 )

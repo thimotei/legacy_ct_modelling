@@ -13,7 +13,7 @@ vector onsets_lmpf(real inc_mean, real inc_sd, vector beta_im, vector beta_is,
   inc_mean_p = combine_effects(inc_mean, beta_im, design);
   if (adj_inc_sd) {
     inc_sd_p = exp(combine_effects(log(inc_sd), beta_is, design));
-  }else{
+  } else {
     inc_sd_p = rep_vector(inc_sd, P);
   }
 
