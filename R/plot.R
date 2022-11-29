@@ -1,21 +1,12 @@
-custom_plot_theme <- function(flip = FALSE, legend_arg = FALSE) {
-
-  custom_plot_theme <- list(
-    theme_bw(11),
-    theme(strip.placement = "outside"),
-    geom_vline(aes(xintercept = -Inf)),
-    guides(color = guide_legend(override.aes = list(fill = NA)))
-  )
-
-  if (!flip) {
-    append(custom_plot_theme, geom_hline(aes(yintercept = -Inf)))
-  }
-
-  if (!legend_arg) {
-    append(custom_plot_theme,
-           theme(legend.title = element_blank()))
-  }
-
+custom_plot_theme <- function() {
+  
+  custom_plot_theme = list(
+    theme_cowplot(11),
+    theme(axis.line = element_line()),
+    theme(strip.placement = "outside",
+          strip.background = element_blank(),
+          legend.title = element_blank()))
+  
   return(custom_plot_theme)
 }
 
@@ -273,7 +264,10 @@ plot_effects <- function(effects,  position = "identity", trans = "log", ...) {
   return(eff_plot)
 }
 
-plot_effect_summary <- function(draws, ct_design, adjustment_design, variables,
+plot_effect_summary <- function(draws,
+                                ct_design,
+                                adjustment_design,
+                                variables,
                                 variable_labels = function(dt, ...) {
                                   return(dt)
                                 }, ...) {
@@ -283,18 +277,19 @@ plot_effect_summary <- function(draws, ct_design, adjustment_design, variables,
     variable_labels(reverse = TRUE) %>%
     plot_effects(...)
 
-  adjustment_plot <- draws %>%
-    summarise_adjustment(
-      design = adjustment_design
-    ) %>%
-    update_predictor_labels() %>%
-    variable_labels(reverse = TRUE) %>%
-    plot_effects(
-      trans = "identity", ...
-    )
+  # adjustment_plot <- draws %>%
+  #   summarise_adjustment(
+  #     design = adjustment_design
+  #   ) %>%
+  #   update_predictor_labels() %>%
+  #   variable_labels(reverse = TRUE) %>%
+  #   plot_effects(
+  #     trans = "identity", ...
+  #   )
+# 
+#   summary <- (ct_plot + adjustment_plot) +
+#    patchwork::plot_layout(heights = c(4, 1))
 
-  summary <- (ct_plot + adjustment_plot) +
-   patchwork::plot_layout(heights = c(4, 1))
-
-  return(summary)
+  # return(summary)
+  return(ct_plot)
 }

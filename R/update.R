@@ -7,12 +7,12 @@ params <- c(
 )
 
 clean_params <- c(
-  "Ct value at latent limit of detection",
+  "Ct value at LOD",
   "Ct value at peak",
   "Ct value at switch",
   "Time of peak",
   "Time of switch",
-  "Time of latent limit of detection",
+  "Time until LOD",
   "Incubation period (log mean)",
   "Incubation period (log sd)",
   "Incubation period (mean)",
@@ -34,4 +34,66 @@ if (reverse) {
     )
   ]
   return(draws[])
+}
+
+add_baseline_to_draws <- function(adj_draws, predictor_label, onsets_flag) {
+  
+  adj_draws <- rbind(
+    extract_param_draws(draws, onsets = onsets_flag)[,
+      predictor := predictor_label
+    ],
+    adj_draws
+  )[, predictor := factor(predictor)]
+  
+  return(adj_draws)
+  
+}
+
+add_regressor_categories <- function(dt) {
+  
+  dt[predictor %in% c("Omicron (BA.1)", "Omicron (BA.2)", "Delta"),
+     regressor_category := "VOC"]
+  
+  dt[predictor %in% c("Age: 20-34",
+                      "Age: 35-49",
+                      "Age: 50+"),
+     regressor_category := "Age"]
+  
+  dt[predictor %in% c("3 exposures", "4 exposures",
+                      "5+ exposures"), 
+     regressor_category := "Number of exposures"]
+  
+  dt[predictor %in% c("Symptomatic", "Asymptomatic"),
+     regressor_category := "Symptom status"]
+  
+  dt[predictor %like% "Baseline", regressor_category := "baseline"]
+  
+}
+
+# Add a function mapping labels to each term
+update_predictor_labels <- function(dt) {
+  dt <- dt[,
+           predictor := factor(
+             predictor,
+             levels =  c(
+               "no_vaccines2",
+               "symptomsasymptomatic", "symptomsunknown",
+               "VOCDelta", "VOCOmicron (BA.2)",
+               "time_since_last_dose",
+               "no_exposures3", "no_exposures5+",
+               "age_group20-34", "age_group50+",
+               "swab_typeVTM"
+             ),
+             labels = c(
+               "2 vaccines",
+               "Asymptomatic", "Symptom status unknown",
+               "Delta", "Omicron (BA.2)",
+               "Time since last dose",
+               "3 exposures", "5+ exposures",
+               "Age: 20-34", "Age: 50+",
+               "Swab type"
+             )
+           )
+  ]
+  return(dt[])
 }

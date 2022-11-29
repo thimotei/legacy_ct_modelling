@@ -46,7 +46,9 @@ epict_to_stan <- function(obs,
                          adjustment_model = test_design(~ 1, obs),
                          individual_variation = 0.2,
                          individual_correlation = 1,
-                         censoring_threshold = 40, switch = TRUE,
+                         censoring_threshold = 40, 
+                         positivity_threshold = 37,
+                         switch = TRUE,
                          onsets = TRUE, incubation_period = get_inc_period(),
                          likelihood = TRUE, output_loglik = FALSE) {
   obs <- data.table::copy(obs)
@@ -104,6 +106,8 @@ epict_to_stan <- function(obs,
   stan_data <- c(stan_data, list(
           any_onsets = 0,
           onset_avail = rep(0, stan_data$P),
+          nonsets = 1,
+          ids_with_onsets = as.array(0),
           onset_time = rep(0, stan_data$P),
           onset_window = rep(0, stan_data$P)
         ))
