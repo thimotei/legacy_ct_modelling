@@ -121,23 +121,8 @@ ggsave("outputs/figures/pngs/individual_ct_posteriors.png",
 
  # simulating Ct trajectories from individual-level posteriors
 dt_sims <- simulate_cts(params = dt_ind_wide,
-                        time_range = seq(0, 30, 0.5),
+                        time_range = seq(0, 30, 1),
                         obs_noise = FALSE)
-
-
-p1 <- dt_ind_long[id == 1 & variable %in%] %>% 
-  ggplot() + 
-  geom_density(aes(x = value, fill = variable))
-
-p2 <- obs_adj[id == 1] %>% 
-  ggplot() +
-  geom_point(aes(x = t, 
-                 y = ct_value,
-                 colour = ct_type)) + 
-  scale_y_reverse() +
-  coord_cartesian(clip = "off", ylim = c(40, 0))
-
-p1 + p2
 
 # summarising simulated trajectories
 dt_sims_sum <- summarise_ct_traj(dt_sims, pop_flag = FALSE)
@@ -189,7 +174,7 @@ ggsave("outputs/figures/pdfs/all_individuals_fits.pdf",
        height = 30)
 
 # saving PNG plot
-ggsave("outputs/figures/pngss/all_individuals_fits.png",
+ggsave("outputs/figures/pngs/all_individuals_fits.png",
        p_all_fits,
        width = 10,
        height = 30)
