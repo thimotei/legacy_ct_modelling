@@ -31,7 +31,7 @@ plot_ct_trajectory_panel <- function(pop_ct_draws_cens,
     geom_line(aes(x = t,
                   y = median,
                   colour = predictor),
-              size = 0.3) +
+              linewidth = 0.3) +
     geom_ribbon(aes(x = t,
                     ymin = lo90,
                     ymax = hi90,
@@ -67,7 +67,7 @@ plot_ct_trajectory_panel <- function(pop_ct_draws_cens,
     theme_minimal() +
     theme(legend.position = "bottom",
           legend.title = element_blank()) +
-    guides(fill = FALSE)
+    guides(fill = "none")
   
   return(plot_out)
   
@@ -147,12 +147,7 @@ plot_effect_panel <- function(param_pp,
 
 figure_3_subpanel <- function(p1, p2, rel_widths_arg) {
   
-  plot_both <- plot_grid(p1, p2, rel_widths = rel_widths_arg)
-  
-  plot_out <- plot_both 
-  # + 
-  #   theme(panel.border = element_rect(colour = "black",
-  #                                     fill = NA, size = 2))
+  plot_out <- plot_grid(p1, p2, rel_widths = rel_widths_arg)
   
   return(plot_out)
 }

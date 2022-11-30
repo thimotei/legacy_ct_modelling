@@ -66,14 +66,14 @@ summarise_pp <- function(fit, obs) {
 summarise_draws <- function(draws, by = c("id", "time")) {
 
   out <- draws[,
-      .(median = quantile(value, c(0.5), na.rm = TRUE),
-        lo95 = quantile(value, c(0.05), na.rm = TRUE),
-        lo90 = quantile(value, c(0.05), na.rm = TRUE),
+      .(lo30 = quantile(value, c(0.35), na.rm = TRUE),
         lo60 = quantile(value, c(0.20), na.rm = TRUE),
-        lo30 = quantile(value, c(0.35), na.rm = TRUE),
+        lo90 = quantile(value, c(0.10), na.rm = TRUE),
+        lo95 = quantile(value, c(0.05), na.rm = TRUE),
+        median = quantile(value, c(0.5), na.rm = TRUE),
         hi30 = quantile(value, c(0.65), na.rm = TRUE),
         hi60 = quantile(value, c(0.80), na.rm = TRUE),
-        hi90 = quantile(value, c(0.95), na.rm = TRUE),
+        hi90 = quantile(value, c(0.90), na.rm = TRUE),
         hi95 = quantile(value, c(0.95), na.rm = TRUE)
       ),
       by = by
@@ -119,38 +119,55 @@ summarise_ct_traj <- function(dt,
   return(out)
 }
 
-summarise_effect_sizes_natural <- function(draws) {
-  
-  draws <- extract_draws(fit)
-  
+summarise_effect_sizes_natural <- function(draws,
+                                           add_baseline_flag = TRUE) {
   adj_params <- c("c_p", "t_p", "t_lod")
-  baseline_predictors <- c("Omicron",
-                           "Symptomatic",
-                           "4 exposures",
-                           "Age: 35-49")
   
-  adj_draws <- adjust_params(draws, design = ct_model$design, onsets = FALSE) 
+  if(add_baseline_flag == TRUE) {
+    
+    baseline_predictors <- c("Omicron",
+                             "Symptomatic",
+                             "4 exposures",
+                             "Age: 35-49")
+    
+    adj_draws <- adjust_params(draws, design = ct_model$design, onsets = FALSE) 
+    
+    adj_draws <- adj_draws %>% 
+      update_predictor_labels()
+    
+    adj_draws <- add_baseline_to_draws(
+      adj_draws, "Omicron (BA.1)", onsets_flag = F)
   
-  adj_draws <- adj_draws %>% 
-    update_predictor_labels()
-  
-  baseline_description <- "Baseline:
-  Omicron,  
-  4 exposures,
-  symptomatic,
-  Age:35—49"
-  
-  # adding baseline case with long description, for legend and vertical lines
-  adj_draws <- add_baseline_to_draws(adj_draws,
-                                     baseline_description,
-                                     onsets_flag = FALSE)
-  
-  # adding the baseline results again for each subcategory, to plot
-  # the results separately for each regressor category
-  adj_draws <- add_baseline_to_draws(adj_draws, "Omicron (BA.1)", onsets_flag = F)
-  adj_draws <- add_baseline_to_draws(adj_draws, "4 exposures", onsets_flag = F)
-  adj_draws <- add_baseline_to_draws(adj_draws, "Symptomatic", onsets_flag = F)
-  adj_draws <- add_baseline_to_draws(adj_draws, "Age: 35-49", onsets_flag = F)
+    baseline_description <- "Baseline:
+                             Omicron,  
+                             4 exposures,
+                             symptomatic,
+                             Age:35—49"
+    
+    # adding baseline case with long description, for legend and vertical lines
+    adj_draws <- add_baseline_to_draws(adj_draws,
+                                       baseline_description,
+                                       onsets_flag = FALSE)
+    
+    # adding the baseline results again for each subcategory, to plot
+    # the results separately for each regressor category
+    adj_draws <- add_baseline_to_draws(adj_draws, "4 exposures", onsets_flag = F)
+    adj_draws <- add_baseline_to_draws(adj_draws, "Symptomatic", onsets_flag = F)
+    adj_draws <- add_baseline_to_draws(adj_draws, "Age: 35-49", onsets_flag = F)
+  } else {
+    
+    baseline_predictors <- c("Omicron")
+    
+    adj_draws <- adjust_params(draws, design = ct_model$design, onsets = FALSE) 
+    
+    adj_draws <- adj_draws %>% 
+      update_predictor_labels()
+    
+    adj_draws <- add_baseline_to_draws(
+      adj_draws,
+      "Omicron (BA.1)", 
+      onsets_flag = F)
+  }
   
   pop_draws <- extract_ct_params(adj_draws, by = "predictor", mean = FALSE) %>% 
     transform_to_model()

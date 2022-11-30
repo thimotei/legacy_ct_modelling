@@ -135,42 +135,47 @@ extract_pop_ct_trajectories <- function(fit,
                                         tmax = 25,
                                         tstep = 0.1,
                                         lower_ct_limit = 40,
-                                        separate_covariates = TRUE,
+                                        separate_baseline_covariates = TRUE,
                                         baseline_tag = "Baseline",
+                                        other_covariates = TRUE,
                                         censor_output = TRUE,
                                         onsets_flag = onsets_flag) {
-  
   # Extract posterior predictions
   draws <- extract_draws(fit)
   
-  adj_draws <- adjust_params(draws, design = ct_model$design, onsets_flag = onsets_flag) 
+  adj_draws <- adjust_params(draws, 
+                             design = ct_model$design, 
+                             onsets_flag = onsets_flag) 
   
-  adj_draws <- adj_draws %>% 
-    update_predictor_labels()
+  adj_draws <- adj_draws %>% update_predictor_labels()
   
   # adding baseline draws
-  if(separate_covariates == TRUE) {
-    adj_draws <- add_baseline_to_draws(adj_draws, "Omicron (BA.1)", onsets_flag = onsets_flag)
-    adj_draws <- add_baseline_to_draws(adj_draws, "4 exposures", onsets_flag = onsets_flag)
-    adj_draws <- add_baseline_to_draws(adj_draws, "Symptomatic", onsets_flag = onsets_flag)
-    adj_draws <- add_baseline_to_draws(adj_draws, "Age: 35-49", onsets_flag = onsets_flag)
-  } else {
-    adj_draws <- add_baseline_to_draws(adj_draws, baseline_tag, onsets_flag = onsets_flag)
-  }
-  
-  # extracting covariate-level parameters
-  # pop_draws <- extract_ct_params(adj_draws, by = "predictor", mean = FALSE) 
+  if(separate_baseline_covariates == TRUE & other_covariates == TRUE) {
+    adj_draws <- add_baseline_to_draws(
+      adj_draws, "Omicron (BA.1)", onsets_flag = onsets_flag)
+    
+    adj_draws <- add_baseline_to_draws(
+      adj_draws, "4 exposures", onsets_flag = onsets_flag)
+    
+    adj_draws <- add_baseline_to_draws(
+      adj_draws, "Symptomatic", onsets_flag = onsets_flag)
+    
+    adj_draws <- add_baseline_to_draws(
+      adj_draws, "Age: 35-49", onsets_flag = onsets_flag)
+    
+  } else if(separate_baseline_covariates == FALSE & other_covariates == FALSE) {
+    adj_draws[is.na(predictor), predictor := "Omicron (BA.1)"]
+  } 
   
   # simulating Ct trajectories
   pop_ct_draws <- adj_draws %>%
     transform_to_model(., onsets_flag = onsets_flag) %>%
     simulate_cts(time_range = seq(tmin, tmax, tstep), 
-                 obs_noise = FALSE,
-                 t_e = 0)
+                 obs_noise = FALSE)
   
   # returning the number of draws set in function call
-  pop_ct_draws <- pop_ct_draws[, .SD[.draw %in% 1:no_draws], 
-                               by = "predictor"]
+  pop_ct_draws <- pop_ct_draws[,
+    .SD[.draw %in% 1:no_draws], by = "predictor"]
   
   # adding regressor categories
   pop_ct_draws <- add_regressor_categories(pop_ct_draws)
@@ -178,7 +183,6 @@ extract_pop_ct_trajectories <- function(fit,
   # censoring outputs to the lower limit of detection (Ct = 40) for
   # simpler interpretability
   out <- pop_ct_draws[ct_value > lower_ct_limit, ct_value := 40]
-  out <- add_regressor_categories(out)
   
   return(out)
   
