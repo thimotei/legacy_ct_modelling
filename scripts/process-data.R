@@ -16,7 +16,7 @@ dt_raw <- fread("data/raw_data.csv")
 # back for certain swabs, based on data collection advice and adjusting
 # all wet swabs upwards according to the fitted dry vs wet adjustment
 # factor
-dt_clean <- process_data(dt_raw)
+dt_clean <- process_data(dt_raw, struct_arg = "long")
 
 # adding time between last vaccine dose and first positive test calculation
 # for each individual

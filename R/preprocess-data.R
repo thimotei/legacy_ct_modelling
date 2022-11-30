@@ -1,4 +1,5 @@
-process_data <- function(dt) {
+process_data <- function(dt,
+                         struct_arg = "long") {
   
   dt <- fread("data/raw_data.csv")
   
@@ -172,12 +173,14 @@ process_data <- function(dt) {
                          labels = c("20-34", "35-49", "50+"))]
   
   
-  # melting the Ct values for the three different gene targets, so we can
-  # use all three in the inference
-  out <- melt(out,
-              measure.vars = c("ct_value", "ct_n_gene", "ct_s_gene"),
-              variable.name = "ct_type", 
-              value.name = "ct_value")[!is.na(ct_value)]
+  if(struct_arg == "long") {
+    # melting the Ct values for the three different gene targets, so we can
+    # use all three in the inference
+    out <- melt(out,
+                measure.vars = c("ct_value", "ct_n_gene", "ct_s_gene"),
+                variable.name = "ct_type", 
+                value.name = "ct_value")[!is.na(ct_value)]
+    }
   
   return(out)
 }
