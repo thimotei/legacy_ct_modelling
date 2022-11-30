@@ -28,8 +28,9 @@ dt_ind_wide[, c_lod := c_0]
 dt_ind_wide <- merge(dt_ind_wide, onset_data, by = "id")
 
 # adjusting onset dates so they are relative to inferred infection times
-dt_ind_wide_adj <- dt_ind_wide[, onset_time_abs := onset_time - quantile(t_inf, 0.5),
-                               by = id]
+dt_ind_wide_adj <- copy(dt_ind_wide)
+dt_ind_wide_adj[, onset_time_abs := onset_time - quantile(t_inf, 0.5),
+                by = id]
 
 # make timing of peak relative to first positive test
 dt_ind_wide_adj[, t_p := t_p - t_inf]
@@ -92,7 +93,7 @@ ggsave("outputs/figures/pngs/individual_t_posteriors.png",
        bg = "white")
 
 # Ct value posteriors plot
-dt_ct_plot <- dt_ind_long[variable %in% c("c_p")][,
+dt_ct_plot <- dt_ind_long_adj[variable %in% c("c_p")][,
   VOC := fct_relevel(VOC, c("Delta",
                             "Omicron (BA.1)",
                             "Omicron (BA.2)"))][,
@@ -122,7 +123,6 @@ ggsave("outputs/figures/pngs/individual_ct_posteriors.png",
        width = 10,
        height = 30,
        bg = "white")
-
 
 # simulating Ct trajectories from individual-level posteriors
 dt_sims <- simulate_cts(params = dt_ind_wide,
