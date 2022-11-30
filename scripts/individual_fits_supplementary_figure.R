@@ -127,7 +127,7 @@ ggsave("outputs/figures/pngs/individual_ct_posteriors.png",
 # simulating Ct trajectories from individual-level posteriors
 dt_sims <- simulate_cts(params = dt_ind_wide,
                         time_range = seq(0, 30, 1),
-                        obs_noise = FALSE)
+                        obs_noise = TRUE)
 
 # summarising simulated trajectories
 dt_sims_sum <- summarise_ct_traj(dt_sims, pop_flag = FALSE)
