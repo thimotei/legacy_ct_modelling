@@ -21,35 +21,34 @@ dt_ind_wide <- spread_draws(fit$draws(),
                             sigma) %>% 
   data.table()
 
-# putting timings on absolute scale, rather than relative
-# dt_ind_wide[, t_p_abs := t_p + t_inf, by = id]
-# dt_ind_wide[, t_lod_abs := t_lod + t_p, by = id]
-
 # adding c_lod, which we assume is the same as c_0 
 dt_ind_wide[, c_lod := c_0]
 
 # merging with onset data
-dt_ind_wide <- merge(dt_ind_wide, onset_data, all.x = TRUE, by = "id")
+dt_ind_wide <- merge(dt_ind_wide, onset_data, by = "id")
 
 # adjusting onset dates so they are relative to inferred infection times
-# dt_ind_wide[, onset_time_abs := abs(onset_time) + quantile(t_inf, 0.5), by = id]
-dt_ind_wide[, onset_time_abs := onset_time - quantile(t_inf, 0.5), by = id]
+dt_ind_wide_adj <- dt_ind_wide[, onset_time_abs := onset_time - quantile(t_inf, 0.5),
+                               by = id]
 
-# Make timing of peak relative to first positive test
-dt_ind_wide[, t_p := t_p - t_inf]
-dt_ind_wide[, t_lod := t_lod - t_inf]
-dt_ind_wide[, t_inf_plot := -t_inf]
+# make timing of peak relative to first positive test
+dt_ind_wide_adj[, t_p := t_p - t_inf]
+dt_ind_wide_adj[, t_lod := t_lod - t_inf]
+dt_ind_wide_adj[, t_inf_plot := -t_inf]
+
+# calculating the difference between the symptom onset (relative to first
+# positive test) and the timing of the peak for each individual
+dt_ind_wide_adj[, diff_t_p_onset := abs(onset_time - t_p), by = id]
 
 # metling for plotting
-dt_ind_long <- melt(dt_ind_wide,
+dt_ind_long_adj <- melt(dt_ind_wide_adj,
      id.vars = c("id", ".chain", ".iteration", ".draw"))
 
 # merging with VOC data 
-dt_ind_long <- merge(dt_ind_long, voc_data, all.x = TRUE, by = "id")
-
+dt_ind_long_adj <- merge(dt_ind_long_adj, voc_data, by = "id")
 
 # timing posteriors plot
-dt_t_plot <- dt_ind_long[variable %in% c("t_inf_plot",
+dt_t_plot <- dt_ind_long_adj[variable %in% c("t_inf_plot",
                                        "t_p",
                                        "t_lod",
                                        "onset_time")][,
@@ -77,7 +76,7 @@ p_t_all <- ggplot() +
   scale_fill_brewer(palette = "Set1") +
   theme(legend.position = "bottom",
         legend.title = element_blank()) +
-  # lims(x = c(NA, 40)) +
+  lims(x = c(-10, 20)) +
   labs(x = "Time relative to first positive test", y = "Density")
 
 ggsave("outputs/figures/pdfs/individual_t_posteriors.pdf",
@@ -124,30 +123,38 @@ ggsave("outputs/figures/pngs/individual_ct_posteriors.png",
        height = 30,
        bg = "white")
 
+# making adjustment of time since first test positive, to help plotting
+# piecewise Ct function currently doesn't work with negative infection times
+# so adjusting everything to be positive, relative to time since infection
+dt_ind_wide_adj_pos <- dt_ind_wide_adj[, t_p := t_p + min(t_inf), by = id]
+dt_ind_wide_adj_pos <- dt_ind_wide_adj[, t_lod := t_lod + min(t_inf), by = id]
+dt_ind_wide_adj_pos <- dt_ind_wide_adj[, t_inf_plot := t_inf - min(t_inf), by = id]
 
- # simulating Ct trajectories from individual-level posteriors
-dt_sims <- simulate_cts(params = dt_ind_wide,
-                        time_range = seq(0, 30, 1),
-                        obs_noise = FALSE)
+# simulating Ct trajectories from individual-level posteriors
+dt_sims <- simulate_cts(params = dt_ind_wide_adj_pos,
+                        time_range = seq(0, 60, 1),
+                        obs_noise = FALSE,
+                        t_e = "t_inf_plot")
 
 # summarising simulated trajectories
 dt_sims_sum <- summarise_ct_traj(dt_sims, pop_flag = FALSE)
-dt_sims_sum_all <- merge(dt_sims_sum, voc_data, all.x = TRUE, by = "id")
+dt_sims_sum_all <- merge(dt_sims_sum, voc_data, by = "id")
 
-# calculating median infection time for adjustment
-dt_t_inf <- dt_ind_wide[, .(t_inf_med = quantile(t_inf, 0.5)), by = id]
+# calculating maximum infection time for adjustment
+dt_t_inf <- dt_ind_wide[, .(t_inf_min = min(t_inf),
+                            t_inf_med = quantile(t_inf, 0.5)), by = id]
 
 # merging with median infection time
-obs_adj <- merge(obs, dt_t_inf, all.x = TRUE, by = "id")
+obs_adj <- merge(obs, dt_t_inf, by = "id")
 
 # adjusting raw data so its on the same scale as inferred trajectories
-obs_adj[, t_first_test_adj := t_first_test + t_inf_med, by = "id"]
+obs_adj[, t_first_test_since_inf := t_first_test + t_inf_med + t_inf_min, by = "id"]
 
 # relabelling factors for plot
-obs_adj[, ct_type := factor(ct_type,
-                            labels = c("ORF1ab",
-                                       "N gene",
-                                       "S gene"))]
+obs_plot <- obs_adj[, ct_type := factor(ct_type,
+                                    labels = c("ORF1ab",
+                                               "N gene",
+                                               "S gene"))]
 
 # plotting all individual-level inferred trajectories with raw data on top
 p_all_fits <- dt_sims_sum_all[, VOC := fct_relevel(VOC,
@@ -155,16 +162,18 @@ p_all_fits <- dt_sims_sum_all[, VOC := fct_relevel(VOC,
                                        "Omicron (BA.1)",
                                        "Omicron (BA.2)"))] %>% 
  ggplot() + 
-  geom_line(aes(x = t, y = median,
-                group = id), alpha = 0.5, linetype = "dashed") +
-  geom_ribbon(aes(x = t, ymin = lo90, ymax = hi90, fill = VOC), alpha = 0.5) +
+  geom_line(aes(x = t, y = median, group = id), 
+            alpha = 0.5, linetype = "dashed") +
+  geom_ribbon(aes(x = t, ymin = lo90, ymax = hi90, fill = VOC), 
+              alpha = 0.5) +
   scale_fill_brewer(palette = "Set1", aesthetics = "fill") +
-  geom_point(data = obs_adj,
-             # inherit.aes = FALSE,
-             aes(x = t_first_test_adj, y = ct_value, colour = ct_type)) +
-  facet_wrap(vars(VOC, id), ncol = 7) + 
+  geom_point(data = obs_plot,
+             inherit.aes = FALSE,
+             aes(x = t_first_test_since_inf, y = ct_value, colour = ct_type)) +
+  facet_wrap(vars(VOC, id), 
+             ncol = 7) + 
   scale_y_reverse() +
-  coord_cartesian(clip = "off", ylim = c(40, 0)) + 
+  coord_cartesian(clip = "off", ylim = c(40, 10)) + 
   scale_colour_brewer(palette = "Set2", aesthetics = "colour") +
   labs(x = "Time since exposure",
        y = "Ct value",

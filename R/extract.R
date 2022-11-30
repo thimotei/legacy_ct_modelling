@@ -164,7 +164,9 @@ extract_pop_ct_trajectories <- function(fit,
   # simulating Ct trajectories
   pop_ct_draws <- adj_draws %>%
     transform_to_model(., onsets_flag = onsets_flag) %>%
-    simulate_cts(time_range = seq(tmin, tmax, tstep), obs_noise = FALSE)
+    simulate_cts(time_range = seq(tmin, tmax, tstep), 
+                 obs_noise = FALSE,
+                 t_e = 0)
   
   # returning the number of draws set in function call
   pop_ct_draws <- pop_ct_draws[, .SD[.draw %in% 1:no_draws], 

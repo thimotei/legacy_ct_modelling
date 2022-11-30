@@ -13,15 +13,15 @@ piecewise_ct <- function(t, c0, cp, cs, clod, te, tp, ts, tlod) {
   } 
   
   else if (t > te && t <= te + tp) {
-    y <- ((t - te) * (cp - c0)) / tp  + c0
+    y <- ((t - te)*(cp - c0))/tp  + c0
   } 
   
   else if (t > te + tp && t <= te + tp + ts) {
-    y <- ((t - te - tp) * (cs - cp)) / ts  + cp
+    y <- ((t - te - tp)*(cs - cp))/ts  + cp
   } 
   
   else if (t > te + tp + ts && t <= te + tp + ts + tlod) {
-    y <- ((t - te - tp - ts) * (clod - cs)) / tlod + cs
+    y <- ((t - te - tp - ts)*(clod - cs))/tlod + cs
   } 
   
   else if (t > tlod) {
@@ -31,7 +31,10 @@ piecewise_ct <- function(t, c0, cp, cs, clod, te, tp, ts, tlod) {
   return(y)
 }
 
-simulate_cts <- function(params, time_range = 0:30, obs_noise = TRUE) {
+simulate_cts <- function(params, 
+                         time_range = 0:30, 
+                         obs_noise = TRUE,
+                         t_e) {
 
   if (is.null(params[["id"]])) {
     params[, id := 1:.N]
@@ -53,7 +56,7 @@ simulate_cts <- function(params, time_range = 0:30, obs_noise = TRUE) {
   )[,
     tid := NULL][,
     exp_ct := piecewise_ct(
-        t, c0 = c_0, cp = c_p, cs = c_s, clod = c_0, te = 0,
+        t, c0 = c_0, cp = c_p, cs = c_s, clod = c_0, te = t_e,
         tp = t_p, ts = t_s, tlod = t_lod
       ),
     by = c("id", "t", ".draw")
