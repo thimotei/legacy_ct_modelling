@@ -127,7 +127,7 @@ ggsave("outputs/figures/pngs/individual_ct_posteriors.png",
 # simulating Ct trajectories from individual-level posteriors
 dt_sims <- simulate_cts(params = dt_ind_wide,
                         time_range = seq(0, 30, 1),
-                        obs_noise = TRUE)
+                        obs_noise = FALSE)
 
 # summarising simulated trajectories
 dt_sims_sum <- summarise_ct_traj(dt_sims, pop_flag = FALSE)
@@ -141,6 +141,7 @@ obs_adj <- merge(obs, dt_t_inf, by = "id")
 
 # adjusting raw data so its on the same scale as inferred trajectories
 obs_adj[, t_first_test_since_inf := t_first_test + t_inf_med, by = "id"]
+obs_adj[, onset_time_adj := onset_time + t_inf_med, by = "id"]
 
 # relabelling factors for plot
 obs_plot <- obs_adj[, ct_type := factor(ct_type,
@@ -162,6 +163,8 @@ p_all_fits <- dt_sims_sum_all[, VOC := fct_relevel(VOC,
   geom_point(data = obs_plot,
              inherit.aes = FALSE,
              aes(x = t_first_test_since_inf, y = ct_value, colour = ct_type)) +
+  geom_vline(data = obs_plot,
+             aes(xintercept = onset_time_adj), linetype = "dashed") +
   facet_wrap(vars(VOC, id), 
              ncol = 7) + 
   scale_y_reverse() +
