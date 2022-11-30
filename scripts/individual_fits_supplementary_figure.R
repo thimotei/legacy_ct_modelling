@@ -123,32 +123,24 @@ ggsave("outputs/figures/pngs/individual_ct_posteriors.png",
        height = 30,
        bg = "white")
 
-# making adjustment of time since first test positive, to help plotting
-# piecewise Ct function currently doesn't work with negative infection times
-# so adjusting everything to be positive, relative to time since infection
-dt_ind_wide_adj_pos <- dt_ind_wide_adj[, t_p := t_p + min(t_inf), by = id]
-dt_ind_wide_adj_pos <- dt_ind_wide_adj[, t_lod := t_lod + min(t_inf), by = id]
-dt_ind_wide_adj_pos <- dt_ind_wide_adj[, t_inf_plot := t_inf - min(t_inf), by = id]
 
 # simulating Ct trajectories from individual-level posteriors
-dt_sims <- simulate_cts(params = dt_ind_wide_adj_pos,
-                        time_range = seq(0, 60, 1),
-                        obs_noise = FALSE,
-                        t_e = "t_inf_plot")
+dt_sims <- simulate_cts(params = dt_ind_wide,
+                        time_range = seq(0, 30, 1),
+                        obs_noise = FALSE)
 
 # summarising simulated trajectories
 dt_sims_sum <- summarise_ct_traj(dt_sims, pop_flag = FALSE)
 dt_sims_sum_all <- merge(dt_sims_sum, voc_data, by = "id")
 
 # calculating maximum infection time for adjustment
-dt_t_inf <- dt_ind_wide[, .(t_inf_min = min(t_inf),
-                            t_inf_med = quantile(t_inf, 0.5)), by = id]
+dt_t_inf <- dt_ind_wide[, .(t_inf_med = quantile(t_inf, 0.5)), by = id]
 
 # merging with median infection time
 obs_adj <- merge(obs, dt_t_inf, by = "id")
 
 # adjusting raw data so its on the same scale as inferred trajectories
-obs_adj[, t_first_test_since_inf := t_first_test + t_inf_med + t_inf_min, by = "id"]
+obs_adj[, t_first_test_since_inf := t_first_test + t_inf_med, by = "id"]
 
 # relabelling factors for plot
 obs_plot <- obs_adj[, ct_type := factor(ct_type,
