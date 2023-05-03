@@ -13,18 +13,23 @@ Russell TW, Townsley H, Abbott S, Hellewell J, Carr EJ et al. Within-host viral 
 
 ### Folder structure
 
-This repository follows the structure of an R package, with functions defined in `R` folder and stan model code defined in `stan`. Data loading and main analysis scripts are in `scripts`.
+This repository follows the structure of an R package, with functions defined in `R` folder, study data in `data`, and stan model code defined in `stan`. Data loading and main analysis scripts are in `scripts`.
 
-### Key files
+### Key script files
 
-To reproduce the analysis in the accompanying paper, run the following script files:
-
-> `scripts/setup.R` - Load and visualise data, and define design matrix and adjustment model for swab type and the gene target
+To reproduce the main analysis in the accompanying paper, use the following script files:
 
 > `scripts/setup.R` - Load and visualise data, and define design matrix and adjustment model for swab type and the gene target
 
-## Reproducibility
+> `scripts/figure_1.R` - Generate schematic of model structure
 
-- Packages and development environment
-- Data
-- Scripts to run
+> `scripts/figure_2.R` - Plot summary of data
+
+> `scripts/figure_3.R` - Fit model and plot estimates of Ct dynamics and effect sizes for different covariates. Supplementary models variants are defined in `scripts/figure_3_[VARIANT].R`.
+
+> `scripts/figure_4.R` - Fit model and plot estimates of incubation period against Ct growth dynamics for different covariates. Supplementary model variants are defined in `scripts/figure_4_[VARIANT].R`.
+
+### Dependencies
+
+Required libraries are listed in the script files. In particular, the inference framework requires [cmdstanr](https://mc-stan.org/cmdstanr/) to be installed, which in turn requires a suitable C++ toolchain. 
+
