@@ -1,4 +1,4 @@
-# script for making figure 3
+# script for making figure 4
 library(ggplot2)
 library(cowplot)
 library(ggridges)
