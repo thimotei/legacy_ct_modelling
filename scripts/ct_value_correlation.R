@@ -67,17 +67,3 @@ ggsave("outputs/figures/pngs/figure_ct_corr.pdf.png",
        width = 14,
        height = 6)
 
-
-fig <- plot_ly(obs_ct_corr,
-               x = ~ct_value,
-               y = ~ct_n_gene,
-               z = ~ct_s_gene, 
-               color = ~ct_value, 
-               colors = c('#BF382A', '#0C4B8E'),
-               size = 0.5)
-
-fig <- fig %>% add_markers()
-fig <- fig %>% layout(scene = list(xaxis = list(title = 'ORF1ab target'),
-                                   yaxis = list(title = 'N gene target'),
-                                   zaxis = list(title = 'S gene target')))
-fig

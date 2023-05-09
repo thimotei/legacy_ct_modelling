@@ -103,33 +103,54 @@ simulate_ips <- function(params, time_range = 0:30) {
   return(ip[])
 }
 
-simulate_obs <- function(obs = obs,
-                         parameters = stan_inits(obs)(),
-                         time_range = 0:30,
-                         sample_density = 2:8) {
-
+simulate_params <- function(obs = obs,
+                            parameters = epict_inits(obs)(),
+                            time_range = 0:30,
+                            sample_density = 2:8,
+                            t_p_eff_size = 1,
+                            t_s_eff_size = 1,
+                            t_lod_eff_size = 1,
+                            c_p_eff_size = 1,
+                            c_s_eff_size = 1){
+  
+  
   params <- with(parameters,
     data.table::data.table(
       id = 1:obs$P,
       swab_type = "Dry",
       onset_time = rlnorm(obs$P, inc_mean, inc_sd),
       t_inf = t_inf,
-      t_p = exp(t_p_mean + ind_var[1] * ind_eta[1, ]),
-      t_s = exp(t_s_mean + ind_var[2] * ind_eta[4, ]),
-      t_lod = exp(t_lod_mean + ind_var[3] * ind_eta[2, ]),
+      t_p = exp(t_p_mean*t_p_eff_size + ind_var[1] * ind_eta[1, ]),
+      t_s = exp(t_s_mean*t_s_eff_size + ind_var[2] * ind_eta[4, ]),
+      t_lod = exp(t_lod_mean*t_lod_eff_size + ind_var[3] * ind_eta[2, ]),
       c_0 = c_0,
-      c_s = c_0 * plogis(c_s_mean + ind_var[4] * ind_eta[5, ])
+      c_s = c_0 * plogis(c_s_mean*c_s_eff_size + ind_var[4] * ind_eta[5, ]),
+      t_p_mean = t_p_mean,
+      t_s_mean = t_s_mean,
+      t_lod_mean = t_lod_mean,
+      c_p_mean = c_p_mean,
+      c_s_mean = c_s_mean
     )[,
-      c_p := c_s * plogis(c_p_mean + ind_var[5] * ind_eta[3, ])
+      c_p := c_s * plogis(c_p_mean*c_p_eff_size + ind_var[5] * ind_eta[3, ])
     ][,
       c_lod := obs$c_lod,
     ][,
       t_lod_abs := t_p + t_s + t_lod
     ][,
       sigma := sigma
-    ]
+    ][,
+      .draw := 1:.N]
   )
+  
+  return(params)
+}
 
+simulate_obs <- function(parameters,
+                         sample_density,
+                         time_range = 0:30) {
+
+  params <- params_sample_1
+  
   ct_trajs <- simulate_cts(params, time_range = time_range, obs_noise = TRUE)
 
   if (!is.null(sample_density)) {
@@ -140,5 +161,6 @@ simulate_obs <- function(obs = obs,
 
   ct_trajs <- index_by_first_positive(ct_trajs)
   ct_trajs[, onset_time := as.integer(onset_time - t_first_pos)]
+  
   return(ct_trajs)
 }

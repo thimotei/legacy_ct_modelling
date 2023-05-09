@@ -26,15 +26,25 @@
 //
 // Check function works with no effects
 // combine_effects(intercept, as.double(c()), design)
-vector combine_effects(real intercept, vector beta, matrix design) {
+
+vector combine_effects(real intercept,
+                       vector beta,
+                       matrix design) {
+  
   int nobs = rows(design);
   int neffs = num_elements(beta);
-  vector[neffs + 1] scaled_beta;
+  vector[neffs + 1] scaled_beta; # +1 dimensions to include the single intercept
+  
   if (neffs) {
+    
     scaled_beta[1] = intercept;
     scaled_beta[2:(neffs+1)] = beta;
+    
     return(design * scaled_beta);
-  }else{
+    
+  } else {
+    
     return(rep_vector(intercept, nobs));
+    
   }
 }

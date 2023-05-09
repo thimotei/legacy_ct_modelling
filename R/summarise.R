@@ -58,7 +58,11 @@ summarise_adjustment <- function(draws, design) {
 summarise_pp <- function(fit, obs) {
   ct_pp <- extract_posterior_predictions(fit, obs)
   ct_pp <- summarise_draws(
-    ct_pp[, value := sim_ct], by = c("id", "t", "obs")
+    ct_pp[, value := sim_ct], by = c("id", 
+                                     "t_first_test_since_inf",
+                                     "obs",
+                                     "VOC",
+                                     "ct_type")
   )
   return(ct_pp)
 }
@@ -205,59 +209,56 @@ summarise_cumulative_shedding_effects <- function(dt) {
   return(out)
 }
 
-summarise_positivity_times <- function(dt, ct_threshold = 37) {
+summarise_ct_threshold <- function(dt_in) {
   
-  dt_proc <- data.table::copy(dt)
+  dt_out <- dt_in[, .(t_me = quantile(t, 0.5),
+                      t_lo = quantile(t, 0.0025),
+                      t_hi = quantile(t, 0.975)),
+                  by = c("predictor",#
+                         "regressor_category",
+                         "direction")][
+  order(direction, regressor_category, predictor)]
   
-  # making sure we return the first time Ct values are closest to 37
-  # (i.e. on the way up, not on the way down)
-  # timing at which inidividuals begin to be detectable by PCR test
-  pcr_pos_times_me_pre <- dt_proc[t < 6, .SD[which.min(abs(median - ct_threshold))],
-                                  by = c("predictor", "regressor_category")][, c("t", "predictor", "regressor_category", "median")]
-  pcr_pos_times_lo_pre <- dt_proc[t < 6, .SD[which.min(abs(lo95 - ct_threshold))],
-                                  by = c("predictor", "regressor_category")][, c("t", "predictor", "regressor_category", "lo95")]
-  pcr_pos_times_hi_pre <- dt_proc[t < 6, .SD[which.min(abs(hi95 - ct_threshold))],
-                                  by = c("predictor", "regressor_category")][, c("t", "predictor", "regressor_category", "hi95")]
+  return(dt_out)
+}
+
+summarise_posterior_differences <- function(adj_draws, param_arg) {
   
-  # merging into single data.table
-  pcr_pos_times_pre <- merge(
-    merge(pcr_pos_times_me_pre, pcr_pos_times_lo_pre,
-          by = c("predictor", "regressor_category")),
-    pcr_pos_times_hi_pre,
-    by = c("predictor", "regressor_category"))
+  by_vars = c(param_arg, ".draw", "predictor")
   
-  # changing column names
-  setnames(pcr_pos_times_pre, c("t", "t.x", "t.y"), c("t_hi95_pre", "t_me_pre", "t_lo95_pre"))
+  dt_pop_long <- adj_draws[, ..by_vars]
+  dt_pop_wide <- dcast(dt_pop_long,
+                       .draw ~ predictor, 
+                       value.var = param_arg)
   
-  # returning neat data.table
-  pcr_pos_times_pre <- pcr_pos_times_pre[, c("predictor", "regressor_category", "t_me_pre", "t_lo95_pre", "t_hi95_pre")]
+  # VOC posterior differences
+  dt_pop_diff_wide <- dt_pop_wide[,
+  `:=` (diff_baseline_delta = baseline - Delta,
+        diff_baseline_ba2 = baseline - `Omicron (BA.2)`,
+        diff_baseline_asymp = baseline - Asymptomatic,
+        diff_baseline_3_exps = baseline - `3 exposures`,
+        diff_baseline_5_exps = baseline - `5+ exposures`,
+        diff_baseline_20_34 = baseline - `Age: 20-34`,
+        diff_baseline_50 = baseline - `Age: 50+`,
+        diff_3_exps_5_exps = `3 exposures` - `5+ exposures`),
+                                  by = ".draw"]
   
-  # now making sure we return the second time Ct values are closest to 37
-  pcr_pos_times_me_post <- dt_proc[t > 6, .SD[which.min(abs(median - ct_threshold))],
-                                   by = c("predictor", "regressor_category")][, c("t", "predictor", "regressor_category", "median")]
-  pcr_pos_times_lo_post <- dt_proc[t > 6, .SD[which.min(abs(lo95 - ct_threshold))],
-                                   by = c("predictor", "regressor_category")][, c("t", "predictor", "regressor_category", "lo95")]
-  pcr_pos_times_hi_post <- dt_proc[t > 6, .SD[which.min(abs(hi95 - ct_threshold))],
-                                   by = c("predictor", "regressor_category")][, c("t", "predictor", "regressor_category", "hi95")]
+  dt_pop_diff_long <- melt(dt_pop_diff_wide[, c(".draw",
+                                                "diff_baseline_delta",
+                                                "diff_baseline_ba2",
+                                                "diff_baseline_asymp",
+                                                "diff_baseline_3_exps",
+                                                "diff_baseline_5_exps",
+                                                "diff_baseline_20_34",
+                                                "diff_baseline_50",
+                                                "diff_3_exps_5_exps")],
+                           id.vars = ".draw")
   
-  # merging
-  pcr_pos_times_post <- merge(
-    merge(pcr_pos_times_me_post, pcr_pos_times_lo_post,
-          by = c("predictor", "regressor_category")),
-    pcr_pos_times_hi_post,
-    by = c("predictor", "regressor_category"))
+  dt_out <- dt_pop_diff_long[, .(me = signif(quantile(value, 0.5), 2),
+                                 lo = signif(quantile(value, 0.025), 2),
+                                 hi = signif(quantile(value, 0.975), 2)),
+                             by = "variable"]
   
-  # changing column names
-  setnames(pcr_pos_times_post, c("t", "t.x", "t.y"), c("t_lo95_post", "t_me_post", "t_hi95_post"))
-  
-  # returning neat data.table
-  pcr_pos_times_post <- pcr_pos_times_post[, c("predictor", "regressor_category",
-                                               "t_me_post", "t_lo95_post", "t_hi95_post")]
-  
-  out <- merge(pcr_pos_times_pre, pcr_pos_times_post, by = c("predictor", "regressor_category"))
-  
-  out <- out[!is.na(predictor)][order(regressor_category, predictor)]
-  
-  return(out)
+  return(dt_out)
   
 }

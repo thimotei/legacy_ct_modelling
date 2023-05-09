@@ -3,6 +3,8 @@ library(data.table)
 library(ggplot2)
 library(forcats)
 
+source("scripts/setup.R")
+
 # load object with all fitted draws
 fit <- readRDS("outputs/fits/fit_full.rds")
 
@@ -32,7 +34,9 @@ dt_ind_wide_adj <- copy(dt_ind_wide)
 dt_ind_wide_adj[, onset_time_abs := onset_time - quantile(t_inf, 0.5),
                 by = id]
 
-# make timing of peak relative to first positive test
+# make timing of peak relative to first positive test rather than relative to
+# the inferred exposure time, which is what the posterior estimates are 
+# relative to as they come out of the inference
 dt_ind_wide_adj[, t_p := t_p - t_inf]
 dt_ind_wide_adj[, t_lod := t_lod - t_inf]
 dt_ind_wide_adj[, t_inf_plot := -t_inf]
@@ -53,9 +57,12 @@ dt_t_plot <- dt_ind_long_adj[variable %in% c("t_inf_plot",
                                        "t_p",
                                        "t_lod",
                                        "onset_time")][,
+  VOC := factor(VOC, 
+                levels = c("Delta", "Omicron (BA.1)", "Omicron (BA.2)"),
+                labels = c("Delta", "BA.1", "BA.2"))][,
   VOC := fct_relevel(VOC, c("Delta",
-                            "Omicron (BA.1)",
-                            "Omicron (BA.2)"))][,
+                            "BA.1",
+                            "BA.2"))][,
   variable := factor(variable,
                      levels = c("t_inf_plot",
                                 "t_p",
@@ -67,62 +74,136 @@ dt_t_plot <- dt_ind_long_adj[variable %in% c("t_inf_plot",
                                 "Symptom onset"))]
 
 # plot of all timing posteriors
-p_t_all <- ggplot() + 
-  geom_density(data = dt_t_plot[variable != "Symptom onset"],
+p_t_delta <- ggplot() + 
+  geom_density(data = dt_t_plot[VOC == "Delta" & 
+                                variable != "Symptom onset"],
                aes(x = value, fill = variable), alpha = 0.5) + 
-  geom_vline(data = dt_t_plot[variable == "Symptom onset"],
+  geom_vline(data = dt_t_plot[VOC == "Delta" & 
+                              variable == "Symptom onset"],
              aes(xintercept = value), linetype = "dashed") +
-  facet_wrap(vars(VOC, id), scales = "free", ncol = 7) +
+  facet_wrap(vars(id), scales = "free") +
   theme_minimal() +
   scale_fill_brewer(palette = "Set1") +
   theme(legend.position = "bottom",
         legend.title = element_blank()) +
-  lims(x = c(-10, 20)) +
-  labs(x = "Time relative to first positive test", y = "Density")
+  lims(x = c(-15, 25)) +
+  labs(x = "Time relative to first positive test",
+       y = "Density",
+       title = "Delta timing posterior distributions") 
 
-ggsave("outputs/figures/pdfs/individual_t_posteriors.pdf",
-       p_t_all,
+p_t_ba1 <- ggplot() + 
+  geom_density(data = dt_t_plot[VOC == "BA.1" & 
+                                  variable != "Symptom onset"],
+               aes(x = value, fill = variable), alpha = 0.5) + 
+  geom_vline(data = dt_t_plot[VOC == "BA.1" & 
+                                variable == "Symptom onset"],
+             aes(xintercept = value), linetype = "dashed") +
+  facet_wrap(vars(id), scales = "free") +
+  theme_minimal() +
+  scale_fill_brewer(palette = "Set1") +
+  theme(legend.position = "bottom",
+        legend.title = element_blank()) +
+  lims(x = c(-15, 25)) +
+  labs(x = "Time relative to first positive test", 
+       y = "Density",
+       title = "Omicron (BA.1) timing posterior distributions") 
+
+p_t_ba2 <- ggplot() + 
+  geom_density(data = dt_t_plot[VOC == "BA.2" & 
+                                  variable != "Symptom onset"],
+               aes(x = value, fill = variable), alpha = 0.5) + 
+  geom_vline(data = dt_t_plot[VOC == "BA.2" & 
+                                variable == "Symptom onset"],
+             aes(xintercept = value), linetype = "dashed") +
+  facet_wrap(vars(id), scales = "free") +
+  theme_minimal() +
+  scale_fill_brewer(palette = "Set1") +
+  theme(legend.position = "bottom",
+        legend.title = element_blank()) +
+  lims(x = c(-15, 25)) +
+  labs(x = "Time relative to first positive test", 
+       y = "Density",
+       title = "Omicron (BA.2) timing posterior distributions") 
+
+ggsave("outputs/figures/pdfs/delta_t_posteriors.pdf",
+       p_t_delta,
        width = 10,
-       height = 30,
+       height = 10,
        bg = "white")
 
-ggsave("outputs/figures/pngs/individual_t_posteriors.png",
-       p_t_all,
+ggsave("outputs/figures/pdfs/ba1_t_posteriors.pdf",
+       p_t_ba1,
        width = 10,
-       height = 30,
+       height = 10,
+       bg = "white")
+
+ggsave("outputs/figures/pdfs/ba2_t_posteriors.pdf",
+       p_t_ba2,
+       width = 10,
+       height = 10,
+       bg = "white")
+
+ggsave("outputs/figures/pngs/delta_t_posteriors.png",
+       p_t_delta,
+       width = 10,
+       height = 10,
+       bg = "white")
+
+ggsave("outputs/figures/pngs/ba1_t_posteriors.png",
+       p_t_ba1,
+       width = 10,
+       height = 10,
+       bg = "white")
+
+ggsave("outputs/figures/pngs/ba2_t_posteriors.png",
+       p_t_ba2,
+       width = 10,
+       height = 10,
        bg = "white")
 
 # Ct value posteriors plot
-dt_ct_plot <- dt_ind_long_adj[variable %in% c("c_p")][,
+dt_ct_plot <- dt_ind_long_adj[variable %in% c("c_p")][, 
+  VOC := factor(VOC, 
+                levels = c("Delta", "Omicron (BA.1)", "Omicron (BA.2)"),
+                labels = c("Delta", "BA.1", "BA.2"))][,
   VOC := fct_relevel(VOC, c("Delta",
-                            "Omicron (BA.1)",
-                            "Omicron (BA.2)"))][,
+                            "BA.1",
+                            "BA.2"))][,
   variable := factor(variable,
                      levels = "c_p",
                      labels = "Ct value at peak")]
 
-p_ct_all <- dt_ct_plot %>% 
-  ggplot(aes(x = value, fill = variable)) + 
-  geom_density() + 
-  facet_wrap(vars(VOC, id), scales = "free", ncol = 7) +
+dt_ct_plot[, id := factor(id)]
+dt_ct_plot[, id := fct_reorder(id, value, .desc = TRUE)]
+
+p_ct <- dt_ct_plot %>% 
+  ggplot() + 
+  geom_density_ridges(aes(x = value, 
+                          y = factor(id),
+                          fill = VOC), 
+                      alpha = 0.6) + 
+  facet_wrap(vars(VOC), scales = "free", ncol = 8) +
   theme_minimal() +
-  scale_fill_brewer(palette = "Set1") +
-  theme(legend.position = "bottom",
+  theme(legend.position = "none",
         legend.title = element_blank()) +
-  lims(x = c(10, 25), y = c(0, 0.5)) +
-  labs(x = "Ct value at peak", y = "Probability density")
+  # lims(x = c(10, 25)) +
+  labs(x = "Ct value at peak",
+       y = "Probability",
+       title = "Ct value posterior distributions by VOC") + 
+  scale_fill_brewer(palette = "Set1", aesthetics = "fill")
 
-ggsave("outputs/figures/pdfs/individual_ct_posteriors.pdf",
-       p_ct_all,
-       width = 10,
-       height = 30,
+ggsave("outputs/figures/pdfs/ct_posteriors.pdf",
+       p_ct,
+       width = 8,
+       height = 12,
        bg = "white")
 
-ggsave("outputs/figures/pngs/individual_ct_posteriors.png",
-       p_ct_all,
-       width = 10,
-       height = 30,
+ggsave("outputs/figures/pdfs/ct_posteriors.pdf",
+       p_ct,
+       width = 8,
+       height = 12,
        bg = "white")
+
 
 # simulating Ct trajectories from individual-level posteriors
 dt_sims <- simulate_cts(params = dt_ind_wide,
@@ -147,45 +228,152 @@ obs_adj[, onset_time_adj := onset_time + t_inf_med, by = "id"]
 obs_plot <- obs_adj[, ct_type := factor(ct_type,
                                     labels = c("ORF1ab",
                                                "N gene",
-                                               "S gene"))]
+                                               "S gene"))][,
+  VOC := factor(VOC, 
+                levels = c("Delta", "Omicron (BA.1)", "Omicron (BA.2)"),
+                labels = c("Delta", "BA.1", "BA.2"))][,
+  VOC := fct_relevel(VOC, c("Delta", "BA.1", "BA.2"))]
 
-# plotting all individual-level inferred trajectories with raw data on top
-p_all_fits <- dt_sims_sum_all[, VOC := fct_relevel(VOC,
-                                     c("Delta",
-                                       "Omicron (BA.1)",
-                                       "Omicron (BA.2)"))] %>% 
- ggplot() + 
-  geom_line(aes(x = t, y = median, group = id), 
+dt_sims_sum_all[, 
+  VOC := factor(VOC, 
+                levels = c("Delta", "Omicron (BA.1)", "Omicron (BA.2)"),
+                labels = c("Delta", "BA.1", "BA.2"))][,
+  VOC := fct_relevel(VOC, c("Delta", "BA.1", "BA.2"))]
+
+# adding posterior predictions
+pp_summary <- summarise_pp(fit, obs_adj)
+
+p_delta_fits <- 
+  ggplot() + 
+  geom_line(data = dt_sims_sum_all[VOC == "Delta"], 
+            aes(x = t, y = median, group = id), 
             alpha = 0.5, linetype = "dashed") +
-  geom_ribbon(aes(x = t, ymin = lo90, ymax = hi90, fill = VOC), 
+  geom_ribbon(data = dt_sims_sum_all[VOC == "Delta"],
+              aes(x = t,
+                  ymin = lo90,
+                  ymax = hi90,
+                  fill = VOC), 
               alpha = 0.5) +
   scale_fill_brewer(palette = "Set1", aesthetics = "fill") +
-  geom_point(data = obs_plot,
-             inherit.aes = FALSE,
-             aes(x = t_first_test_since_inf, y = ct_value, colour = ct_type)) +
-  geom_vline(data = obs_plot,
+  geom_pointrange(data = pp_summary[VOC == "Delta"],
+                  aes(x = t_first_test_since_inf,
+                      y = median,
+                      ymin = lo90,
+                      ymax = hi90,
+                      colour = ct_type)) +
+  geom_vline(data = obs_plot[VOC == "Delta"],
              aes(xintercept = onset_time_adj), linetype = "dashed") +
-  facet_wrap(vars(VOC, id), 
-             ncol = 7) + 
+  facet_wrap(vars(id)) + 
   scale_y_reverse() +
   coord_cartesian(clip = "off", ylim = c(40, 10)) + 
   scale_colour_brewer(palette = "Set2", aesthetics = "colour") +
   labs(x = "Time since exposure",
        y = "Ct value",
        fill = "VOC",
-       colour = "Target gene") +
+       colour = "Target gene",
+       title = "Model fits for Delta-infected individuals") +
   theme_minimal() + 
   theme(legend.position = "bottom")
+
+p_ba1_fits <- 
+  ggplot() + 
+  geom_line(data = dt_sims_sum_all[VOC == "BA.1"], 
+            aes(x = t, y = median, group = id), 
+            alpha = 0.5, linetype = "dashed") +
+  geom_ribbon(data = dt_sims_sum_all[VOC == "BA.1"],
+              aes(x = t,
+                  ymin = lo90,
+                  ymax = hi90,
+                  fill = VOC), 
+              alpha = 0.5) +
+  scale_fill_brewer(palette = "Set1", aesthetics = "fill") +
+  geom_pointrange(data = pp_summary[VOC == "BA.1"],
+                  aes(x = t_first_test_since_inf,
+                      y = median,
+                      ymin = lo90,
+                      ymax = hi90,
+                      colour = ct_type)) +
+  geom_vline(data = obs_plot[VOC == "BA.1"],
+             aes(xintercept = onset_time_adj), linetype = "dashed") +
+  facet_wrap(vars(id)) + 
+  scale_y_reverse() +
+  coord_cartesian(clip = "off", ylim = c(40, 10)) + 
+  scale_colour_brewer(palette = "Set2", aesthetics = "colour") +
+  labs(x = "Time since exposure",
+       y = "Ct value",
+       fill = "VOC",
+       colour = "Target gene",
+       title = "Model fits for BA.1-infected individuals") +
+  theme_minimal() + 
+  theme(legend.position = "bottom")
+
+
+p_ba2_fits <- 
+  ggplot() + 
+  geom_line(data = dt_sims_sum_all[VOC == "BA.2"], 
+            aes(x = t, y = median, group = id), 
+            alpha = 0.5, linetype = "dashed") +
+  geom_ribbon(data = dt_sims_sum_all[VOC == "BA.2"],
+              aes(x = t,
+                  ymin = lo90,
+                  ymax = hi90,
+                  fill = VOC), 
+              alpha = 0.5) +
+  scale_fill_brewer(palette = "Set1", aesthetics = "fill") +
+  geom_pointrange(data = pp_summary[VOC == "BA.2"],
+                  aes(x = t_first_test_since_inf,
+                      y = median,
+                      ymin = lo90,
+                      ymax = hi90,
+                      colour = ct_type)) +
+  geom_vline(data = obs_plot[VOC == "BA.2"],
+             aes(xintercept = onset_time_adj), linetype = "dashed") +
+  facet_wrap(vars(id)) + 
+  scale_y_reverse() +
+  coord_cartesian(clip = "off", ylim = c(40, 10)) + 
+  scale_colour_brewer(palette = "Set2", aesthetics = "colour") +
+  labs(x = "Time since exposure",
+       y = "Ct value",
+       fill = "VOC",
+       colour = "Target gene",
+       title = "Model fits for BA.2-infected individuals") +
+  theme_minimal() + 
+  theme(legend.position = "bottom")
+
   
 # saving PDF plot
-ggsave("outputs/figures/pdfs/all_individuals_fits.pdf",
-       p_all_fits,
-       width = 10,
-       height = 30)
+ggsave("outputs/figures/pdfs/delta_fits.pdf",
+       p_delta_fits,
+       width = 8,
+       height = 8)
 
 # saving PNG plot
-ggsave("outputs/figures/pngs/all_individuals_fits.png",
-       p_all_fits,
-       width = 10,
-       height = 30)
+ggsave("outputs/figures/pngs/delta_fits.png",
+       p_delta_fits,
+       width = 8,
+       height = 8)
+
+# saving PDF plot
+ggsave("outputs/figures/pdfs/ba1_fits.pdf",
+       p_ba1_fits,
+       width = 8,
+       height = 10)
+
+# saving PNG plot
+ggsave("outputs/figures/pngs/ba1_fits.png",
+       p_ba1_fits,
+       width = 8,
+       height = 10)
+
+# saving PDF plot
+ggsave("outputs/figures/pdfs/ba2_fits.pdf",
+       p_ba2_fits,
+       width = 8,
+       height = 10)
+
+# saving PNG plot
+ggsave("outputs/figures/pngs/ba2_fits.png",
+       p_ba2_fits,
+       width = 8,
+       height = 10)
 
