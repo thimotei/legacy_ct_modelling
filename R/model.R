@@ -19,8 +19,11 @@ params_avail_to_adjust <- function(params = "all") {
     return(out)
   }
 
-subject_design <- function(formula = ~ 1, data, preds_sd = 0.1,
-                             params = "all") {
+subject_design <- function(formula = ~ 1,
+                           data,
+                           preds_sd = 0.1,
+                           params = "all") {
+  
   params <- params_avail_to_adjust(params)
 
   subjects <- extract_subjects(data)
@@ -30,6 +33,7 @@ subject_design <- function(formula = ~ 1, data, preds_sd = 0.1,
     design = design, subjects = subjects, params = params,
     preds_sd = preds_sd
   )
+  
   return(out)
 }
 
@@ -49,8 +53,11 @@ epict_to_stan <- function(obs,
                          censoring_threshold = 40, 
                          positivity_threshold = 37,
                          switch = TRUE,
-                         onsets = TRUE, incubation_period = get_inc_period(),
-                         likelihood = TRUE, output_loglik = FALSE) {
+                         onsets = TRUE, 
+                         incubation_period = get_inc_period(),
+                         likelihood = TRUE,
+                         output_loglik = FALSE) {
+  
   obs <- data.table::copy(obs)
   obs <- obs[order(id)]
   obs[, obs := 1:.N]
@@ -149,8 +156,8 @@ epict_inits <- function(dt) {
       c_p_mean = rnorm(1, 0, 1),
       t_p_mean = rnorm(1, 1.61, 0.5),
       t_lod_mean = rnorm(1, 2.3, 0.5),
-      ind_var = abs(rnorm(dt$K, 0, dt$ind_var_sd * 0.1)),
-      ind_eta  = matrix(rnorm(dt$P * dt$K, 0, 0.1), nrow = dt$K, ncol = dt$P),
+      ind_var = abs(rnorm(dt$K, 0, dt$ind_var_sd*0.1)),
+      ind_eta  = matrix(rnorm(dt$P*dt$K, 0, 0.1), nrow = dt$K, ncol = dt$P),
       sigma = truncnorm::rtruncnorm(1, a = 0, mean = 5, sd = 0.5)
     )
 

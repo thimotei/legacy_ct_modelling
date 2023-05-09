@@ -10,7 +10,7 @@ fit <- epict(
   onsets = TRUE, # include the symptom onset data and likelihood components
   switch = FALSE, # include the longer wane part of the model
   individual_variation = 0.025, # control the amount of 
-  individual_correlation = 2,
+  individual_correlation = 1,
   chains = 4,
   parallel_chains = 4,
   iter_warmup = 1000,

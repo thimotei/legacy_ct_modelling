@@ -1,6 +1,7 @@
   vector piecewise_ct(vector t, real c0, real cp, real cs, 
                       real clod, real te, real tp, real ts,
                       real tlod, int switch) {
+                        
     int N = num_elements(t);
     vector[N] y = rep_vector(c0, N);
     vector[N] adj_t = t - te;
@@ -8,13 +9,18 @@
     real sgrad;
     real lgrad;
     real c_adj;
+    
     if (switch) {
+      
       sgrad = (cs - cp) / ts;
       lgrad = (clod - cs) / tlod;
       c_adj = cs;
-    }else{
+      
+    } else {
+      
       lgrad = (clod - cp) / tlod;
       c_adj = cp;
+      
     }
 
     for (i in 1:N) {
@@ -36,6 +42,7 @@
         }
       }
     }
+    
     return(y);
   }
   
@@ -43,11 +50,13 @@
                             real te, vector tp, vector ts, vector tlod,
                             array[] int id, array[] int tests_per_id,
                             array[] int cum_tests_per_id, int switch) {
+                              
     int P = num_elements(cp);
     int N = num_elements(t);
     vector[N] ct;
 
     for(k in 1:P) {
+      
       int t_start = cum_tests_per_id[k] - tests_per_id[k] + 1;
       int t_end = cum_tests_per_id[k];
       ct[t_start:t_end] = piecewise_ct(

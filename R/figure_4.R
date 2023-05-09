@@ -1,36 +1,16 @@
-munge_figure_4_data <- function(draws,
-                                dt_pop_ct_draws,
-                                ct_threshold_arg) {
+figure_4_data <- function(dt_in, ct_threshold) {
   
-  adj_draws <- adjust_params(draws,
-                             design = ct_model$design,
-                             onsets_flag = TRUE) %>%
-    update_predictor_labels()
+  dt_proc <- copy(dt_in)
   
-  adj_draws <- add_baseline_to_draws(adj_draws, "Omicron (BA.1)", onsets_flag = TRUE)
-  adj_draws <- add_baseline_to_draws(adj_draws, "4 exposures", onsets_flag = TRUE)
-  adj_draws <- add_baseline_to_draws(adj_draws, "Symptomatic", onsets_flag = TRUE)
-  adj_draws <- add_baseline_to_draws(adj_draws, "Age: 35-49", onsets_flag = TRUE)
+  dt_proc <- dt_proc[t < t_p, .SD[which.min(abs(ct_value - ct_threshold))],
+                    by = c(".draw",
+                           "inc_mean_nat",
+                           "predictor",
+                           "regressor_category")]
   
-  adj_draws_natural <- adj_draws %>%
-    transform_to_model() %>%
-    add_regressor_categories() %>% 
-    .[!is.na(predictor) & predictor != "Asymptomatic"] %>% 
-    .[, inc_mean_nat := exp(inc_mean), by = .draw]
+  dt_out <- dt_proc[!is.na(predictor) == TRUE][predictor != "Asymptomatic"]
   
-  dt_ct_threshold <- calculate_ct_threshold(dt_pop_ct_draws,
-                                            ct_threshold = ct_threshold_arg,
-                                            trim_flag = TRUE)
-  
-  out <- merge(adj_draws_natural,
-               dt_ct_threshold,
-        by = c(".draw",
-               "predictor",
-               "regressor_category"))
-  
-  
-  return(out)
-
+  return(dt_out)
 }
 
 figure_4_panel <- function(dt, regressor_category_arg,
@@ -56,8 +36,8 @@ figure_4_panel <- function(dt, regressor_category_arg,
          title = title_arg) + 
     theme(legend.position = "bottom",
           legend.title = element_blank()) + 
-    lims(x = c(3, 7),
-         y = c(3, 7)) 
+    lims(x = c(3, 8),
+         y = c(3, 8)) 
   
   return(p_out)
 }

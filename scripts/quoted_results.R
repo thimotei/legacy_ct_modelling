@@ -80,28 +80,76 @@ obs[, .(quantile(t_since_last_dose, 0.5),
         quantile(t_since_last_dose, 0.75)),
     by = VOC]
 
-
-.obs[, .(IQR(t_since_last_dose)),
+obs[, .(IQR(t_since_last_dose)),
     by = VOC]
 
+obs[, uniqueN(id)]
 
 # either run inference script or load in saved fit
-# fit <- readRDS("outputs/fits/fit_full.rds")
+fit <- readRDS("outputs/fits/fit_full.rds")
 
 cols <- c("variable", "predictor", "median", "lo95", "hi95")
 cols_fun <- c("median", "lo95", "hi95")
 
-effect_size_summary_natural[regressor_category == "VOC"][order(variable, predictor)][, ..cols][ , (cols_fun) := lapply(.SD, signif, 2), .SDcols = cols_fun][]
-effect_size_summary_natural[regressor_category == "Symptom status"][order(variable, predictor)][, ..cols][ , (cols_fun) := lapply(.SD, signif, 2), .SDcols = cols_fun][]
-effect_size_summary_natural[regressor_category == "Number of exposures"][order(variable, predictor)][, ..cols][ , (cols_fun) := lapply(.SD, signif, 2), .SDcols = cols_fun][]
-effect_size_summary_natural[regressor_category == "Age"][order(variable, predictor)][, ..cols][ , (cols_fun) := lapply(.SD, signif, 2), .SDcols = cols_fun][]
+# calculating the effect sizes again for the results in the main figure
+# (Figure 3)
 
-# recalculating the population-level Ct curves summarised, without censoring of Ct values at LOD
-pop_ct_draws_sum <- ct_pp_sum_data(pop_ct_draws_cens)
+draws <- extract_draws(fit)
 
-summarise_positivity_times(pop_ct_draws_sum, ct_threshold = 37)
-summarise_positivity_times(pop_ct_draws_sum, ct_threshold = 30)
+# the next command takes a long time. A high number of draws was used 
+# (no_draws) for the figures
+dt_pop_ct_draws <- extract_pop_ct_trajectories(fit,
+                                               no_draws = 10000,
+                                               onsets = FALSE)
 
+# summarising Ct trajectories
+pop_ct_draws_sum <- summarise_ct_traj(dt_pop_ct_draws, pop_flag = TRUE)
+
+# summarising effect sizes and converting to natural units
+effect_size_summary_natural <- summarise_effect_sizes_natural(draws)
+
+effect_size_summary_natural[
+  regressor_category == "VOC"][
+  order(variable, predictor)][,
+  ..cols][,
+  (cols_fun) := lapply(.SD, signif, 3), .SDcols = cols_fun][]
+
+effect_size_summary_natural[
+  regressor_category == "Symptom status"][
+  order(variable, predictor)][, ..cols][,
+  (cols_fun) := lapply(.SD, signif, 3), .SDcols = cols_fun][]
+
+effect_size_summary_natural[
+  regressor_category == "Number of exposures"][
+  order(variable, predictor)][, ..cols][,
+  (cols_fun) := lapply(.SD, signif, 3), .SDcols = cols_fun][]
+
+effect_size_summary_natural[
+  regressor_category == "Age"][
+  order(variable, predictor)][, 
+  ..cols][,
+  (cols_fun) := lapply(.SD, signif, 3), .SDcols = cols_fun][]
+
+# calculating the times at which certain Ct value thresholds are reached 
+# for the population-level curves
+dt_figure_4 <- figure_4_data(dt_pop_ct_draws, 
+                             ct_threshold = 20)
+
+dt_t_ct_20_reached <- calculate_t_ct_threshold(dt_pop_ct_draws, 
+                                        ct_threshold = 20)
+
+dt_t_ct_30_reached <- calculate_t_ct_threshold(dt_pop_ct_draws, 
+                                               ct_threshold = 30)
+
+dt_t_ct_37_reached <- calculate_t_ct_threshold(dt_pop_ct_draws, 
+                                               ct_threshold = 37)
+
+
+summarise_ct_threshold(dt_t_ct_20_reached)[!is.na(predictor)]
+summarise_ct_threshold(dt_t_ct_30_reached)[!is.na(predictor)]
+summarise_ct_threshold(dt_t_ct_37_reached)[!is.na(predictor)]
+
+# summarising the Figure 4 results for the main text
 fig_4_sum <- dt_figure_4[, .(t_me = quantile(t, 0.5),
                 t_lo95  = quantile(t, 0.0025),
                 t_hi95 = quantile(t, 0.975),
@@ -112,6 +160,28 @@ fig_4_sum <- dt_figure_4[, .(t_me = quantile(t, 0.5),
 
 fig_4_sum[regressor_category == "VOC"]
 fig_4_sum[regressor_category == "Age"]
+
+
+#--- quoted differences between posterior distributions, calculated
+#--- by taking the difference between two samples many times
+adj_draws <- adjust_params(draws, 
+                           design = ct_model$design, 
+                           onsets_flag = TRUE) 
+
+adj_draws <- adj_draws %>% update_predictor_labels()
+
+adj_draws <- add_baseline_to_draws(
+  adj_draws, "baseline", onsets_flag = TRUE) %>% 
+  transform_to_model(., onsets_flag = TRUE)
+
+summarise_posterior_differences(adj_draws, "c_p")
+summarise_posterior_differences(adj_draws, "t_p")
+summarise_posterior_differences(adj_draws, "t_lod")
+
+#--- plotting priors vs posteriors
+
+
+
 
 
 

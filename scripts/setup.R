@@ -17,13 +17,7 @@ library(forcats)
 devtools::load_all()
 
 # load in data processed in scripts/process-data.R
-dt_clean <- readRDS(here("data/processed-data.rds"))
-
-# Do additional processing to filter for the desired number of swabs
-# per positive episode
-obs <- subset_data(dt_clean,
-                   no_pos_swabs = 2,
-                   first_pos_min = -15)
+obs <- readRDS("data/processed-data.rds")
 
 # Plot the raw data
 p1_raw <- plot_obs(obs, col = factor(swab_type)) +
@@ -49,4 +43,3 @@ adjustment_model <- test_design(
   data = obs,
   preds_sd = 1
 )
-

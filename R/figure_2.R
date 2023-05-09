@@ -1,4 +1,4 @@
-figure_1_panel_a <- function(dt) {
+figure_2_panel_a <- function(dt) {
   
   dt_plot <- data.table::copy(dt)
   
@@ -39,7 +39,7 @@ figure_1_panel_a <- function(dt) {
   
 }
 
-figure_1_panel_b <- function(dt, voc_arg){
+figure_2_panel_b <- function(dt, voc_arg){
 
   obs <- data.table::copy(dt)
 
@@ -75,9 +75,9 @@ figure_1_panel_b <- function(dt, voc_arg){
     theme_minimal() +
     scale_x_continuous(breaks = seq(-10, 30, 5),
                        limits = c(NA, 30)) +
-    scale_y_discrete(labels = paste0(plot_data$infection_id, ",",
+    scale_y_discrete(labels = paste0(plot_data$no_vaccines, ",",
                                      plot_data$total_infections, ",",
-                                     plot_data$no_vaccines)) + 
+                                     plot_data$no_exposures)) + 
     # geom_text(aes(y = forcats::fct_reorder(clean.id, last_swab),
     #               x = -14,
     #               label = infection_id), inherit.aes = FALSE, size = 2.5) +

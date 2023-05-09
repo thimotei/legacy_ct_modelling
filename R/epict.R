@@ -4,12 +4,16 @@ epict <- function(obs,
                   inits = epict_inits,
                   ct_model = subject_design(~ 1, obs),
                   adjustment_model = test_design(~ 1, obs),
-                  individual_variation = 0.2, individual_correlation = 1,
+                  individual_variation = 0.2,
+                  individual_correlation = 1,
                   censoring_threshold = 40,
                   positivity_threshold = 37,
                   switch = TRUE,
-                  onsets = TRUE, incubation_period = get_inc_period(),
-                  likelihood = TRUE, output_loglik = FALSE, ...) {
+                  onsets = TRUE,
+                  incubation_period = get_inc_period(),
+                  likelihood = TRUE,
+                  output_loglik = FALSE, ...) {
+  
   stan_data <- as_data_list(
     obs,
     ct_model = ct_model,
@@ -25,7 +29,7 @@ epict <- function(obs,
 
   fit <- model$sample(
     data = stan_data,
-    init = inits(stan_data),
+    init = epict_inits(stan_data),
     ...
   )
   return(fit)

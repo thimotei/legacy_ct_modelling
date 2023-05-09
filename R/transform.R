@@ -1,4 +1,5 @@
 transform_to_model <- function(draws, onsets_flag = FALSE) {
+  
   draws <- data.table::copy(draws)
 
   if (is.null(draws[["t_s"]])) {
@@ -41,20 +42,25 @@ transform_to_model <- function(draws, onsets_flag = FALSE) {
 }
 
 transform_to_natural <- function(draws) {
+  
   draws <- transform_to_model(draws)
+  
   draws[,
     t_lod := t_p + t_s + t_lod
   ][,
     t_s := t_p + t_s,
   ]
+  
   return(draws[])
 }
 
 transform_ip_to_natural <- function(draws) {
+  
   draws <- draws[, `:=`(
     nat_inc_mean = exp(inc_mean + (inc_sd^2) / 2),
     nat_inc_sd = sqrt((exp(inc_sd^2) - 1) * exp(2 * inc_mean + inc_sd^2))
   )]
+  
   return(draws[])
 }
 

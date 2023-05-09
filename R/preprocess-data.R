@@ -17,10 +17,10 @@ process_data <- function(dt,
   #--- Filtering for only crick tests and tests with ct values + known age
   # Drop private swab types
   out <- dt_proc[centre == "crick" & 
-                 ct_unadjusted != "unknown" & 
-                 age != "unknown" & 
-                 barcode != "LFT" &
-                 swab_type != "Private"]
+                   ct_unadjusted != "unknown" & 
+                   age != "unknown" & 
+                   barcode != "LFT" &
+                   swab_type != "Private"]
   
   # Drop 1 individual with no vaccine information
   # out[no_vaccines %in% "unknown"]
@@ -38,10 +38,10 @@ process_data <- function(dt,
   # Re-format dates and ct values
   cols <- c("swab_date", "symptom_onset_date", paste0("date_dose_", 1:4))
   out <- out[,
-    (cols) := lapply(.SD, lubridate::dmy), .SDcols = cols][,
-    ct_unadjusted := as.numeric(ct_unadjusted)][, 
-    ct_n_gene := as.numeric(ct_n_gene)][,
-    ct_s_gene := as.numeric(ct_s_gene)]
+             (cols) := lapply(.SD, lubridate::dmy), .SDcols = cols][,
+                                                                    ct_unadjusted := as.numeric(ct_unadjusted)][, 
+                                                                                                                ct_n_gene := as.numeric(ct_n_gene)][,
+                                                                                                                                                    ct_s_gene := as.numeric(ct_s_gene)]
   
   # Fix onset date for this infection episode
   out[barcode == "RLNB620101",
@@ -72,7 +72,7 @@ process_data <- function(dt,
   
   # Set Ct values for negative results
   out <- out[, ct_value := ct_unadjusted
-             ][result == "Negative", ct_value := 40]
+  ][result == "Negative", ct_value := 40]
   
   # Remove entries with NA ct values
   out <- out[!(is.na(ct_value) & is.na(ct_n_gene) & is.na(ct_s_gene))]
@@ -94,7 +94,7 @@ process_data <- function(dt,
   # Some people did > 1 swab on one day
   no_pos_cts[, no_pos_results := min(no_pos_results, ndays), 
              c("id", "infection_id")
-             ][, ndays := NULL]
+  ][, ndays := NULL]
   
   out <- merge(
     out, no_pos_cts, by = c("id", "infection_id")
@@ -102,8 +102,8 @@ process_data <- function(dt,
   
   #--- adding time since first positive test by individual
   first_pos_test_date_dt <- out[result == "Positive",
-    .(first_pos_test_date = min(swab_date)),
-    by = c("id", "infection_id")]
+                                .(first_pos_test_date = min(swab_date)),
+                                by = c("id", "infection_id")]
   
   out <- merge(
     out, first_pos_test_date_dt, by = c("id", "infection_id")
@@ -123,9 +123,9 @@ process_data <- function(dt,
   
   # add time at onset
   out[,
-    onset_time := as.numeric(symptom_onset_date - first_pos_test_date,
+      onset_time := as.numeric(symptom_onset_date - first_pos_test_date,
                                units = "days")
-    ]
+  ]
   
   # calculating number of exposures as the sum of number of vaccines and
   # number of infections by individual
@@ -140,7 +140,7 @@ process_data <- function(dt,
   # Drop infections with gaps between positive tests of more than 60 days
   ids_spurious_gaps <- out[result == "Positive" & 
                              (abs(t_since_first_pos) > 60 | 
-                              abs(onset_time) > 60), id]
+                                abs(onset_time) > 60), id]
   out <- out[!(id %in% ids_spurious_gaps)]
   
   # Make variables factors
@@ -153,17 +153,17 @@ process_data <- function(dt,
   out[no_exposures == "5" | no_exposures == "6",
       no_exposures := factor("5+"),
       by = id][,
-  no_exposures := forcats::fct_drop(no_exposures)]
+               no_exposures := forcats::fct_drop(no_exposures)]
   
   # re-assign those with unknown symptom status to symptomatic (for the time-being,
   # based on a discussion with Crick collaborators)
   out[,
       symptoms := factor(symptoms,
-        levels = c("0", "1", "unknown"),
-        labels = c("asymptomatic", "symptomatic", "symptomatic")
+                         levels = c("0", "1", "unknown"),
+                         labels = c("asymptomatic", "symptomatic", "symptomatic")
       )
   ]
-
+  
   # Drop unused factor levels
   out[, (facs) := lapply(.SD, forcats::fct_drop), .SDcols = facs]
   
@@ -180,7 +180,7 @@ process_data <- function(dt,
                 measure.vars = c("ct_value", "ct_n_gene", "ct_s_gene"),
                 variable.name = "ct_type", 
                 value.name = "ct_value")[!is.na(ct_value)]
-    }
+  }
   
   return(out)
 }
@@ -192,17 +192,17 @@ voc_status_attribution <- function(dt) {
   # assuming that all "variant-like" samples are the same
   out[VOC %like% "Delta", VOC := "Delta"]
   out[VOC == "Omicron (BA.1-like)",
-     VOC := "Omicron (BA.1)"]
+      VOC := "Omicron (BA.1)"]
   out[VOC == "Omicron (BA.2-like)" | VOC == "Omicron-BA2",
-     VOC := "Omicron (BA.2)"]
+      VOC := "Omicron (BA.2)"]
   
   out[, VOC := factor(VOC,
-                     levels = c("Omicron (BA.1)",
-                                "Delta",
-                                "Omicron (BA.2)"),
-                     labels = c("Omicron (BA.1)",
-                                "Delta",
-                                "Omicron (BA.2)"))]
+                      levels = c("Omicron (BA.1)",
+                                 "Delta",
+                                 "Omicron (BA.2)"),
+                      labels = c("Omicron (BA.1)",
+                                 "Delta",
+                                 "Omicron (BA.2)"))]
   
   
   # removing any data without a VOC attribution
@@ -221,13 +221,13 @@ subset_data <- function(dt, no_pos_swabs, first_pos_min) {
   
   # Rename some columns
   out <- out[, t_first_test := t_since_first_pos
-    ][, data_id := id
-      ][, id := .GRP, by = c("data_id", "infection_id")
-        ][, swab_type_num := ifelse(swab_type == "Dry", 0, 1)]
+  ][, data_id := .GRP, by = id
+  ][, id := .GRP, by = c("data_id", "infection_id")
+  ][, swab_type_num := ifelse(swab_type == "Dry", 0, 1)]
   
   # Set baselines for factors
   out <- out[,
-    VOC := forcats::fct_relevel(VOC, "Omicron (BA.1)")
+             VOC := forcats::fct_relevel(VOC, "Omicron (BA.1)")
   ][,
     symptoms := forcats::fct_relevel(symptoms, "symptomatic")
   ][,
@@ -265,17 +265,17 @@ t_last_dose <- function(dt, imm_delay = 14) {
   # Some people have dose dates entered for some tests but not all tests. 
   # We can fill in these missing dose dates so they don't get filtered out 
   dt_proc[, date_dose_1 := ifelse(any(!is.na(date_dose_1)),
-                             max(date_dose_1, na.rm = TRUE),
-                             NA), c("id", "infection_id")]
+                                  max(date_dose_1, na.rm = TRUE),
+                                  NA), c("id", "infection_id")]
   dt_proc[, date_dose_2 := ifelse(any(!is.na(date_dose_2)),
-                             max(date_dose_2, na.rm = TRUE),
-                             NA), c("id", "infection_id")]
+                                  max(date_dose_2, na.rm = TRUE),
+                                  NA), c("id", "infection_id")]
   dt_proc[, date_dose_3 := ifelse(any(!is.na(date_dose_3)),
-                             max(date_dose_3, na.rm = TRUE),
-                             NA), c("id", "infection_id")]
+                                  max(date_dose_3, na.rm = TRUE),
+                                  NA), c("id", "infection_id")]
   dt_proc[, date_dose_4 := ifelse(any(!is.na(date_dose_4)),
-                           max(date_dose_4, na.rm = TRUE),
-                           NA), c("id", "infection_id")]
+                                  max(date_dose_4, na.rm = TRUE),
+                                  NA), c("id", "infection_id")]
   
   fz <- function(x, imm_delay){
     m <- unique(x$first_pos_test_date)
@@ -307,7 +307,7 @@ t_last_exposure <- function(dt, imm_delay = 14) {
   
   dt_proc[t_first_inf_to_cur_inf != 0,
           t_since_last_exposure := min(pmin(t_first_inf_to_cur_inf,
-                                               t_since_last_dose)),
+                                            t_since_last_dose)),
           by = c("id", "infection_id")]
   
   dt_proc[t_first_inf_to_cur_inf == 0,
@@ -321,9 +321,9 @@ t_last_exposure <- function(dt, imm_delay = 14) {
   mx <- dt_proc[, max(t_since_last_exposure)]
   
   dt_proc[,
-    t_since_last_exposure := (t_since_last_exposure - mn)/(mx - mn),
-    c("id", "infection_id")
-    ]
+          t_since_last_exposure := (t_since_last_exposure - mn)/(mx - mn),
+          c("id", "infection_id")
+  ]
   
   return(dt_proc)
 }
@@ -334,7 +334,7 @@ index_by_first_positive <- function(dt) {
   
   pos_test <- out[
     uncensored == 1, .SD[t == min(t)], by = "id"][,
-      .(id, t_first_pos = t)
+                                                  .(id, t_first_pos = t)
     ]
   
   out <- out[pos_test, on = "id"]
@@ -351,13 +351,13 @@ create_stan_data <- function(dt){
   out[, test.id := 1:.N]
   
   out <- out[, .(id = new.id, 
-                test.id,
-                ct_value,
-                test_date = swab_date,
-                t,
-                onset_date = symptom_onset_date,
-                onset_t = onset_time,
-                censored = uncensored)]
+                 test.id,
+                 ct_value,
+                 test_date = swab_date,
+                 t,
+                 onset_date = symptom_onset_date,
+                 onset_t = onset_time,
+                 censored = uncensored)]
   
   return(out)
 }

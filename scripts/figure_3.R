@@ -4,7 +4,6 @@ library(ggridges)
 library(lemon)
 library(scico)
 library(ggsci)
-library(facetscales)
 library(data.table)
 
 # sourcing the setup file, to load in the data, the model structure, etc
@@ -12,14 +11,14 @@ source("scripts/setup.R")
 
 # either run inference script, which saves a fit object, or load a saved fit
 # object from a previous inference
-# fit <- readRDS("outputs/fits/fit_full.rds")
+fit <- readRDS("outputs/fits/fit_full.rds")
 draws <- extract_draws(fit)
 
 # the next command takes a long time. A high number of draws was used 
 # (no_draws) for the figures
 dt_pop_ct_draws <- extract_pop_ct_trajectories(fit,
                                                no_draws = 10000,
-                                               onsets = FALSE)
+                                               onsets = TRUE)
 
 # summarising Ct trajectories
 pop_ct_draws_sum <- summarise_ct_traj(dt_pop_ct_draws, pop_flag = TRUE)
