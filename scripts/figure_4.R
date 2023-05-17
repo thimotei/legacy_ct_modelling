@@ -5,7 +5,6 @@ library(ggridges)
 library(lemon)
 library(scico)
 library(ggsci)
-# library(facetscales)
 library(data.table)
 library(ggExtra)
 

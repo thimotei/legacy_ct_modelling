@@ -17,7 +17,7 @@ library(forcats)
 devtools::load_all()
 
 # load in data processed in scripts/process-data.R
-dt_clean <- readRDS(here("data/processed-data.rds"))
+dt_clean <- readRDS(here("data_inference/processed-data.rds"))
 
 # Do additional processing to filter for the desired number of swabs
 # per positive episode
