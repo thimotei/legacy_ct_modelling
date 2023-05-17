@@ -5,7 +5,7 @@ library(cowplot)
 source("scripts/setup.R")
 
 # figure 2, panel A
-dt_obs <- dt_clean[no_pos_results >= 2]
+dt_obs <- obs[no_pos_results >= 2]
 dt_plot <- reshape_figure_2_panel_a(dt_obs)
 
 p1_fig2 <- figure_2_panel_a(dt_plot) + 

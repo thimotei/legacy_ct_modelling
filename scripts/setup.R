@@ -17,7 +17,7 @@ library(forcats)
 devtools::load_all()
 
 # load in data processed in scripts/process-data.R
-obs <- readRDS("data/processed-data.rds")
+obs <- readRDS("data_inference/processed-data.rds")
 
 # Plot the raw data
 p1_raw <- plot_obs(obs, col = factor(swab_type)) +
