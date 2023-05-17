@@ -1,7 +1,7 @@
 admin/
 data_raw/
 manuscript/
-outputs/
+outputs-raw/
 .Rproj.user
 .DS_Store
 */.DS_Store
