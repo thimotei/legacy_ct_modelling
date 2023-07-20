@@ -256,7 +256,7 @@ model {
 generated quantities {
   vector[N] sim_ct;
   matrix[ind_corr ? K : 0, ind_corr ? K : 0] correlation;
-  vector[output_loglik ? P : 0] log_lik;
+  vector[output_loglik ? N : 0] log_lik;
   if (ind_corr) {
     correlation = L_Omega * L_Omega';
   }
@@ -265,21 +265,13 @@ generated quantities {
   sim_ct = fmin(sim_ct, c_lod);
   // Output by infection log-likelihood
   if (output_loglik) {
-    log_lik = rep_vector(0, P);
-    if (nonsets) {
-      log_lik = onsets_log_lik;
-    }
-    for (i in 1:P) {
-      int t_start = cum_tests_per_id[i] - tests_per_id[i] + 1;
-      int t_end = cum_tests_per_id[i];
-      for (j in t_start:t_end) {
-        if (uncensored_by_test[j] == 1) {
-          log_lik[i] += normal_lpdf(ct_value[j] | adj_exp_ct[j], sigma);
-        }else{
-          log_lik[i] += normal_lccdf(c_lod | adj_exp_ct[j], sigma);
-        }
+    log_lik = rep_vector(0, N);
+    for(i in 1:N){
+      if (uncensored_by_test[i] == 1){
+        log_lik[i] = normal_lpdf(ct_value[i] | adj_exp_ct[i], sigma) - normal_lccdf(0 | adj_exp_ct[i], sigma);
+      } else {
+        log_lik[i] = normal_lccdf(c_lod | adj_exp_ct[i], sigma) - normal_lccdf(0 | adj_exp_ct[i], sigma);
       }
-      log_lik[i] += -normal_lccdf(0 | adj_exp_ct[t_start:t_end], sigma);
     }
   }
 }
