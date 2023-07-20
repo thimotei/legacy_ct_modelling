@@ -12,7 +12,9 @@ epict <- function(obs,
                   onsets = TRUE,
                   incubation_period = get_inc_period(),
                   likelihood = TRUE,
-                  output_loglik = FALSE, ...) {
+                  output_loglik = FALSE, 
+                  seed_manual = NULL,
+                  ...) {
   
   stan_data <- as_data_list(
     obs,
@@ -23,13 +25,16 @@ epict <- function(obs,
     censoring_threshold = censoring_threshold,
     positivity_threshold = positivity_threshold,
     switch = switch,
-    onsets = onsets, incubation_period = incubation_period,
-    likelihood = likelihood, output_loglik = output_loglik
+    onsets = onsets,
+    incubation_period = incubation_period,
+    likelihood = likelihood, 
+    output_loglik = output_loglik
   )
 
   fit <- model$sample(
     data = stan_data,
     init = epict_inits(stan_data),
+    seed = seed_manual,
     ...
   )
   return(fit)

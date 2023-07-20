@@ -46,24 +46,24 @@ get_inc_period <- function(inc_mean = c(1.621, 0.0640),
 }
 
 epict_to_stan <- function(obs,
-                         ct_model = subject_design(~ 1, obs),
-                         adjustment_model = test_design(~ 1, obs),
-                         individual_variation = 0.2,
-                         individual_correlation = 1,
-                         censoring_threshold = 40, 
-                         positivity_threshold = 37,
-                         switch = TRUE,
-                         onsets = TRUE, 
-                         incubation_period = get_inc_period(),
-                         likelihood = TRUE,
-                         output_loglik = FALSE) {
+                          ct_model = subject_design(~ 1, obs),
+                          adjustment_model = test_design(~ 1, obs),
+                          individual_variation = 0.2,
+                          individual_correlation = 1,
+                          censoring_threshold = 40, 
+                          positivity_threshold = 37,
+                          switch = TRUE,
+                          onsets = TRUE, 
+                          incubation_period = get_inc_period(),
+                          likelihood = TRUE,
+                          output_loglik = FALSE) {
   
   obs <- data.table::copy(obs)
   obs <- obs[order(id)]
   obs[, obs := 1:.N]
-
+  
   tests_per_id <- obs[, .(n = .N), by = "id"]$n
-
+  
   stan_data <- list(N = obs[, .N],
                     P = length(unique(obs$id)),
                     id = obs[, id],
@@ -83,7 +83,7 @@ epict_to_stan <- function(obs,
                     ind_var_sd = individual_variation,
                     ind_var_m = as.numeric(individual_variation != 0),
                     ind_corr = as.numeric(!is.na(individual_correlation) &&
-                      individual_variation != 0),
+                                            individual_variation != 0),
                     lkj_prior = ifelse(
                       is.na(individual_correlation), 0, individual_correlation
                     ),
@@ -109,39 +109,40 @@ epict_to_stan <- function(obs,
                     ct_preds_sd = adjustment_model$preds_sd,
                     ct_design = adjustment_model$design
   )
- if (is.null(obs$onset_time) | !onsets) {
-  stan_data <- c(stan_data, list(
-          any_onsets = 0,
-          onset_avail = rep(0, stan_data$P),
-          nonsets = 1,
-          ids_with_onsets = as.array(0),
-          onset_time = rep(0, stan_data$P),
-          onset_window = rep(0, stan_data$P)
-        ))
- }else{
-  onset_dt <- suppressWarnings(
-    obs[,
-    .(onset_time = min(onset_time, na.rm = TRUE), id), by = "id"
-    ][
-      is.infinite(onset_time), onset_time := NA
-    ]
-  )
-  stan_data <- c(stan_data, list(
-          any_onsets = 1,
-          onset_avail = as.numeric(!is.na(onset_dt$onset_time)),
-          nonsets = sum(as.numeric(!is.na(onset_dt$onset_time))),
-          ids_with_onsets = onset_dt[!is.na(onset_time), id],
-          onset_time = onset_dt$onset_time %>%
-            tidyr::replace_na(0),
-          onset_window = rep(1, stan_data$P)
-        ))
- }
-
+  if (is.null(obs$onset_time) | !onsets) {
+    stan_data <- c(stan_data, list(
+      any_onsets = 0,
+      onset_avail = rep(0, stan_data$P),
+      nonsets = 1,
+      ids_with_onsets = as.array(0),
+      onset_time = rep(0, stan_data$P),
+      onset_window = rep(0, stan_data$P)
+    ))
+  } else {
+    onset_dt <- suppressWarnings(
+      obs[,
+          .(onset_time = min(onset_time, na.rm = TRUE), id), by = "id"
+      ][
+        is.infinite(onset_time), onset_time := NA
+      ]
+    )
+    stan_data <- c(stan_data, list(
+      any_onsets = 1,
+      onset_avail = as.numeric(!is.na(onset_dt$onset_time)),
+      nonsets = sum(as.numeric(!is.na(onset_dt$onset_time))),
+      ids_with_onsets = onset_dt[!is.na(onset_time), id],
+      onset_time = onset_dt$onset_time %>%
+        tidyr::replace_na(0),
+      onset_window = rep(1, stan_data$P)
+    ))
+  }
+  
   return(stan_data)
 }
 
 epict_inits <- function(dt) {
   function() {
+    
     inits <- list(
       t_inf = purrr::map_dbl(
         1:dt$P,
@@ -198,10 +199,11 @@ epict_inits <- function(dt) {
     }
 
     if (dt$any_onsets == 1) {
-      inits$inc_mean <- rnorm(1, dt$lmean[1], dt$lmean[2] * 0.1)
-      inits$inc_sd <- truncnorm::rtruncnorm(
-        1, a = 0, mean = dt$lsd[1], sd = dt$lsd[2] * 0.1
-      )
+
+      inits$inc_mean <- as.array(rnorm(1, dt$lmean[1], dt$lmean[2] * 0.1))
+
+      inits$inc_sd <- as.array(truncnorm::rtruncnorm(
+        n = 1, a = 0, mean = dt$lsd[1], sd = dt$lsd[2] * 0.1))
     }
     return(inits)
   }

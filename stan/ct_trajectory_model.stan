@@ -1,4 +1,4 @@
-functions{ 
+functions{
 #include functions/piecewise_ct.stan
 #include functions/combine_effects.stan
 #include functions/onsets_lmpf.stan
@@ -117,7 +117,7 @@ transformed parameters {
       for (i in 1:K) {
         eta[1:P, i] = to_vector(ind_eta[i, 1:P]) * ind_var[i];
       }
-    }else{
+    } else {
       // No infection level differences
       eta = rep_matrix(0, P, K);
     }
@@ -127,6 +127,7 @@ transformed parameters {
   t_p = exp(combine_effects(t_p_mean, beta_t_p, design) + eta[, 1]);
   t_lod = exp(combine_effects(t_lod_mean, beta_t_lod, design) + eta[, 2]);
   c_p = inv_logit(combine_effects(c_p_mean, beta_c_p, design) + eta[, 3]);
+  
   // Optional effects if a second breakpoint is used
   if (switch) {
     t_s = exp(combine_effects(t_s_mean[1], beta_t_s, design) + eta[, 4]);
@@ -134,7 +135,7 @@ transformed parameters {
       combine_effects(c_s_mean[1], beta_c_s, design) + eta[, 5]
     );
     c_p = c_s .* c_p;
-  }else{
+  } else {
     c_s = rep_vector(0.0, P);
     t_s = rep_vector(0.0, P);
     c_p = c_0 * c_p;
@@ -164,6 +165,7 @@ transformed parameters {
       inc_mean[1], inc_sd[1], beta_inc_mean, beta_inc_sd, design, onset_avail,
       onset_time, onset_window, t_inf, ids_with_onsets
     );
+    
     onsets_star[1] = sum(onsets_ttar);
     if (output_loglik) {
       onsets_log_lik = onsets_ttar;
@@ -267,7 +269,7 @@ generated quantities {
   if (output_loglik) {
     log_lik = rep_vector(0, N);
     for(i in 1:N){
-      if (uncensored_by_test[i] == 1){
+      if (uncensored_by_test[i] == 1) {
         log_lik[i] = normal_lpdf(ct_value[i] | adj_exp_ct[i], sigma) - normal_lccdf(0 | adj_exp_ct[i], sigma);
       } else {
         log_lik[i] = normal_lccdf(c_lod | adj_exp_ct[i], sigma) - normal_lccdf(0 | adj_exp_ct[i], sigma);
