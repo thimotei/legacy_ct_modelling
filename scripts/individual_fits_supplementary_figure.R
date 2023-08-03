@@ -9,10 +9,6 @@ source("scripts/setup.R")
 # load object with all fitted draws
 fit <- readRDS("outputs/fits/fit_main.rds")
 
-fit <- fit_without_voc
-
-ct_model <- ct_model_no_voc
-
 # subsetting onset and VOC data for merging later
 onset_data <- obs[, onset_time, by = c("id")] %>% unique()
 voc_data <- obs[, VOC, by = c("id")] %>% unique()
@@ -52,46 +48,46 @@ dt_ind_wide_adj[, diff_t_p_onset := abs(onset_time - t_p), by = id]
 
 # metling for plotting
 dt_ind_long_adj <- melt(dt_ind_wide_adj,
-     id.vars = c("id", ".chain", ".iteration", ".draw"))
+                        id.vars = c("id", ".chain", ".iteration", ".draw"))
 
 # merging with VOC data 
 dt_ind_long_adj <- merge(dt_ind_long_adj, voc_data, by = "id")
 
 # timing posteriors plot
 dt_t_plot <- dt_ind_long_adj[variable %in% c("t_inf_plot",
-                                       "t_p",
-                                       "t_lod",
-                                       "onset_time")][,
-  VOC := factor(VOC, 
-                levels = c("Delta", "Omicron (BA.1)", "Omicron (BA.2)"),
-                labels = c("Delta", "BA.1", "BA.2"))][,
-  VOC := fct_relevel(VOC, c("Delta",
-                            "BA.1",
-                            "BA.2"))][,
-  variable := factor(variable,
-                     levels = c("t_inf_plot",
-                                "t_p",
-                                "t_lod",
-                                "onset_time"),
-                     labels = c("Time of infection",
-                                "Time of peak",
-                                "Time LOD reached",
-                                "Symptom onset"))]
+                                             "t_p",
+                                             "t_lod",
+                                             "onset_time")][,
+                                                            VOC := factor(VOC, 
+                                                                          levels = c("Delta", "Omicron (BA.1)", "Omicron (BA.2)"),
+                                                                          labels = c("Delta", "BA.1", "BA.2"))][,
+                                                                                                                VOC := fct_relevel(VOC, c("Delta",
+                                                                                                                                          "BA.1",
+                                                                                                                                          "BA.2"))][,
+                                                                                                                                                    variable := factor(variable,
+                                                                                                                                                                       levels = c("t_inf_plot",
+                                                                                                                                                                                  "t_p",
+                                                                                                                                                                                  "t_lod",
+                                                                                                                                                                                  "onset_time"),
+                                                                                                                                                                       labels = c("Time of infection",
+                                                                                                                                                                                  "Time of peak",
+                                                                                                                                                                                  "Time LOD reached",
+                                                                                                                                                                                  "Symptom onset"))]
 
 # plot of all timing posteriors
 p_t_delta <- ggplot() + 
   geom_density(data = dt_t_plot[VOC == "Delta" & 
-                                variable != "Symptom onset"],
+                                  variable != "Symptom onset"],
                aes(x = value, fill = variable), alpha = 0.5) + 
   geom_vline(data = dt_t_plot[VOC == "Delta" & 
-                              variable == "Symptom onset"],
+                                variable == "Symptom onset"],
              aes(xintercept = value), linetype = "dashed") +
   facet_wrap(vars(id), scales = "free") +
   theme_minimal() +
   scale_fill_brewer(palette = "Set1") +
   theme(legend.position = "bottom",
         legend.title = element_blank()) +
-  lims(x = c(-15, 30)) +
+  lims(x = c(-15, 25)) +
   labs(x = "Time relative to first positive test",
        y = "Density",
        title = "Delta timing posterior distributions") 
@@ -108,7 +104,7 @@ p_t_ba1 <- ggplot() +
   scale_fill_brewer(palette = "Set1") +
   theme(legend.position = "bottom",
         legend.title = element_blank()) +
-  lims(x = c(-15, 30)) +
+  lims(x = c(-15, 25)) +
   labs(x = "Time relative to first positive test", 
        y = "Density",
        title = "Omicron (BA.1) timing posterior distributions") 
@@ -125,7 +121,7 @@ p_t_ba2 <- ggplot() +
   scale_fill_brewer(palette = "Set1") +
   theme(legend.position = "bottom",
         legend.title = element_blank()) +
-  lims(x = c(-15, 30)) +
+  lims(x = c(-15, 25)) +
   labs(x = "Time relative to first positive test", 
        y = "Density",
        title = "Omicron (BA.2) timing posterior distributions") 
@@ -168,15 +164,15 @@ ggsave("outputs/figures/pngs/ba2_t_posteriors.png",
 
 # Ct value posteriors plot
 dt_ct_plot <- dt_ind_long_adj[variable %in% c("c_p")][, 
-  VOC := factor(VOC, 
-                levels = c("Delta", "Omicron (BA.1)", "Omicron (BA.2)"),
-                labels = c("Delta", "BA.1", "BA.2"))][,
-  VOC := fct_relevel(VOC, c("Delta",
-                            "BA.1",
-                            "BA.2"))][,
-  variable := factor(variable,
-                     levels = "c_p",
-                     labels = "Ct value at peak")]
+                                                      VOC := factor(VOC, 
+                                                                    levels = c("Delta", "Omicron (BA.1)", "Omicron (BA.2)"),
+                                                                    labels = c("Delta", "BA.1", "BA.2"))][,
+                                                                                                          VOC := fct_relevel(VOC, c("Delta",
+                                                                                                                                    "BA.1",
+                                                                                                                                    "BA.2"))][,
+                                                                                                                                              variable := factor(variable,
+                                                                                                                                                                 levels = "c_p",
+                                                                                                                                                                 labels = "Ct value at peak")]
 
 dt_ct_plot[, id := factor(id)]
 dt_ct_plot[, id := fct_reorder(id, value, .desc = TRUE)]
@@ -231,19 +227,19 @@ obs_adj[, onset_time_adj := onset_time + t_inf_med, by = "id"]
 
 # relabelling factors for plot
 obs_plot <- obs_adj[, ct_type := factor(ct_type,
-                                    labels = c("ORF1ab",
-                                               "N gene",
-                                               "S gene"))][,
-  VOC := factor(VOC, 
-                levels = c("Delta", "Omicron (BA.1)", "Omicron (BA.2)"),
-                labels = c("Delta", "BA.1", "BA.2"))][,
-  VOC := fct_relevel(VOC, c("Delta", "BA.1", "BA.2"))]
+                                        labels = c("ORF1ab",
+                                                   "N gene",
+                                                   "S gene"))][,
+                                                               VOC := factor(VOC, 
+                                                                             levels = c("Delta", "Omicron (BA.1)", "Omicron (BA.2)"),
+                                                                             labels = c("Delta", "BA.1", "BA.2"))][,
+                                                                                                                   VOC := fct_relevel(VOC, c("Delta", "BA.1", "BA.2"))]
 
 dt_sims_sum_all[, 
-  VOC := factor(VOC, 
-                levels = c("Delta", "Omicron (BA.1)", "Omicron (BA.2)"),
-                labels = c("Delta", "BA.1", "BA.2"))][,
-  VOC := fct_relevel(VOC, c("Delta", "BA.1", "BA.2"))]
+                VOC := factor(VOC, 
+                              levels = c("Delta", "Omicron (BA.1)", "Omicron (BA.2)"),
+                              labels = c("Delta", "BA.1", "BA.2"))][,
+                                                                    VOC := fct_relevel(VOC, c("Delta", "BA.1", "BA.2"))]
 
 # adding posterior predictions
 pp_summary <- summarise_pp(fit, obs_adj)
@@ -345,7 +341,7 @@ p_ba2_fits <-
   theme_minimal() + 
   theme(legend.position = "bottom")
 
-  
+
 # saving PDF plot
 ggsave("outputs/figures/pdfs/delta_fits.pdf",
        p_delta_fits,
@@ -381,4 +377,3 @@ ggsave("outputs/figures/pngs/ba2_fits.png",
        p_ba2_fits,
        width = 8,
        height = 10)
-

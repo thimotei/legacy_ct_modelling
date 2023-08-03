@@ -24,8 +24,8 @@ extract_params <- function(draws, params, by) {
 }
 
 extract_ct_params <- function(draws, params = c("c_0", "c_p_mean",
-                                                 "c_s_mean[1]", "t_p_mean",
-                                                 "t_s_mean[1]", "t_lod_mean"),
+                                                "c_s_mean[1]", "t_p_mean",
+                                                "t_s_mean[1]", "t_lod_mean"),
                               mean = TRUE, by) {
   if (!mean) {
     params <- stringr::str_remove(params, "_mean")
@@ -43,8 +43,8 @@ extract_ip_params <- function(draws, params = c("inc_mean[1]", "inc_mean",
                               by) {
   draws <- extract_params(draws, params = params, by)
   colnames(draws) <- purrr::map_chr(
-      colnames(draws), ~ stringr::str_split(., "\\[[0-9]\\]")[[1]][1]
-    )
+    colnames(draws), ~ stringr::str_split(., "\\[[0-9]\\]")[[1]][1]
+  )
   
   return(draws)
 }
@@ -68,27 +68,27 @@ extract_coeffs <- function(draws, exponentiate = FALSE, design, variables) {
   beta_cols <- grep("beta_", colnames(draws), value = TRUE)
   cols <- c(".iteration", ".draw", ".chain", beta_cols)
   draws <- draws[, ..cols]
-
+  
   if (exponentiate) {
     draws[, (beta_cols) := lapply(.SD, exp), .SDcols = beta_cols]
   }
-
+  
   setnames(draws, beta_cols, gsub("beta_", "", beta_cols))
-
+  
   draws <- melt_draws(draws)
-
+  
   draws <- draws[,
-    coeff := as.numeric(stringr::str_extract(variable, "[0-9]+"))
+                 coeff := as.numeric(stringr::str_extract(variable, "[0-9]+"))
   ][,
     variable := purrr::map_chr(
       variable, ~ stringr::str_split(., "\\[[0-9]+\\]")[[1]][1]
     )
   ]
-
+  
   if (!missing(variables)) {
     draws <- draws[variable %in% variables]
   }
-
+  
   if (!missing(design)) {
     design <- data.table::data.table(predictor = colnames(design))
     design <- design[!predictor %in% "(Intercept)"]
@@ -104,23 +104,23 @@ melt_draws <- function(draws, ids = c(".chain", ".iteration", ".draw")) {
 
 extract_ct_trajectories <- function(fit, variable = "ct", inf_time = TRUE) {
   dt_draws <- extract_draws(fit, params = variable, format = "array")
-
+  
   obs_out <- dt_draws[,
-   c("id", "time") := tstrsplit(variable, ",")
+                      c("id", "time") := tstrsplit(variable, ",")
   ][,
-   id := str_remove(id, paste0("ct", "\\["))][,
-   time := str_remove(time, "\\]")][,
-   time := as.numeric(time)][,
-   id := factor(id)][,
-   c("time", "iteration", "chain", "id", "value")][
-   order(id, time)]
-
+    id := str_remove(id, paste0("ct", "\\["))][,
+                                               time := str_remove(time, "\\]")][,
+                                                                                time := as.numeric(time)][,
+                                                                                                          id := factor(id)][,
+                                                                                                                            c("time", "iteration", "chain", "id", "value")][
+                                                                                                                              order(id, time)]
+  
   if (inf_time) {
     inf_time_draws <- extract_draws(fit, params = "t_inf", format = "array")[,
-      id := str_remove(variable, "t_inf\\[")][,
-      id := str_remove(id, "\\]")][,
-      .(id, inf_time = value, iteration, chain)]
-
+                                                                             id := str_remove(variable, "t_inf\\[")][,
+                                                                                                                     id := str_remove(id, "\\]")][,
+                                                                                                                                                  .(id, inf_time = value, iteration, chain)]
+    
     obs_out <- obs_out[inf_time_draws, on = c("id", "iteration", "chain")]
   }
   obs_out[, time_since_first_pos := time - inf_time]
@@ -140,7 +140,6 @@ extract_pop_ct_trajectories <- function(fit,
                                         other_covariates = TRUE,
                                         censor_output = TRUE,
                                         onsets_flag = onsets_flag) {
-  
   # Extract posterior predictions
   draws <- extract_draws(fit)
   
@@ -168,11 +167,6 @@ extract_pop_ct_trajectories <- function(fit,
     adj_draws[is.na(predictor), predictor := "Omicron (BA.1)"]
   } 
   
-  adj_draws %>%
-    transform_to_model(., onsets_flag = onsets_flag) |> 
-    ggplot() + 
-    geom_density_ridges(aes(x = t_lod, y = predictor))
-  
   # simulating Ct trajectories
   pop_ct_draws <- adj_draws %>%
     transform_to_model(., onsets_flag = onsets_flag) %>%
@@ -181,7 +175,7 @@ extract_pop_ct_trajectories <- function(fit,
   
   # returning the number of draws set in function call
   pop_ct_draws <- pop_ct_draws[,
-    .SD[.draw %in% 1:no_draws], by = "predictor"]
+                               .SD[.draw %in% 1:no_draws], by = "predictor"]
   
   # adding regressor categories
   pop_ct_draws <- add_regressor_categories(pop_ct_draws)
@@ -196,14 +190,14 @@ extract_pop_ct_trajectories <- function(fit,
 
 extract_posterior_predictions <- function(fit, obs) {
   dt_draws <- extract_draws(fit, "sim_ct", format = "array")
-
+  
   simulated_cts <- dt_draws[,
-    obs := str_remove(variable, "sim_ct\\[")][,
-    obs := str_remove(obs, "\\]")][,
-    .(obs = as.numeric(obs), sim_ct = value, iteration = as.numeric(iteration),
-      chain = as.numeric(chain))
-  ][order(obs)]
-
+                            obs := str_remove(variable, "sim_ct\\[")][,
+                                                                      obs := str_remove(obs, "\\]")][,
+                                                                                                     .(obs = as.numeric(obs), sim_ct = value, iteration = as.numeric(iteration),
+                                                                                                       chain = as.numeric(chain))
+                                                                      ][order(obs)]
+  
   if (!missing(obs)) {
     simulated_cts <- merge(
       obs[order(id), obs := 1:.N], simulated_cts, by = "obs"
@@ -232,8 +226,8 @@ extract_shedding <- function(dt,
     # calculating total area under curve for each trajectory
     total_auc_dt <- out[ct_value <= pcr_pos_threshold,
                         .(total_auc = pracma::trapz(t, vl)),
-                     c(".draw", "predictor", "id")]
-  
+                        c(".draw", "predictor", "id")]
+    
     # merging with viral load trajectories
     out <- merge(out,
                  total_auc_dt,
@@ -247,13 +241,13 @@ extract_shedding <- function(dt,
     
     # calculating total area under curve for each trajectory
     total_auc_dt <- out[, .(total_auc = pracma::trapz(t, ct_value)),
-                     c(".draw", "predictor", "id")]
+                        c(".draw", "predictor", "id")]
     
     # merging with viral load trajectories
     out <- merge(out,
                  total_auc_dt,
                  by = c(".draw", "predictor", "id"))
-
+    
     # calculating AUC under Ct curve
     out[ct_value <= pcr_pos_threshold,
         auc_prop := pracma::cumtrapz(t, ct_value)/total_auc,
@@ -275,7 +269,7 @@ extract_shedding <- function(dt,
   
   return(out)
 }
- 
+
 extract_ip_draws <- function(draws,
                              factor_order,
                              keep_asymptomatic = FALSE,
@@ -296,7 +290,7 @@ extract_ip_draws <- function(draws,
   
   # calculating draws from the incubation period using the adjusted draws
   out <- extract_ip_params(adj_draws, by = "predictor")[,
-    ip_draw := rlnorm(1, inc_mean, inc_sd), by = c(".draw", "predictor")
+                                                        ip_draw := rlnorm(1, inc_mean, inc_sd), by = c(".draw", "predictor")
   ][, inc_mean_nat := exp(inc_mean)]
   
   # remove the few negative draws (where are these coming from?)
@@ -307,7 +301,7 @@ extract_ip_draws <- function(draws,
   ]
   
   if(keep_asymptomatic == FALSE) {
-  # removing artificial incubation period estimate for asymptomatic individuals
+    # removing artificial incubation period estimate for asymptomatic individuals
     out <- out[predictor != "Asymptomatic"]
   }
   
