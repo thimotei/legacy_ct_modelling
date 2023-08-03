@@ -140,6 +140,7 @@ extract_pop_ct_trajectories <- function(fit,
                                         other_covariates = TRUE,
                                         censor_output = TRUE,
                                         onsets_flag = onsets_flag) {
+  
   # Extract posterior predictions
   draws <- extract_draws(fit)
   
@@ -166,6 +167,11 @@ extract_pop_ct_trajectories <- function(fit,
   } else if(separate_baseline_covariates == FALSE & other_covariates == FALSE) {
     adj_draws[is.na(predictor), predictor := "Omicron (BA.1)"]
   } 
+  
+  adj_draws %>%
+    transform_to_model(., onsets_flag = onsets_flag) |> 
+    ggplot() + 
+    geom_density_ridges(aes(x = t_lod, y = predictor))
   
   # simulating Ct trajectories
   pop_ct_draws <- adj_draws %>%

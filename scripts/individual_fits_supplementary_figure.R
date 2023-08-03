@@ -9,6 +9,10 @@ source("scripts/setup.R")
 # load object with all fitted draws
 fit <- readRDS("outputs/fits/fit_main.rds")
 
+fit <- fit_without_voc
+
+ct_model <- ct_model_no_voc
+
 # subsetting onset and VOC data for merging later
 onset_data <- obs[, onset_time, by = c("id")] %>% unique()
 voc_data <- obs[, VOC, by = c("id")] %>% unique()
@@ -87,7 +91,7 @@ p_t_delta <- ggplot() +
   scale_fill_brewer(palette = "Set1") +
   theme(legend.position = "bottom",
         legend.title = element_blank()) +
-  lims(x = c(-15, 25)) +
+  lims(x = c(-15, 30)) +
   labs(x = "Time relative to first positive test",
        y = "Density",
        title = "Delta timing posterior distributions") 
@@ -104,7 +108,7 @@ p_t_ba1 <- ggplot() +
   scale_fill_brewer(palette = "Set1") +
   theme(legend.position = "bottom",
         legend.title = element_blank()) +
-  lims(x = c(-15, 25)) +
+  lims(x = c(-15, 30)) +
   labs(x = "Time relative to first positive test", 
        y = "Density",
        title = "Omicron (BA.1) timing posterior distributions") 
@@ -121,7 +125,7 @@ p_t_ba2 <- ggplot() +
   scale_fill_brewer(palette = "Set1") +
   theme(legend.position = "bottom",
         legend.title = element_blank()) +
-  lims(x = c(-15, 25)) +
+  lims(x = c(-15, 30)) +
   labs(x = "Time relative to first positive test", 
        y = "Density",
        title = "Omicron (BA.2) timing posterior distributions") 

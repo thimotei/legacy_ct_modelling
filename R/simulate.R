@@ -39,7 +39,7 @@ simulate_cts <- function(params,
   if (is.null(params[["id"]])) {
     params[, id := 1:.N]
   }
-
+  
   if (is.null(params[["t_s"]])) {
     params[, t_s := 0]
   }
@@ -61,7 +61,7 @@ simulate_cts <- function(params,
       ),
     by = by
   ]
-
+  
   if (obs_noise) {
     ct_trajs[,
     ct_value := truncnorm::rtruncnorm(
@@ -72,7 +72,7 @@ simulate_cts <- function(params,
     ][,
       uncensored := ifelse(ct_value < c_lod, 1, 0)
     ]
-  }else{
+  } else {
     ct_trajs[, ct_value := exp_ct]
   }
 

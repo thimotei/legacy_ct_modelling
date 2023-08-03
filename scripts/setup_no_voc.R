@@ -50,3 +50,4 @@ adjustment_model <- test_design(
   data = obs,
   preds_sd = 1
 )
+
