@@ -16,11 +16,11 @@ p1_fig2 <- figure_2_panel_a(dt_plot) +
 
 # figure 2, panel B
 p2_fig2 <- figure_2_panel_b(obs[,
-    VOC := fct_relevel(VOC, "Delta")
-  ], voc_arg = c("Delta",
-                 "Omicron (BA.1)",
-                 "Omicron (BA.2)")
-  ) + 
+                                VOC := fct_relevel(VOC, "Delta")
+], voc_arg = c("Delta",
+               "Omicron (BA.1)",
+               "Omicron (BA.2)")
+) + 
   theme(legend.position = "bottom",
         legend.box="vertical", 
         legend.margin=margin()) +
@@ -39,4 +39,3 @@ ggsave("outputs/figures/pdfs/figure_2.pdf",
        width = 12,
        height = 12,
        bg = "white")
-

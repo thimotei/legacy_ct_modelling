@@ -11,10 +11,7 @@ source("scripts/setup.R")
 
 # either run inference script, which saves a fit object, or load a saved fit
 # object from a previous inference
-fit <- readRDS("outputs/fits/fit_full.rds")
-
-fit <- fit_voc
-ct_model <- ct_model_voc
+fit <- readRDS("outputs/fits/fit_uninformative.rds")
 
 draws <- extract_draws(fit)
 
@@ -81,10 +78,10 @@ p3_31 <- plot_ct_trajectory_panel(dt_pop_ct_draws,
   scale_fill_brewer(palette = "Set2") 
 
 p3_32 <- plot_effect_panel(effect_size_summary_natural, 
-                              regressor_category_arg = "Number of exposures",
-                              baseline_arg = "4 exposures",
-                              c("3 exposures", "4 exposures",
-                                "5+ exposures")) +
+                           regressor_category_arg = "Number of exposures",
+                           baseline_arg = "4 exposures",
+                           c("3 exposures", "4 exposures",
+                             "5+ exposures")) +
   scale_fill_brewer(palette = "Set2") 
 
 # Age panel
@@ -112,13 +109,13 @@ p3_4 <- figure_3_subpanel(p3_41, p3_42, rel_widths_arg = c(2, 1))
 
 p31 <- plot_grid(p3_1, p3_2, p3_3, p3_4, nrow = 2)
 
-ggsave("outputs/figures/pngs/figure_3_new_voc.png",
+ggsave("outputs/figures/pngs/figure_3_uninformative.png",
        p31,
        width = 12,
        height = 10,
        bg = "white")
 
-ggsave("outputs/figures/pdfs/figure_3_new_voc.pdf",
+ggsave("outputs/figures/pdfs/figure_3_uninformative.pdf",
        p31,
        width = 12,
        height = 10,

@@ -2,7 +2,7 @@ update_variable_labels <- function(draws, reverse = FALSE) {
 
 draws <- data.table::copy(draws)
 params <- c(
-  "c_0", "c_p", "c_s","t_p", "t_s", "t_lod", "inc_mean", "inc_sd",
+  "c_0", "c_p", "c_s", "t_p", "t_s", "t_lod", "inc_mean", "inc_sd",
   "nat_inc_mean", "nat_inc_sd", "ct_shift", "ct_scale"
 )
 

@@ -10,7 +10,7 @@ library(forcats)
 # loading all functions in package directory
 devtools::load_all()
 
-dt_raw <- fread("data/raw_data.csv")
+dt_raw <- fread("data_raw/raw_data.csv")
 
 # processing data, adding machine readable dates, moving dates
 # back for certain swabs, based on data collection advice and adjusting
@@ -42,4 +42,5 @@ cols_to_keep <- setdiff(colnames(obs), cols_to_remove)
 dt_clean <- obs[, ..cols_to_keep] 
 
 # saving processed data as R object file
-saveRDS(dt_clean, here("data", "processed-data.rds"))
+saveRDS(dt_clean, "data_inference/processed-data.rds")
+

@@ -2,11 +2,12 @@ library(tidybayes)
 library(data.table)
 library(ggplot2)
 library(forcats)
+library(ggridges)
 
 source("scripts/setup.R")
 
 # load object with all fitted draws
-fit <- readRDS("outputs/fits/fit_full.rds")
+fit <- readRDS("outputs/fits/fit_main.rds")
 
 # subsetting onset and VOC data for merging later
 onset_data <- obs[, onset_time, by = c("id")] %>% unique()

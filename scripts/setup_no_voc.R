@@ -33,14 +33,14 @@ ct_model_no_voc <- subject_design(
   ~ 1 + symptoms + no_exposures + age_group + t_since_last_exposure,
   data = obs,
   params = adj_params,
-  preds_sd = 0.2
+  preds_sd = 0.1
 )
 
-ct_model_voc <- subject_design(
-  ~ 1 + VOC + symptoms + no_exposures + age_group + t_since_last_exposure,
+subject_design(
+  ~ 1 + VOC,
   data = obs,
   params = adj_params,
-  preds_sd = 0.2
+  preds_sd = 0.1
 )
 
 # Specify the model to use to adjust Cts globally - we use this to adjust for

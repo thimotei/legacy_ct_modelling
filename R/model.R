@@ -209,11 +209,26 @@ epict_inits <- function(dt) {
   }
 }
 
-load_epict_model <- function() {
+load_epict_model <- function(informative_priors) {
+
+  if(informative_priors == TRUE) {  
+    
   mod <- cmdstan_model(
     "stan/ct_trajectory_model.stan",
     include_paths = "stan",
-    stanc_options = list("O1")
- )
- return(mod)
+    stanc_options = list("O1"),
+    cpp_options = list(stan_threads = TRUE)) 
+  
+  } else if (informative_priors == FALSE) {
+    
+    mod <- cmdstan_model(
+      "stan/ct_trajectory_model_uninformative.stan",
+      include_paths = "stan",
+      stanc_options = list("O1"),
+      cpp_options = list(stan_threads = TRUE)
+    ) 
+    
+  }
+  
+  return(mod)
 }

@@ -1,5 +1,5 @@
 epict <- function(obs,
-                  model = load_epict_model(),
+                  model,
                   as_data_list = epict_to_stan,
                   inits = epict_inits,
                   ct_model = subject_design(~ 1, obs),
@@ -14,7 +14,14 @@ epict <- function(obs,
                   likelihood = TRUE,
                   output_loglik = FALSE, 
                   seed_manual = NULL,
+                  informative_priors,
                   ...) {
+  
+  if(informative_priors == FALSE) {
+    model = load_epict_model(informative_priors = FALSE)
+  } else {
+    model = load_epict_model(informative_priors = TRUE)
+  }
   
   stan_data <- as_data_list(
     obs,

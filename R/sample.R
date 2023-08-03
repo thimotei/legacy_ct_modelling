@@ -1,25 +1,31 @@
-sample_from_pop_priors <- function(samples, 
-                                   c_lod = 40,
-                                   predictor_arg) {
+sample_pop_priors <- function(n_samples,
+                              c_lod = 40,
+                              switch = FALSE,
+                              data_format = "long",
+                              scale_type = "natural") {
   
-  dt_wide <- data.table(
-    c_0 = rtruncnorm(samples, a = c_lod, c_lod + 10, 5),
-    c_p = rnorm(samples, 0, 1),
-    t_p = rnorm(samples, 1.61, 0.5),
-    t_lod = rnorm(samples, 2.3, 0.5)
-  )
+  dt_proc <- data.table(
+    c_0 = truncnorm::rtruncnorm(
+      n_samples, a = c_lod, mean = c_lod + 10, sd = 2),
+    c_p = rnorm(n_samples, 0, 1),
+    t_p = rnorm(n_samples, 1.61, 0.5),
+    t_lod = rnorm(n_samples, 2.3, 0.5))
   
-  dt_natural_units <- transform_to_model(dt_wide)
+  if(switch == TRUE) {
+    dt_proc[, c_s := rnorm(n_samples, 0, 1)]
+    dt_proc[, t_s := rnorm(n_samples, 1.61, 0.5)]
+  }
   
-  dt_long <- melt(
-    dt_natural_units, 
-    measure.vars = c("c_0", "c_p", "c_s",
-                     "t_p",  "t_s", "t_lod"),
-    variable.name = "parameter")[,
-                                 type := "Prior"]
+  if(scale_type == "natural") {
+    dt_proc <- transform_to_natural(dt_proc)
+  }
   
-  dt_out <- dt_long[, predictor := predictor_arg]
-  
-  return(dt_long)
-  
+  if(data_format == "long") {
+    dt_out <- melt(dt_proc,
+                   measure.vars = colnames(dt_proc),
+                   variable.name = "parameter")
+  } else {
+    dt_out <- dt_proc
+  }
+  return(dt_out)
 }

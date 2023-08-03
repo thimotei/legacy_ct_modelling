@@ -33,7 +33,8 @@ piecewise_ct <- function(t, c0, cp, cs, clod, te, tp, ts, tlod) {
 
 simulate_cts <- function(params, 
                          time_range = 0:30, 
-                         obs_noise = TRUE) {
+                         obs_noise = TRUE,
+                         by = c("id", "t", ".draw")) {
 
   if (is.null(params[["id"]])) {
     params[, id := 1:.N]
@@ -58,7 +59,7 @@ simulate_cts <- function(params,
         t, c0 = c_0, cp = c_p, cs = c_s, clod = c_0, te = 0,
         tp = t_p, ts = t_s, tlod = t_lod
       ),
-    by = c("id", "t", ".draw")
+    by = by
   ]
 
   if (obs_noise) {
