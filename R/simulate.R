@@ -34,7 +34,8 @@ piecewise_ct <- function(t, c0, cp, cs, clod, te, tp, ts, tlod) {
 simulate_cts <- function(params, 
                          time_range = 0:30, 
                          obs_noise = TRUE,
-                         by = c("id", "t", ".draw")) {
+                         by = c("id", "t", ".draw"),
+                         c_lod_exp = 40) {
   
   if (is.null(params[["id"]])) {
     params[, id := 1:.N]
@@ -44,33 +45,31 @@ simulate_cts <- function(params,
     params[, t_s := 0]
   }
   
-  times <- data.table::data.table(
-    t = time_range
-  )[,
-    sample := 1:.N
-  ]
+  if (is.null(params[["c_s"]])) {
+    params[, c_s := c_0]
+  }
+  
+  times <- data.table::data.table(t = time_range)[, sample := 1:.N]
   
   ct_trajs <- merge(
     params[, tid := 1], times[, tid := 1], by = "tid",
-    allow.cartesian = TRUE
-  )[,
-    tid := NULL][,
-                 exp_ct := piecewise_ct(
-                   t, c0 = c_0, cp = c_p, cs = c_s, clod = c_0, te = 0,
-                   tp = t_p, ts = t_s, tlod = t_lod
-                 ),
-                 by = by
-    ]
+    allow.cartesian = TRUE)[, tid := NULL][, exp_ct := piecewise_ct(
+                                             t, 
+                                             c0 = c_0, cp = c_p, cs = c_s,
+                                             clod = c_0, te = 0, tp = t_p,
+                                             ts = t_s, tlod = t_lod),
+                                           by = by]
   
   if (obs_noise) {
-    ct_trajs[,
-             ct_value := truncnorm::rtruncnorm(
+    ct_trajs[, ct_value := truncnorm::rtruncnorm(
                1, b = c_0, mean = exp_ct, sd = sigma
              )
-    ][ct_value >= c_lod,
-      ct_value := c_lod
+    ][ct_value >= c_lod_exp,
+      ct_value := c_lod_exp
+    ][ct_value <= 0,
+      ct_value := 0
     ][,
-      uncensored := ifelse(ct_value < c_lod, 1, 0)
+      uncensored := ifelse(ct_value < c_lod_exp, 1, 0)
     ]
   }else{
     ct_trajs[, ct_value := exp_ct]
@@ -104,64 +103,63 @@ simulate_ips <- function(params, time_range = 0:30) {
   return(ip[])
 }
 
-simulate_params <- function(obs = obs,
-                            parameters = epict_inits(obs)(),
-                            time_range = 0:30,
-                            sample_density = 2:8,
-                            t_p_eff_size = 1,
-                            t_s_eff_size = 1,
-                            t_lod_eff_size = 1,
-                            c_p_eff_size = 1,
-                            c_s_eff_size = 1){
-  
-  
-  params <- with(parameters,
-                 data.table::data.table(
-                   id = 1:obs$P,
-                   swab_type = "Dry",
-                   onset_time = rlnorm(obs$P, inc_mean, inc_sd),
-                   t_inf = t_inf,
-                   t_p = exp(t_p_mean*t_p_eff_size + ind_var[1] * ind_eta[1, ]),
-                   t_s = exp(t_s_mean*t_s_eff_size + ind_var[2] * ind_eta[4, ]),
-                   t_lod = exp(t_lod_mean*t_lod_eff_size + ind_var[3] * ind_eta[2, ]),
-                   c_0 = c_0,
-                   c_s = c_0 * plogis(c_s_mean*c_s_eff_size + ind_var[4] * ind_eta[5, ]),
-                   t_p_mean = t_p_mean,
-                   t_s_mean = t_s_mean,
-                   t_lod_mean = t_lod_mean,
-                   c_p_mean = c_p_mean,
-                   c_s_mean = c_s_mean
-                 )[,
-                   c_p := c_s * plogis(c_p_mean*c_p_eff_size + ind_var[5] * ind_eta[3, ])
-                 ][,
-                   c_lod := obs$c_lod,
-                 ][,
-                   t_lod_abs := t_p + t_s + t_lod
-                 ][,
-                   sigma := sigma
-                 ][,
-                   .draw := 1:.N]
-  )
-  
-  return(params)
-}
+# simulate_params <- function(obs = obs,
+#                             parameters = epict_inits(obs)(),
+#                             time_range = 0:30,
+#                             sample_density = 2:8,
+#                             t_p_eff_size = 1,
+#                             t_s_eff_size = 1,
+#                             t_lod_eff_size = 1,
+#                             c_p_eff_size = 1,
+#                             c_s_eff_size = 1){
+#   
+#   params <- with(parameters,
+#                  data.table(
+#                    id = 1:obs$P,
+#                    swab_type = "Dry",
+#                    onset_time = rlnorm(obs$P, inc_mean, inc_sd),
+#                    t_inf = t_inf,
+#                    t_p = exp(t_p_mean*t_p_eff_size + ind_var[1] * ind_eta[1, ]),
+#                    t_s = exp(t_s_mean*t_s_eff_size + ind_var[2] * ind_eta[4, ]),
+#                    t_lod = exp(t_lod_mean*t_lod_eff_size + ind_var[3] * ind_eta[2, ]),
+#                    c_0 = c_0,
+#                    c_s = c_0 * plogis(c_s_mean*c_s_eff_size + ind_var[4] * ind_eta[5, ]),
+#                    t_p_mean = t_p_mean,
+#                    t_s_mean = t_s_mean,
+#                    t_lod_mean = t_lod_mean,
+#                    c_p_mean = c_p_mean,
+#                    c_s_mean = c_s_mean
+#                  )
+#   )
+#   
+#   params[, c_p := c_s * plogis(c_p_mean*c_p_eff_size + ind_var[5]*ind_eta[3, ])
+#   ][, c_lod := obs$c_lod,
+#   ][, t_lod_abs := t_p + t_s + t_lod
+#   ][, sigma := sigma
+#   ][, .draw := 1:.N]
+#   
+#   return(params)
+# }
+# 
+# simulate_ind_params <- function(obs_sim = obs_sim,
+#                                 parameters = stan_inits(obs_sim),
+#                                 time_range = 0:30,
+#                                 sample_density = 2:8) {
+#   
+#   dt_out <- with(parameters,
+#                  data.table::data.table(
+#                    id = 1:obs$P,
+#                    swab_type = "Dry",
+#                    onset_time = rlnorm(obs$P, inc_mean, inc_sd),
+#                    T_e = T_e,
+#                    t_p = exp(t_p_mean + ind_var[1] * ind_eta[1, ]),
+#                    t_lod = exp(t_lod_mean + ind_var[3] * ind_eta[2, ]),
+#                    c_0 = c_0)[, c_p := c_0*plogis(c_p_mean + ind_var[5] * ind_eta[3, ])
+#                  ][, c_lod := obs$c_lod,
+#                  ][, t_lod_abs := t_p + t_lod
+#                  ][, sigma := sigma]
+#   )
+#   
+#   return(dt_out)
+# }
 
-simulate_obs <- function(parameters,
-                         sample_density,
-                         time_range = 0:30) {
-  
-  params <- params_sample_1
-  
-  ct_trajs <- simulate_cts(params, time_range = time_range, obs_noise = TRUE)
-  
-  if (!is.null(sample_density)) {
-    ct_trajs <- ct_trajs[,
-                         .SD[sample %in% sample(.N, sample(sample_density, 1))], by = "id"
-    ]
-  }
-  
-  ct_trajs <- index_by_first_positive(ct_trajs)
-  ct_trajs[, onset_time := as.integer(onset_time - t_first_pos)]
-  
-  return(ct_trajs)
-}

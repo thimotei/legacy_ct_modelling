@@ -1,55 +1,51 @@
-transform_to_model <- function(draws, onsets_flag = FALSE) {
+transform_to_model <- function(draws, 
+                               onsets_flag = FALSE) {
   
-  draws <- data.table::copy(draws)
-
+  dt_draws <- data.table::copy(draws)
+  
   if (is.null(draws[["t_s"]])) {
-    draws[, t_s := -Inf]
+    dt_draws[, t_s := -Inf]
   }
-
+  
   if (is.null(draws[["c_s"]])) {
-    draws[, c_s := c_0]
+    dt_draws[, c_s := c_0]
   }
+  
   if(onsets_flag == TRUE) {
-    draws[,
-      `:=`(
-        t_p = exp(t_p),
-        t_s = exp(t_s),
-        t_lod = exp(t_lod),
-        c_0 = c_0,
-        c_s = c_0 * plogis(c_s),
-        inc_mean_nat = exp(inc_mean),
-        inc_sd_nat = exp(inc_sd)
-      )
-    ][,
-      c_p := c_s * plogis(c_p)
+    dt_draws[, `:=`(
+      t_p = exp(t_p),
+      t_s = exp(t_s),
+      t_lod = exp(t_lod),
+      c_0 = c_0,
+      c_s = c_0 * plogis(c_s),
+      inc_mean_nat = exp(inc_mean),
+      inc_sd_nat = exp(inc_sd)
+    )
+    ][, c_p := c_s * plogis(c_p)
     ]
   }
   else if(onsets_flag == FALSE) {
-    draws[,
-          `:=`(
-            t_p = exp(t_p),
-            t_s = exp(t_s),
-            t_lod = exp(t_lod),
-            c_0 = c_0,
-            c_s = c_0 * plogis(c_s)
-          )
-    ][,
-      c_p := c_s * plogis(c_p)
+    dt_draws[, `:=`(
+      t_p = exp(t_p),
+      t_s = exp(t_s),
+      t_lod = exp(t_lod),
+      c_0 = c_0,
+      c_s = c_0 * plogis(c_s)
+    )
+    ][, c_p := c_s * plogis(c_p)
     ]
-    
   }
-  return(draws[])
+  
+  return(dt_draws[])
 }
 
 transform_to_natural <- function(draws) {
   
   draws <- transform_to_model(draws)
   
-  draws[,
-    t_lod := t_p + t_s + t_lod
-  ][,
-    t_s := t_p + t_s,
-  ]
+    draws[, t_lod := t_p + t_s + t_lod
+          ][, t_s := t_p + t_s
+          ]
   
   return(draws[])
 }

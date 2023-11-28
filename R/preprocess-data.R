@@ -2,8 +2,7 @@ process_data <- function(dt,
                          struct_arg = "long") {
   
   # Change some column names
-  setnames(
-    dt, 
+  setnames(dt, 
     c("ORF1ab", "total infections", "ID", "infection_ID",
       "number_vaccines", "N gene Ct", "S gene Ct"), 
     c("ct_unadjusted", "total_infections", "id", "infection_id",
@@ -12,11 +11,11 @@ process_data <- function(dt,
   
   #--- Filtering for only crick tests and tests with ct values + known age
   # Drop private swab types
-  out <- dt[centre == "crick" & 
-              ct_unadjusted != "unknown" & 
-              age != "unknown" & 
-              barcode != "LFT" &
-              swab_type != "Private"]
+  out <- dt[centre == "crick" &
+            ct_unadjusted != "unknown" & 
+            age != "unknown" & 
+            barcode != "LFT" &
+            swab_type != "Private"]
   
   # Drop 1 individual with no vaccine information
   # out[no_vaccines %in% "unknown"]
@@ -24,9 +23,10 @@ process_data <- function(dt,
   
   # Drop 10 individuals with no symptom status (either symptomatic, asymptomatic,
   # or unknown)
-  # out[symptoms %in% "unknown"]
-  out <- out[is.na(symptoms) == TRUE, symptoms := "1"]
-  out <- out[symptoms == "unknown", symptoms := "1"]
+  # out <- out[!symptoms %in% "unknown"]
+  # out <- out[is.na(symptoms) == FALSE]
+  # out <- out[is.na(symptoms) == TRUE, symptoms := "1"]
+  # out <- out[symptoms == "unknown", symptoms := "1"]
   
   # Drop subject with ID 978 due to large mismatch between onset and positive
   # tests
@@ -36,21 +36,19 @@ process_data <- function(dt,
   cols <- c("swab_date", "symptom_onset_date", paste0("date_dose_", 1:4))
   
   out <- out[, (cols) := lapply(.SD, lubridate::dmy), .SDcols = cols
-  ][, ct_unadjusted := as.numeric(ct_unadjusted)][, 
-                                                  ct_n_gene := as.numeric(ct_n_gene)
+  ][, ct_unadjusted := as.numeric(ct_unadjusted)
+  ][, ct_n_gene := as.numeric(ct_n_gene)
   ][, ct_s_gene := as.numeric(ct_s_gene)]
   
   # Fix onset date for this infection episode
-  out[barcode == "RLNB620101",
+  out[barcode == "RLNB620101", 
       symptom_onset_date := lubridate::dmy("18-02-2022")]
   
   # Fix onset date for this infection episode
-  out[id == 857,
-      symptom_onset_date := lubridate::dmy("19-02-2022")]
+  out[id == 857, symptom_onset_date := lubridate::dmy("19-02-2022")]
   
   # fix symptom status for the same individual
-  out[id == 857,
-      symptoms := "1"]
+  out[id == 857, symptoms := "1"]
   
   # fixing the number of doses for an individual with some incorrect data
   out[id == 135, no_vaccines := 3]
@@ -82,10 +80,12 @@ process_data <- function(dt,
              result := "Negative"]
   
   # Counting number of positive swabs (and number of test days) by individual
-  no_pos_cts <- out[(result == "Positive" | result == "Inconclusive"), 
-                    .(no_pos_results = .N, 
-                      ndays = length(unique(swab_date))), 
-                    by = c("id", "infection_id")]
+  no_pos_cts <- out[
+    (result == "Positive" | result == "Inconclusive"), 
+    .(no_pos_results = .N, 
+      ndays = length(unique(swab_date))), 
+    by = c("id", "infection_id")
+  ]
   
   # We are interested in number of timepoints, not number of swabs
   # Some people did > 1 swab on one day
@@ -126,12 +126,11 @@ process_data <- function(dt,
   out[, no_exposures := as.numeric(no_vaccines) + as.numeric(total_infections),
       by = id]
   
-  # Don't think this was changing any symptom status. Check this
   # Add symptomatic status to individuals with missing status but onset date
   # as per advice from Crick collaborators
-  # out[is.na(symptoms),
-  #     symptoms := ifelse(!is.na(symptom_onset_date), "1", "unknown")]
-  
+  out[is.na(symptoms),
+      symptoms := ifelse(!is.na(symptom_onset_date), "1", "unknown")]
+
   # Drop infections with gaps between positive tests of more than 60 days
   ids_spurious_gaps <- out[result == "Positive" & 
                              (abs(t_since_first_pos) > 60 | 
@@ -146,17 +145,22 @@ process_data <- function(dt,
   # combining 5 and greater than 5 exposures,
   # as only a few individuals have more than 5
   out[no_exposures == "5" | no_exposures == "6",
-      no_exposures := factor("5+"), by = id][,
-                                             no_exposures := forcats::fct_drop(no_exposures)
+      no_exposures := factor("5+"), by = id
+      ][, no_exposures := forcats::fct_drop(no_exposures)
       ]
   
   # re-assign those with unknown symptom status to symptomatic (for the time-being,
   # based on a discussion with Crick collaborators)
   
-  # out <- out[!is.na(symptoms), symptoms := "unknown"]
-  out[, symptoms := factor(symptoms,
-                           levels = c("0", "1"),
-                           labels = c("asymptomatic", "symptomatic"))
+  # remove unknown symptom status individuals
+  # out <- out[symptoms != "unknown"]
+  
+  # adding factors for symptom status
+  out[, symptoms := factor(
+    symptoms, 
+    levels = c("0", "1", "unknown"),
+    labels = c("asymptomatic", "symptomatic", "symptomatic")
+    )
   ]
   
   # Drop unused factor levels
@@ -314,8 +318,7 @@ t_last_exposure <- function(dt, imm_delay = 14) {
   mn <- dt_proc[, min(t_since_last_exposure)]
   mx <- dt_proc[, max(t_since_last_exposure)]
   
-  dt_proc[,
-          t_since_last_exposure := (t_since_last_exposure - mn)/(mx - mn),
+  dt_proc[, t_since_last_exposure := (t_since_last_exposure - mn)/(mx - mn),
           c("id", "infection_id")
   ]
   

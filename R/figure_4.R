@@ -8,6 +8,9 @@ figure_4_data <- function(dt_in, ct_threshold) {
                            "predictor",
                            "regressor_category")]
   
+  # removing NAs in the predictor category, which appear due to the baseline
+  # case needing manual attribution. Plus we remove the asymptomatic category
+  # given that by definition, they do not have an incubation period estimate
   dt_out <- dt_proc[!is.na(predictor) == TRUE][predictor != "Asymptomatic"]
   
   return(dt_out)

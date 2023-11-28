@@ -105,21 +105,20 @@ melt_draws <- function(draws, ids = c(".chain", ".iteration", ".draw")) {
 extract_ct_trajectories <- function(fit, variable = "ct", inf_time = TRUE) {
   dt_draws <- extract_draws(fit, params = variable, format = "array")
   
-  obs_out <- dt_draws[,
-                      c("id", "time") := tstrsplit(variable, ",")
-  ][,
-    id := str_remove(id, paste0("ct", "\\["))][,
-                                               time := str_remove(time, "\\]")][,
-                                                                                time := as.numeric(time)][,
-                                                                                                          id := factor(id)][,
-                                                                                                                            c("time", "iteration", "chain", "id", "value")][
-                                                                                                                              order(id, time)]
+  obs_out <- dt_draws[, c("id", "time") := tstrsplit(variable, ",")
+  ][, id := str_remove(id, paste0("ct", "\\["))
+  ][, time := str_remove(time, "\\]")
+  ][, time := as.numeric(time)
+  ][, id := factor(id)
+  ][, c("time", "iteration", "chain", "id", "value")
+  ][order(id, time)]
   
   if (inf_time) {
-    inf_time_draws <- extract_draws(fit, params = "t_inf", format = "array")[,
-                                                                             id := str_remove(variable, "t_inf\\[")][,
-                                                                                                                     id := str_remove(id, "\\]")][,
-                                                                                                                                                  .(id, inf_time = value, iteration, chain)]
+    inf_time_draws <- extract_draws(
+      fit, params = "t_inf", format = "array"
+      )[, id := str_remove(variable, "t_inf\\[")
+      ][, id := str_remove(id, "\\]")
+      ][,.(id, inf_time = value, iteration, chain)]
     
     obs_out <- obs_out[inf_time_draws, on = c("id", "iteration", "chain")]
   }
@@ -174,8 +173,8 @@ extract_pop_ct_trajectories <- function(fit,
                  obs_noise = FALSE)
   
   # returning the number of draws set in function call
-  pop_ct_draws <- pop_ct_draws[,
-                               .SD[.draw %in% 1:no_draws], by = "predictor"]
+  pop_ct_draws <- pop_ct_draws[, .SD[.draw %in% 1:no_draws],
+                               by = "predictor"]
   
   # adding regressor categories
   pop_ct_draws <- add_regressor_categories(pop_ct_draws)
@@ -191,12 +190,13 @@ extract_pop_ct_trajectories <- function(fit,
 extract_posterior_predictions <- function(fit, obs) {
   dt_draws <- extract_draws(fit, "sim_ct", format = "array")
   
-  simulated_cts <- dt_draws[,
-                            obs := str_remove(variable, "sim_ct\\[")][,
-                                                                      obs := str_remove(obs, "\\]")][,
-                                                                                                     .(obs = as.numeric(obs), sim_ct = value, iteration = as.numeric(iteration),
-                                                                                                       chain = as.numeric(chain))
-                                                                      ][order(obs)]
+  simulated_cts <- dt_draws[, obs := str_remove(variable, "sim_ct\\[")
+                            ][, obs := str_remove(obs, "\\]")
+                            ][, .(obs = as.numeric(obs), 
+                                  sim_ct = value, 
+                                  iteration = as.numeric(iteration),
+                                  chain = as.numeric(chain))
+                            ][order(obs)]
   
   if (!missing(obs)) {
     simulated_cts <- merge(

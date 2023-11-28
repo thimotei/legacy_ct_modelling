@@ -91,7 +91,7 @@ epict_to_stan <- function(obs,
                     lsd = incubation_period$inc_sd_p,
                     likelihood = as.numeric(likelihood),
                     output_loglik = as.numeric(output_loglik),
-                    preds = ncol(ct_model$design) - 1,
+                    preds = as.integer(ncol(ct_model$design) - 1),
                     preds_sd = ct_model$preds_sd,
                     design = ct_model$design,
                     switch = as.numeric(switch),
@@ -156,7 +156,7 @@ epict_inits <- function(dt) {
       ),
       c_p_mean = rnorm(1, 0, 1),
       t_p_mean = rnorm(1, 1.61, 0.5),
-      t_lod_mean = rnorm(1, 2.3, 0.5),
+      t_lod_mean = rnorm(1, 3.22, 0.5),
       ind_var = abs(rnorm(dt$K, 0, dt$ind_var_sd*0.1)),
       ind_eta  = matrix(rnorm(dt$P*dt$K, 0, 0.1), nrow = dt$K, ncol = dt$P),
       sigma = truncnorm::rtruncnorm(1, a = 0, mean = 5, sd = 0.5)
@@ -169,40 +169,40 @@ epict_inits <- function(dt) {
 
     if (dt$preds > 0) {
       if (dt$adj_t_p > 0) {
-        inits$beta_t_p <- rnorm(dt$preds, 0, 0.01)
+        inits$beta_t_p <- array(rnorm(dt$preds, 0, 0.01))
       }
       if (dt$adj_t_s > 0) {
-        inits$beta_t_s <- rnorm(dt$preds, 0, 0.01)
+        inits$beta_t_s <- array(rnorm(dt$preds, 0, 0.01))
       }
       if (dt$adj_t_lod > 0) {
-        inits$beta_t_lod <- rnorm(dt$preds, 0, 0.01)
+        inits$beta_t_lod <- array(rnorm(dt$preds, 0, 0.01))
       }
       if (dt$adj_c_p > 0) {
-        inits$beta_c_p <- rnorm(dt$preds,  0, 0.01)
+        inits$beta_c_p <- array(rnorm(dt$preds,  0, 0.01))
       }
       if (dt$adj_c_s > 0) {
-        inits$beta_c_s <- rnorm(dt$preds,  0, 0.01)
+        inits$beta_c_s <- array(rnorm(dt$preds,  0, 0.01))
       }
       if (dt$adj_inc_mean > 0) {
-        inits$beta_inc_mean <- rnorm(dt$preds, 0, 0.01)
+        inits$beta_inc_mean <- array(rnorm(dt$preds, 0, 0.01))
       }
       if (dt$adj_inc_sd > 0) {
-        inits$beta_inc_sd <- rnorm(dt$preds, 0, 0.01)
+        inits$beta_inc_sd <- array(rnorm(dt$preds, 0, 0.01))
       }
     }
 
     if (dt$ct_preds > 0) {
       if (dt$adj_ct > 0) {
-        inits$beta_ct_shift <- rnorm(dt$ct_preds, 0, 0.001)
-        inits$beta_ct_scale <- rnorm(dt$ct_preds, 0, 0.001)
+        inits$beta_ct_shift <- array(rnorm(dt$ct_preds, 0, 0.001))
+        inits$beta_ct_scale <- array(rnorm(dt$ct_preds, 0, 0.001))
       }
     }
 
     if (dt$any_onsets == 1) {
 
-      inits$inc_mean <- as.array(rnorm(1, dt$lmean[1], dt$lmean[2] * 0.1))
+      inits$inc_mean <- array(rnorm(1, dt$lmean[1], dt$lmean[2] * 0.1))
 
-      inits$inc_sd <- as.array(truncnorm::rtruncnorm(
+      inits$inc_sd <- array(truncnorm::rtruncnorm(
         n = 1, a = 0, mean = dt$lsd[1], sd = dt$lsd[2] * 0.1))
     }
     return(inits)

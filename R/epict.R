@@ -18,9 +18,9 @@ epict <- function(obs,
                   ...) {
   
   if(informative_priors == FALSE) {
-    model = load_epict_model(informative_priors = FALSE)
+    model <- load_epict_model(informative_priors = FALSE)
   } else {
-    model = load_epict_model(informative_priors = TRUE)
+    model <- load_epict_model(informative_priors = TRUE)
   }
   
   stan_data <- as_data_list(
@@ -37,12 +37,13 @@ epict <- function(obs,
     likelihood = likelihood, 
     output_loglik = output_loglik
   )
-
+  
   fit <- model$sample(
     data = stan_data,
     init = epict_inits(stan_data),
     seed = seed_manual,
     ...
   )
+  
   return(fit)
 }

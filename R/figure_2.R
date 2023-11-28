@@ -1,4 +1,4 @@
-figure_2_panel_a <- function(dt) {
+figure_2_panel_a <- function(dt, flip_arg = FALSE) {
   
   dt_plot <- data.table::copy(dt)
   
@@ -12,8 +12,8 @@ figure_2_panel_a <- function(dt) {
                    size = 1.35,
                    alpha = 0.75) + 
     labs(colour = "Dose") + 
-    ggsci::scale_colour_nejm() +  
     guides(colour = guide_legend(override.aes = list(alpha = 1))) +
+    ggsci::scale_color_jco() + 
     new_scale_colour() +
     geom_point(aes(x = date,
                    y = new_id,
@@ -22,10 +22,10 @@ figure_2_panel_a <- function(dt) {
                    shape = `VOC/event`),
                size = 2) +
     theme_minimal() +
-    theme(axis.text.y = element_blank(),
-          axis.ticks.y = element_blank(),
-          axis.line.y = element_blank(),
-          panel.grid.major.y = element_blank()) +
+    # theme(axis.text.x = element_blank(),
+    #       axis.ticks.x = element_blank(),
+    #       axis.line.x = element_blank(),
+    #       panel.grid.major.x = element_blank()) +
     # scale_x_continuous(breaks = c(ymd("2021-01-01"),
     #                               ymd("2021-07-01"),
     #                               ymd("2022-01-01")),
@@ -33,16 +33,62 @@ figure_2_panel_a <- function(dt) {
     #                               "July 2021",
     #                               "Janurary 2022")) + 
     labs(x = "Date", y = "Participant") + 
+    scale_x_date(date_breaks = "3 month", date_labels =  "%b %Y") 
     scale_colour_brewer(palette = "Set1") 
+  
+  if(flip_arg == FALSE) {
+    
+    p_out <- p_out + 
+      theme(axis.text.y = element_blank(),
+            axis.ticks.y = element_blank(),
+            axis.line.y = element_blank(),
+            panel.grid.major.y = element_blank())
+    
+  } else {
+    
+    p_out <- p_out + 
+      coord_flip() + 
+      theme(axis.text.x = element_blank(),
+            axis.ticks.x = element_blank(),
+            axis.line.x = element_blank(),
+            panel.grid.major.x = element_blank())
+    
+  }
+  
+  return(p_out)
+  
+}
+
+figure_2_ct_box_plot <- function(dt_in, 
+                                 regressor_category_arg, 
+                                 factor_arg) {
+  dt_proc <- copy(dt_in)
+  
+  dt_plot <- dt_proc[
+    `Regressor category` == regressor_category_arg
+  ][, Regressor := forcats::fct_relevel(Regressor, factor_arg)
+  ]
+  
+  p_out <- ggplot(data = dt_plot, 
+                  aes(x = Regressor, y = ct_value)) +
+    geom_point(aes(colour = Regressor),
+               position = position_jitter(width = 0.3), 
+               alpha = 0.25) + 
+    geom_boxplot(aes(colour = Regressor, fill = Regressor),
+                 alpha = 0.1) + 
+    scale_y_reverse() + 
+    theme_minimal() + 
+    labs(y = "Ct value") + 
+    theme(legend.position = "none")
   
   return(p_out)
   
 }
 
 figure_2_panel_b <- function(dt, voc_arg){
-
+  
   obs <- data.table::copy(dt)
-
+  
   obs_plot <- copy(obs)[
     , no_vaccines := forcats::fct_relevel(no_vaccines, "2")
   ][
@@ -50,14 +96,14 @@ figure_2_panel_b <- function(dt, voc_arg){
   ]
   
   obs <- obs[VOC %in% voc_arg]
-
+  
   obs[, combo.id := paste0(id,".",infection_id)]
   obs[, clean.id := .GRP, by = "combo.id"][, clean.id := as.factor(clean.id)]
   obs[, last_swab := max(t_since_first_pos), by = c("clean.id")]
-
+  
   plot_data <- obs[t_since_first_pos >= -10]
   plot_data[, clean.id := forcats::fct_reorder(clean.id, last_swab)]
-
+  
   p <- plot_data %>%
     ggplot(aes(x = t_since_first_pos,
                y = clean.id,
@@ -94,6 +140,6 @@ figure_2_panel_b <- function(dt, voc_arg){
           panel.grid.major.y = element_blank()) +
     labs(x = "Days since first positive test") +
     facet_rep_wrap(~VOC, scales = "free")
-
+  
   return(p)
 }

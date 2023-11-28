@@ -35,7 +35,6 @@ calculate_t_ct_threshold <- function(dt_in,
   ]
   
   pre_peak[, direction := "up"]
-  
   post_peak <- dt_in[t > t_p, .SD[which.min(abs(ct_value - ct_threshold))],
                                by = c(".draw",
                                       "inc_mean_nat",
@@ -46,9 +45,7 @@ calculate_t_ct_threshold <- function(dt_in,
         "regressor_category", 
         "t")
   ]
-  
   post_peak[, direction := "down"]
-  
   dt_out <- rbind(pre_peak, post_peak)
   
   return(dt_out)

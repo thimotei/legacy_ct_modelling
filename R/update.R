@@ -1,32 +1,34 @@
 update_variable_labels <- function(draws, reverse = FALSE) {
-
-draws <- data.table::copy(draws)
-params <- c(
-  "c_0", "c_p", "c_s", "t_p", "t_s", "t_lod", "inc_mean", "inc_sd",
-  "nat_inc_mean", "nat_inc_sd", "ct_shift", "ct_scale"
-)
-
-clean_params <- c(
-  "Ct value at LOD",
-  "Ct value at peak",
-  "Ct value at switch",
-  "Time of peak",
-  "Time of switch",
-  "Time until LOD",
-  "Incubation period (log mean)",
-  "Incubation period (log sd)",
-  "Incubation period (mean)",
-  "Incubation period (sd)",
-  "Ct intercept adjustment",
-  "Ct multiplicative adjustment"
-)
-
-if (reverse) {
-  params <- rev(params)
-  clean_params <- rev(clean_params)
-}
-
-  draws <- draws[variable %in% params][,
+  
+  draws <- data.table::copy(draws)
+  params <- c(
+    "c_0", "c_p", "c_s", "t_p", "t_s", "t_lod", "inc_mean", "inc_sd",
+    "nat_inc_mean", "nat_inc_sd", "ct_shift", "ct_scale"
+  )
+  
+  clean_params <- c(
+    "Ct value at LOD",
+    "Ct value at peak",
+    "Ct value at switch",
+    "Time of peak",
+    "Time of switch",
+    "Time until PCR-",
+    "Incubation period (log mean)",
+    "Incubation period (log sd)",
+    "Incubation period (mean)",
+    "Incubation period (sd)",
+    "Ct intercept adjustment",
+    "Ct multiplicative adjustment"
+  )
+  
+  if (reverse) {
+    params <- rev(params)
+    clean_params <- rev(clean_params)
+  }
+  
+  draws <- draws[
+    variable %in% params
+  ][,
     variable := factor(
       variable,
       levels = params,
@@ -39,9 +41,9 @@ if (reverse) {
 add_baseline_to_draws <- function(adj_draws, predictor_label, onsets_flag) {
   
   adj_draws <- rbind(
-    extract_param_draws(draws, onsets = onsets_flag)[,
-      predictor := predictor_label
-    ],
+    extract_param_draws(
+      draws, onsets = onsets_flag)[, predictor := predictor_label
+      ],
     adj_draws
   )[, predictor := factor(predictor)]
   
@@ -63,7 +65,7 @@ add_regressor_categories <- function(dt) {
                       "5+ exposures"), 
      regressor_category := "Number of exposures"]
   
-  dt[predictor %in% c("Symptomatic", "Asymptomatic"),
+  dt[predictor %in% c("Symptomatic", "Asymptomatic", "Unknown"),
      regressor_category := "Symptom status"]
   
   dt[predictor %like% "Baseline", regressor_category := "baseline"]
@@ -86,7 +88,7 @@ update_predictor_labels <- function(dt) {
              ),
              labels = c(
                "2 vaccines",
-               "Asymptomatic", "Symptom status unknown",
+               "Asymptomatic", "Unknown",
                "Delta", "Omicron (BA.2)",
                "Time since last dose",
                "3 exposures", "5+ exposures",

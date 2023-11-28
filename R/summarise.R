@@ -124,7 +124,9 @@ summarise_ct_traj <- function(dt,
 }
 
 summarise_effect_sizes_natural <- function(draws,
-                                           add_baseline_flag = TRUE) {
+                                           ct_model = ct_model,
+                                           add_baseline_flag = TRUE,
+                                           onsets_flag = TRUE) {
   adj_params <- c("c_p", "t_p", "t_lod")
   
   if(add_baseline_flag == TRUE) {
@@ -134,13 +136,15 @@ summarise_effect_sizes_natural <- function(draws,
                              "4 exposures",
                              "Age: 35-49")
     
-    adj_draws <- adjust_params(draws, design = ct_model$design, onsets = FALSE) 
+    adj_draws <- adjust_params(draws, 
+                               design = ct_model$design,
+                               onsets = onsets_flag) 
     
     adj_draws <- adj_draws %>% 
       update_predictor_labels()
     
     adj_draws <- add_baseline_to_draws(
-      adj_draws, "Omicron (BA.1)", onsets_flag = F)
+      adj_draws, "Omicron (BA.1)", onsets_flag = onsets_flag)
   
     baseline_description <- "Baseline:
                              Omicron,  
@@ -151,18 +155,20 @@ summarise_effect_sizes_natural <- function(draws,
     # adding baseline case with long description, for legend and vertical lines
     adj_draws <- add_baseline_to_draws(adj_draws,
                                        baseline_description,
-                                       onsets_flag = FALSE)
+                                       onsets_flag = onsets_flag)
     
     # adding the baseline results again for each subcategory, to plot
     # the results separately for each regressor category
-    adj_draws <- add_baseline_to_draws(adj_draws, "4 exposures", onsets_flag = F)
-    adj_draws <- add_baseline_to_draws(adj_draws, "Symptomatic", onsets_flag = F)
-    adj_draws <- add_baseline_to_draws(adj_draws, "Age: 35-49", onsets_flag = F)
+    adj_draws <- add_baseline_to_draws(adj_draws, "4 exposures", onsets_flag = onsets_flag)
+    adj_draws <- add_baseline_to_draws(adj_draws, "Symptomatic", onsets_flag = onsets_flag)
+    adj_draws <- add_baseline_to_draws(adj_draws, "Age: 35-49", onsets_flag = onsets_flag)
   } else {
     
     baseline_predictors <- c("Omicron")
     
-    adj_draws <- adjust_params(draws, design = ct_model$design, onsets = FALSE) 
+    adj_draws <- adjust_params(draws, 
+                               design = ct_model$design, 
+                               onsets = onsets_flag) 
     
     adj_draws <- adj_draws %>% 
       update_predictor_labels()
@@ -170,11 +176,11 @@ summarise_effect_sizes_natural <- function(draws,
     adj_draws <- add_baseline_to_draws(
       adj_draws,
       "Omicron (BA.1)", 
-      onsets_flag = F)
+      onsets_flag = onsets_flag)
   }
   
   pop_draws <- extract_ct_params(adj_draws, by = "predictor", mean = FALSE) %>% 
-    transform_to_model()
+    transform_to_natural()
   
   pop_draws_long <- melt(pop_draws[, !"c_0"],
                          measure.vars = adj_params)

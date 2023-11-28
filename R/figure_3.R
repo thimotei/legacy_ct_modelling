@@ -151,3 +151,69 @@ figure_3_subpanel <- function(p1, p2, rel_widths_arg) {
   
   return(plot_out)
 }
+
+figure_3_t_lod <- function(dt_in, ct_threshold = 37) {
+  
+  dt_proc <- copy(dt_in)
+  
+  dt_out <- dt_proc[t > t_p, .SD[which.min(abs(ct_value - ct_threshold))],
+                    by = c(".draw",
+                           "predictor",
+                           "regressor_category")]
+  
+  return(dt_out)
+}
+
+figure_3_t_lod_sum <- function(dt_in, ct_threshold = 37) {
+  
+  dt_proc <- copy(dt_in)
+  
+  dt_proc_cal <- dt_proc[t > t_p, .SD[which.min(abs(ct_value - ct_threshold))],
+                         by = c(".draw",
+                                "predictor",
+                                "regressor_category")]
+  
+  dt_out <- dt_proc_cal[, .(variable = "Time until PCR-",
+                            lo30 = quantile(t, 0.35), 
+                            lo60 = quantile(t, 0.20),
+                            lo90 = quantile(t, 0.05),
+                            lo95 = quantile(t, 0.025),
+                            median = quantile(t, 0.5),
+                            hi30 = quantile(t, 0.65), 
+                            hi60 = quantile(t, 0.8),
+                            hi90 = quantile(t, 0.95),
+                            hi95 = quantile(t, 0.975)),
+                        by = c("predictor", "regressor_category")]
+  
+  return(dt_out)
+}
+
+add_baseline_effect_sizes <- function(dt_in) {
+  # manually producing a single row with the same structure as the standard
+  # effect size panel, to add the baseline draw
+  dt_proc <- dt_in[, .(variable = "Time until PCR-",
+                       lo30 = quantile(t, 0.35), 
+                       lo60 = quantile(t, 0.20),
+                       lo90 = quantile(t, 0.05),
+                       lo95 = quantile(t, 0.025),
+                       median = quantile(t, 0.5),
+                       hi30 = quantile(t, 0.65), 
+                       hi60 = quantile(t, 0.8),
+                       hi90 = quantile(t, 0.95),
+                       hi95 = quantile(t, 0.975)),
+                   by = c("predictor", "regressor_category")]
+  
+  # same baseline description
+  baseline_description <- "Baseline:
+                         Omicron,
+                         4 exposures,
+                         symptomatic,
+                         Age:35—49"
+  
+  # isolating the baseline category 
+  dt_out <- dt_proc[
+    predictor == "Omicron (BA.1)"
+  ][, regressor_category := baseline_description]
+  
+  return(dt_out) 
+}
