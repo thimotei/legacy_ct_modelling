@@ -128,17 +128,12 @@ extract_ct_trajectories <- function(fit, variable = "ct", inf_time = TRUE) {
   return(obs_out[])
 }
 
-extract_pop_ct_trajectories <- function(fit,
-                                        no_draws = 1000,
-                                        tmin = 0,
-                                        tmax = 30,
-                                        tstep = 0.1,
-                                        lower_ct_limit = 40,
-                                        separate_baseline_covariates = TRUE,
-                                        baseline_tag = "Baseline",
-                                        other_covariates = TRUE,
-                                        censor_output = TRUE,
-                                        onsets_flag = onsets_flag) {
+extract_pop_ct_trajectories <- function(
+    fit, no_draws = 1000, tmin = 0, tmax = 30, tstep = 0.1,
+    lower_ct_limit = 40, separate_baseline_covariates = TRUE,
+    baseline_tag = "Baseline", other_covariates = TRUE, 
+    censor_output = TRUE, onsets_flag = onsets_flag) {
+  
   # Extract posterior predictions
   draws <- extract_draws(fit)
   
@@ -167,8 +162,8 @@ extract_pop_ct_trajectories <- function(fit,
   } 
   
   # simulating Ct trajectories
-  pop_ct_draws <- adj_draws %>%
-    transform_to_model(., onsets_flag = onsets_flag) %>%
+  pop_ct_draws <- adj_draws |> 
+    transform_to_model(., onsets_flag = onsets_flag) |>
     simulate_cts(time_range = seq(tmin, tmax, tstep), 
                  obs_noise = FALSE)
   

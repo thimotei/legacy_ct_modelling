@@ -19,9 +19,8 @@ draws <- extract_draws(fit_main)
 
 # the next command takes a long time. A high number of draws was used 
 # (no_draws) for the figures
-dt_pop_ct_draws <- extract_pop_ct_trajectories(fit_main,
-                                               no_draws = 2000,
-                                               onsets = TRUE)
+dt_pop_ct_draws <- extract_pop_ct_trajectories(
+  fit_main, no_draws = 2000, onsets = TRUE)
 
 # summarising Ct trajectories
 pop_ct_draws_sum <- summarise_ct_traj(dt_pop_ct_draws, pop_flag = TRUE)
