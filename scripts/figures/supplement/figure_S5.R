@@ -72,7 +72,7 @@ ggsave("outputs/figures/pngs/supplement/figure_S5.png",
        height = 7,
        bg = "white")
 
-ggsave("outputs/figures/pdfs/supplement/timing_full_cohort.pdf", 
+ggsave("outputs/figures/pdfs/supplement/figure_S5.pdf", 
        p_timing,
        width = 10,
        height = 7,

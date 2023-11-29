@@ -1,7 +1,12 @@
+# This script requires the more full LEGACY dataset, which isn't 
+# available as part of this publication. We use it to determine
+# infection naive individuals for figure_S4. Use the script
+# for figure_S4 if you wish to remake that figure
+
 # isolating all individuals with no infection episodes before joining the study
 # remember this does not necessarily mean they have not been infected. this
 # just means they hadn't had a detected infection before the start of the study
-load("data/Legacy_DataAnnotatedDateSeries_2023-11-09.RData")
+# load("~/lshtm/legacy_correlates/data/legacy_DataAnnotatedDateSeries_2023-11-09.RData")
 
 # checking everyone in the Ct study is in the full dataset 
 ct_study_ids <- obs[, unique(data_id)]

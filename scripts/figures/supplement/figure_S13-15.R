@@ -11,7 +11,7 @@ dt_pop_priors_wide <- sample_pop_priors(
   c_lod = 40,
   switch = FALSE, 
   data_format = "wide", 
-  scale_type = "model")
+  scale_type = "natural")
 
 # Sampling from population-level priors - long format
 dt_pop_priors_long <- sample_pop_priors(
@@ -19,7 +19,7 @@ dt_pop_priors_long <- sample_pop_priors(
   c_lod = 40,
   switch = FALSE, 
   data_format = "long", 
-  scale_type = "model")
+  scale_type = "natural")
 
 # Adding a sample ID, so prior samples are easier to match with posterior samples
 dt_pop_priors_long[, sample_id := 1:.N, by = parameter]
@@ -113,7 +113,8 @@ dt_ind_wide[, c_lod := c_0]
 
 # Merging with onset data
 dt_ind_wide <- merge(
-  dt_ind_wide[, id := factor(id)], onset_data, by = "id")
+  dt_ind_wide[, id := factor(id)],
+  onset_data[, id := factor(id)], by = "id")
 
 # Adjusting onset dates so they are relative to inferred infection times
 dt_ind_wide_adj <- copy(dt_ind_wide)
@@ -243,41 +244,48 @@ p_ba2 <- ggplot() +
        title = "Omicron (BA.2) timing posterior distributions") 
 
 # Saving data required to make plot
-saveRDS(dt_t_prior_plot_all, "outputs/plot_data/supplement/figure_S13-15.rds")
+saveRDS(dt_t_prior_plot_all,
+  "outputs/plot_data/supplement/figure_S13-15.rds")
 
 # saving Delta plot
-ggsave("outputs/figures/pdfs/supplement/pdfs/figure_S13.pdf", 
+ggsave("outputs/figures/pdfs/supplement/figure_S13.pdf", 
        p_delta,
        width = 10,
-       height = 10)
+       height = 10,
+       bg = "white")
 
 # saving Delta plot
-ggsave("outputs/figures/pdfs/supplement/pngs/figure_S13.png", 
+ggsave("outputs/figures/pngs/supplement/figure_S13.png", 
        p_delta,
        width = 10,
-       height = 10)
+       height = 10,
+       bg = "white")
 
 # saving BA.1 plot
-ggsave("outputs/figures/pdfs/supplement/pdfs/figure_S14.pdf", 
+ggsave("outputs/figures/pdfs/supplement/figure_S14.pdf", 
        p_ba1,
        width = 10,
-       height = 10)
+       height = 10,
+       bg = "white")
 
 # saving BA.1 plot
-ggsave("outputs/figures/pdfs/supplement/pngs/figure_S14.png", 
+ggsave("outputs/figures/pngs/supplement/figure_S14.png", 
        p_ba1,
        width = 10,
-       height = 10)
+       height = 10,
+       bg = "white")
 
 # saving BA.2 plot
-ggsave("outputs/figures/pdfs/supplement/pdfs/figure_S15.pdf", 
+ggsave("outputs/figures/pdfs/supplement/figure_S15.pdf", 
        p_ba2,
        width = 10,
-       height = 10)
+       height = 10,
+       bg = "white")
 
 # saving BA.2 plot
-ggsave("outputs/figures/pdfs/supplement/pngs/figure_S15.png", 
+ggsave("outputs/figures/pngs/supplement/figure_S15.png", 
        p_ba2,
        width = 10,
-       height = 10)
+       height = 10,
+       bg = "white")
 

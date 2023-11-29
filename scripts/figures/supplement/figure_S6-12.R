@@ -1,5 +1,3 @@
-library(tidybayes)
-
 # Loading data and model structure, etc.
 source("scripts/setup/main.R")
 
@@ -346,29 +344,36 @@ saveRDS(dt_sims_sum_all, "outputs/plot_data/supplement/figure_S10-12.rds")
 ggsave("outputs/figures/pdfs/supplement/figure_S10.pdf",
        p_delta_fits,
        width = 8,
-       height = 8)
+       height = 8,
+       bg = "white")
 
 ggsave("outputs/figures/pngs/supplement/figure_S10.png",
        p_delta_fits,
        width = 8,
-       height = 8)
+       height = 8,
+       bg = "white")
 
 ggsave("outputs/figures/pdfs/supplement/figure_S11.pdf",
        p_ba1_fits,
        width = 8,
-       height = 10)
+       height = 10,
+       bg = "white")
 
 ggsave("outputs/figures/pngs/supplement/figure_S11.png",
        p_ba1_fits,
        width = 8,
-       height = 10)
+       height = 10,
+       bg = "white")
 
 ggsave("outputs/figures/pdfs/supplement/figure_S12.pdf",
        p_ba2_fits,
        width = 8,
-       height = 10)
+       height = 10,
+       bg = "white")
 
 ggsave("outputs/figures/pngs/supplement/figure_S12.png",
        p_ba2_fits,
        width = 8,
-       height = 10)
+       height = 10,
+       bg = "white")
+

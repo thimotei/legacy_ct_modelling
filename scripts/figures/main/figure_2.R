@@ -83,13 +83,13 @@ p_fig_2_b_c <- plot_grid(p_fig_2_b, p_fig_2_c, ncol = 1,
 p_fig_2 <- plot_grid(p_fig_2_a, p_fig_2_b_c, 
                      ncol = 2)
 
-ggsave("outputs/figures/pngs/figure_2.png",
+ggsave("outputs/figures/pngs/main/figure_2.png",
        p_fig_2,
        width = 14,
        height = 10,
        bg = "white")
 
-ggsave("outputs/figures/pdfs/figure_2.pdf",
+ggsave("outputs/figures/pdfs/main/figure_2.pdf",
        p_fig_2,
        width = 14,
        height = 10,

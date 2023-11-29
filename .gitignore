@@ -1,8 +1,8 @@
 admin/
 data_raw/
 manuscript/
-outputs-raw/
-outputs/
+outputs/fits
+outputs/plot_data
 .Rproj.user
 .DS_Store
 */.DS_Store

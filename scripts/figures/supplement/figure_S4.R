@@ -1,9 +1,14 @@
-# running the script which loads the full LEGACY dataset and
+# Script which loads the full LEGACY dataset and
 # works out who hadn't had an infection detected prior to this 
 # study
 
-# This script requires the full LEGACY dataset
-source("scripts/tables/table_S1.R")
+# This script requires the full LEGACY dataset - this won't run 
+# for others, so its commented out by default
+# source("scripts/tables/table_S1.R")
+
+# Run this instead
+dt_ct_no_inf_before_start <- readRDS(
+  "outputs/plot_data/supplement/figure_S4.rds")
 
 # Plotting the number of observations available per patient
 p1_inf_naive <- dt_ct_no_inf_before_start[

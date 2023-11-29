@@ -1,5 +1,4 @@
 #--- Figure S18
-#--- Plotting the Ct value adjustment effect size posteriors
 
 # sourcing the setup file, to load in the data, the model structure, etc
 source("scripts/setup/main.R")

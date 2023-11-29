@@ -142,15 +142,20 @@ p3_4 <- figure_3_subpanel(p3_41, p3_42, rel_widths_arg = c(2, 1))
 # Putting all four panels together
 p31 <- plot_grid(p3_1, p3_2, p3_3, p3_4, nrow = 2)
 
-# Saving the final figure
-ggsave("outputs/figures/pngs/figure_3.png",
-       p31,
+# Saving all three required data.tables to build the overall plot
+saveRDS(dt_pop_ct_draws, "outputs/plot_data/main/figure_3_traj.rds")
+saveRDS(pop_ct_draws_sum, "outputs/plot_data/main/figure_3_sum.rds")
+saveRDS(effect_size_summary_natural, "outputs/plot_data/main/figure_3_eff.rds")
+
+# Saving final figure
+ggsave("outputs/figures/pngs/main/figure_3.png",
+       p31_inf_lkj_prior,
        width = 12,
        height = 10,
        bg = "white")
 
-ggsave("outputs/figures/pdfs/figure_3.pdf",
-       p31,
+ggsave("outputs/figures/pdfs/main/figure_3.pdf",
+       p31_inf_lkj_prior,
        width = 12,
        height = 10,
        bg = "white")

@@ -73,14 +73,16 @@ figure_4 <- plot_grid(
   figure_43_w_marginals, figure_44_w_marginals,
   ncol = 2)
 
-# Saving the final figure
-ggsave("outputs/figures/pngs/figure_4.png",
+# Saving all three required data.tables to build the overall plot
+saveRDS(dt_figure_4, "outputs/plot_data/main/figure_4.rds")
+
+ggsave("outputs/figures/pdfs/main/figure_4.pdf",
        figure_4,
        width = 11,
        height = 8,
        bg = "white")
 
-ggsave("outputs/figures/pdfs/figure_4.pdf",
+ggsave("outputs/figures/pngs/main/figure_4.png",
        figure_4,
        width = 11,
        height = 8,

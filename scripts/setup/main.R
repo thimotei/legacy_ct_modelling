@@ -12,6 +12,10 @@ library(here)
 library(ggnewscale)
 library(cowplot)
 library(forcats)
+library(lemon)
+library(tidybayes)
+library(ggsci)
+library(ggridges)
 
 # loading all functions in package directory
 devtools::load_all()

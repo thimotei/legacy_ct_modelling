@@ -1,8 +1,6 @@
-sample_pop_priors <- function(n_samples,
-                              c_lod = 40,
-                              switch = FALSE,
-                              data_format = "long",
-                              scale_type = "natural") {
+sample_pop_priors <- function(
+    n_samples, c_lod = 40, switch = FALSE,
+    data_format = "long", scale_type = "natural") {
   
   dt_proc <- data.table(
     c_0 = truncnorm::rtruncnorm(
