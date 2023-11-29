@@ -99,6 +99,14 @@ saveRDS(dt_inc_period, "outputs/plot_data/supplement/figure_S22.rds")
 ggsave("outputs/figures/pdfs/supplement/figure_S22.pdf",
        p_ip,
        width = 8,
-       height = 8)
+       height = 8,
+       bg = "white")
+
+# Saving the final plot
+ggsave("outputs/figures/pngs/supplement/figure_S22.png",
+       p_ip,
+       width = 8,
+       height = 8,
+       bg = "white")
 
 

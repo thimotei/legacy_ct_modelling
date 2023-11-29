@@ -30,9 +30,8 @@ dt_proc <- voc_status_attribution(dt_proc)
 
 # Do additional processing to filter for the desired number of swabs
 # per positive episode
-obs <- subset_data(dt_proc,
-                   no_pos_swabs = 2,
-                   first_pos_min = -15)
+obs <- subset_data(
+  dt_proc, no_pos_swabs = 2, first_pos_min = -15)
 
 cols_to_remove <- c("centre", "sex", "age", "barcode", "Sequenced",
                     "dose_1", "dose_2", "dose_3", "dose_4")

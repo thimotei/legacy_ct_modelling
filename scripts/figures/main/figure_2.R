@@ -105,7 +105,7 @@ p_fig_2 <- plot_grid(
   ncol = 2)
 
 # Saving plot data
-saveRDS(obs, "outputs/plot_data/figure_2.rds")
+saveRDS(obs, "outputs/plot_data/main/figure_2.rds")
 
 # Saving plots
 ggsave("outputs/figures/pngs/main/figure_2.png",
