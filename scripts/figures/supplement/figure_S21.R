@@ -1,4 +1,6 @@
-# Script for figure 4
+library(ggExtra)
+
+# Figure S21
 
 # Sourcing the setup file, to load in the data, the model structure, etc
 source("scripts/setup/main.R")
@@ -21,7 +23,7 @@ draws <- extract_draws(fit_main)
 
 # Using the Ct trajectories to calculate the incubation period draws and
 # peak Ct values
-dt_figure_4 <- figure_4_data(dt_pop_ct_draws, ct_threshold = 20)
+dt_figure_4 <- figure_4_data(dt_pop_ct_draws, ct_threshold = 25)
 
 #--- Bivariate plots of incubation period samples and peak Ct value samples,
 #--- one panel at a time for each covariate category, much the same as 
@@ -57,7 +59,7 @@ figure_43 <- figure_4_panel(
 # Adding marginal distributions - using ggExtra package
 figure_43_w_marginals <- add_marginals(figure_43)
 
-# Age panel
+# Adding marginal distributions - using ggExtra package
 figure_44 <- figure_4_panel(
   dt_figure_4, regressor_category_arg = "Age", 
   title_arg = "Age", factor_arg = c(
@@ -73,14 +75,16 @@ figure_4 <- plot_grid(
   figure_43_w_marginals, figure_44_w_marginals,
   ncol = 2)
 
-# Saving the final figure
-ggsave("outputs/figures/pngs/figure_4.png",
+# Saving all three required data.tables to build the overall plot
+saveRDS(dt_figure_4, "outputs/plot_data/supplement/figure_S21.rds")
+
+ggsave("outputs/figures/pdfs/supplement/figure_S21.pdf",
        figure_4,
        width = 11,
        height = 8,
        bg = "white")
 
-ggsave("outputs/figures/pdfs/figure_4.pdf",
+ggsave("outputs/figures/pngs/supplement/figure_S21.png",
        figure_4,
        width = 11,
        height = 8,

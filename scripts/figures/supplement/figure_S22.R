@@ -1,25 +1,16 @@
-# incubation period plots
-library(ggplot2)
-library(cowplot)
 library(ggridges)
-library(lemon)
-library(scico)
-library(ggsci)
 library(gridExtra)
-library(data.table)
-library(ggExtra)
 
-# sourcing the setup file, to load in the data, the model structure, etc
+# Sourcing the setup file, to load in the data, the model structure, etc
 source("scripts/setup/main.R")
 
-# either run inference script, which saves a fit object, or load a saved fit
+# Either run inference script, which saves a fit object, or load a saved fit
 # object from a previous inference
 fit_main <- readRDS("outputs/fits/main.rds")
 draws <- extract_draws(fit_main)
 
-adj_draws <- adjust_params(draws, 
-                           design = ct_model$design, 
-                           onsets_flag = TRUE) 
+adj_draws <- adjust_params(
+  draws, design = ct_model$design, onsets_flag = TRUE) 
 
 adj_draws <- adj_draws %>% update_predictor_labels()
 
@@ -50,6 +41,7 @@ factor_order <- c(
 
 dt_inc_period[, predictor := fct_relevel(predictor, factor_order)]
 
+# Plotting incubation periods as ridge plots, using ggridges
 p_ip_dist <- dt_inc_period[
   !is.na(regressor_category) & predictor != "Asymptomatic"] %>% 
   ggplot() + 
@@ -64,7 +56,7 @@ p_ip_dist <- dt_inc_period[
   theme(legend.position = "none",
         axis.title.x = element_blank())
 
-# calculating effect sizes: medians and 95% credible intervals of overall 
+# Calculating effect sizes: medians and 95% credible intervals of overall 
 # incubation periods
 dt_inc_period[
   , `:=` (me = quantile(ip_draw, 0.5, na.rm = TRUE),
@@ -72,6 +64,7 @@ dt_inc_period[
           hi = quantile(ip_draw, 0.975, na.rm = TRUE)),
   by = c("predictor", "regressor_category")]
 
+# Plotting the summarised incubation periods
 p_ip_eff <- dt_inc_period[
   !is.na(regressor_category) & predictor != "Asymptomatic"] %>% 
   ggplot() + 
@@ -91,6 +84,7 @@ p_ip_eff <- dt_inc_period[
   theme(legend.position = "none",
         axis.title.x = element_blank())
 
+# Putting the two panels together
 p_ip <- grid.arrange(
   patchworkGrob(
     p_ip_dist + p_ip_eff + 
@@ -98,7 +92,11 @@ p_ip <- grid.arrange(
         title = 'Incubation periods by covariates')),
   bottom = "Time of symptom onset (days since exposure)")
 
-ggsave("outputs/figures/pdfs/supplement/inc_periods.pdf",
+# Saving the data required to remake the figure
+saveRDS(dt_inc_period, "outputs/plot_data/supplement/figure_S22.rds")
+
+# Saving the final plot
+ggsave("outputs/figures/pdfs/supplement/figure_S22.pdf",
        p_ip,
        width = 8,
        height = 8)

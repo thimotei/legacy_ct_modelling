@@ -1,5 +1,7 @@
+# Loading data
 source("scripts/setup/main.R")
 
+# Plotting the number of observations available per patient
 p1_timing <- obs[, .N, by = c("data_id", "VOC", "result")][
   , VOC := fct_relevel(VOC, "Delta")] |> 
   ggplot() +
@@ -12,7 +14,7 @@ p1_timing <- obs[, .N, by = c("data_id", "VOC", "result")][
   scale_colour_nejm() + 
   scale_fill_nejm()
 
-# delay between first viral load data and symptom onset
+# Plotting the observed delay between first viral load data and symptom onset
 p2_timing <- obs[, .(onset_time), by = c("data_id", "VOC")][
   , VOC := fct_relevel(VOC, "Delta")] |>
   unique() |> 
@@ -27,7 +29,7 @@ p2_timing <- obs[, .(onset_time), by = c("data_id", "VOC")][
   scale_colour_nejm() + 
   scale_fill_nejm()
 
-# observed peak viral load
+# Plotting the observed peak viral load
 p3_timing <- obs[, .SD[which.min(ct_value)], by = id
 ][, VOC := fct_relevel(VOC, "Delta")] |>
   ggplot(aes(x = VOC, y = ct_value, colour = VOC, fill = VOC)) +
@@ -43,7 +45,7 @@ p3_timing <- obs[, .SD[which.min(ct_value)], by = id
   scale_colour_nejm() + 
   scale_fill_nejm()
 
-# time to clearance
+# Plotting the observed time to clearance
 p4_timing <- obs[result == "Positive", .SD[which.max(t)], by = id
 ][, VOC := fct_relevel(VOC, "Delta")] |>
   ggplot(aes(x = VOC, y = t, colour = VOC, fill = VOC)) +
@@ -58,13 +60,13 @@ p4_timing <- obs[result == "Positive", .SD[which.max(t)], by = id
   scale_colour_nejm() + 
   scale_fill_nejm()
 
-
+# Putting together the various panels for the final plot
 p_top_row <- p1_timing + p2_timing + plot_layout(guides = "collect")
 p_bottom_row <- p3_timing + p4_timing
-
 p_timing <- plot_grid(p_top_row, p_bottom_row, nrow = 2)
 
-ggsave("outputs/figures/pngs/supplement/timing_full_cohort.png", 
+# Saving final plot
+ggsave("outputs/figures/pngs/supplement/figure_S5.png", 
        p_timing,
        width = 10,
        height = 7,

@@ -2,10 +2,10 @@
 # works out who hadn't had an infection detected prior to this 
 # study
 
-source("scripts/tables/table_s1.R")
+# This script requires the full LEGACY dataset
+source("scripts/tables/table_S1.R")
 
-#--- extra figures with same data
-# no of points available per patient
+# Plotting the number of observations available per patient
 p1_inf_naive <- dt_ct_no_inf_before_start[
   , .N, by = c("data_id", "VOC", "result")][
   , VOC := fct_relevel(VOC, "Delta")] |> 
@@ -19,7 +19,7 @@ p1_inf_naive <- dt_ct_no_inf_before_start[
   scale_colour_nejm() + 
   scale_fill_nejm()
 
-# delay between first viral load data and symptom onset
+# Plotting the observed delay between first viral load data and symptom onset
 p2_inf_naive <- dt_ct_no_inf_before_start[
   , .(onset_time), by = c("data_id", "VOC")][
   , VOC := fct_relevel(VOC, "Delta")] |>
@@ -35,7 +35,7 @@ p2_inf_naive <- dt_ct_no_inf_before_start[
   scale_colour_nejm() + 
   scale_fill_nejm()
 
-# observed peak viral load
+# Plotting the observed peak viral load
 p3_inf_naive <- dt_ct_no_inf_before_start[
   , .SD[which.min(ct_value)], by = id][
   , VOC := fct_relevel(VOC, "Delta")] |>
@@ -52,7 +52,7 @@ p3_inf_naive <- dt_ct_no_inf_before_start[
   scale_colour_nejm() + 
   scale_fill_nejm()
 
-# time to clearance
+# Plotting the observed time to clearance
 p4_inf_naive <- dt_ct_no_inf_before_start[
   result == "Positive", .SD[which.max(t)], by = id][
   , VOC := fct_relevel(VOC, "Delta")] |>
@@ -68,19 +68,22 @@ p4_inf_naive <- dt_ct_no_inf_before_start[
   scale_colour_nejm() + 
   scale_fill_nejm()
 
-
+# Putting together the various panels for the final plot
 p_top_row <- p1_inf_naive + p2_inf_naive + plot_layout(guides = "collect")
 p_bottom_row <- p3_inf_naive + p4_inf_naive
-
 p_inf_naive <- plot_grid(p_top_row, p_bottom_row, nrow = 2)
 
-ggsave("outputs/figures/pngs/supplement/inf_naive.png", 
+# Saving data needed to make the figure
+saveRDS(dt_ct_no_inf_before_start, "outputs/plot_data/supplement/figure_S4.rds")
+
+# Saving the figure
+ggsave("outputs/figures/pngs/supplement/figure_S4.png", 
        p_inf_naive,
        width = 10,
        height = 7,
        bg = "white")
 
-ggsave("outputs/figures/pdfs/supplement/inf_naive.pdf", 
+ggsave("outputs/figures/pdfs/supplement/figure_S4.pdf", 
        p_inf_naive,
        width = 10,
        height = 7,

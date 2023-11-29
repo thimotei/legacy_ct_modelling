@@ -1,60 +1,52 @@
 library(tidybayes)
-library(data.table)
-library(ggplot2)
-library(forcats)
-library(ggridges)
 
+# Loading data and model structure, etc.
 source("scripts/setup/main.R")
 
-# load object with all fitted draws
+# Load object with all fitted draws
 fit <- readRDS("outputs/fits/main.rds")
 
-# subsetting onset and VOC data for merging later
+# Subsetting onset and VOC data for merging later
 onset_data <- obs[, onset_time, by = c("id")] %>% unique()
 voc_data <- obs[, VOC, by = c("id")] %>% unique()
 
-# extracting the individual-level posterior draws from the fit object
-dt_ind_wide <- spread_draws(fit$draws(),
-                            inf_rel[id],
-                            c_0,
-                            t_inf[id],
-                            t_p[id],
-                            t_lod[id],
-                            c_p[id],
-                            sigma) %>% 
+# Extracting the individual-level posterior draws from the fit object
+dt_ind_wide <- spread_draws(
+  fit$draws(), inf_rel[id], c_0, t_inf[id], t_p[id], t_lod[id],
+  c_p[id], sigma) |> 
   data.table()
 
-# adding c_lod, which we assume is the same as c_0 
+# Adding c_lod, which we assume is the same as c_0 
 dt_ind_wide[, c_lod := c_0]
 
-# merging with onset data
+# Merging with onset data
 dt_ind_wide <- merge(dt_ind_wide, onset_data, by = "id")
 
-# adjusting onset dates so they are relative to inferred infection times
+# Adjusting onset dates so they are relative to inferred infection times
 dt_ind_wide_adj <- copy(dt_ind_wide)
-dt_ind_wide_adj[, onset_time_abs := onset_time - quantile(t_inf, 0.5),
-                by = id]
+dt_ind_wide_adj[
+  , onset_time_abs := onset_time - quantile(t_inf, 0.5), by = id]
 
-# make timing of peak relative to first positive test rather than relative to
+# Make timing of peak relative to first positive test rather than relative to
 # the inferred exposure time, which is what the posterior estimates are 
 # relative to as they come out of the inference
 dt_ind_wide_adj[, t_p := t_p - t_inf]
 dt_ind_wide_adj[, t_lod := t_lod - t_inf]
 dt_ind_wide_adj[, t_inf_plot := -t_inf]
 
-# calculating the difference between the symptom onset (relative to first
+# Calculating the difference between the symptom onset (relative to first
 # positive test) and the timing of the peak for each individual
 dt_ind_wide_adj[, diff_t_p_onset := abs(onset_time - t_p), by = id]
 
-# metling for plotting
+# Metling for plotting
 dt_ind_long_adj <- melt(
   dt_ind_wide_adj,
   id.vars = c("id", ".chain", ".iteration", ".draw"))
 
-# merging with VOC data 
+# Merging with VOC data 
 dt_ind_long_adj <- merge(dt_ind_long_adj, voc_data, by = "id")
 
-# timing posteriors plot
+# Timing posteriors plot
 dt_t_plot <- dt_ind_long_adj[
   variable %in% c(
     "t_inf_plot", "t_p", "t_lod", "onset_time")
@@ -73,7 +65,7 @@ dt_t_plot <- dt_ind_long_adj[
       "Time LOD reached",
       "Symptom onset"))]
 
-# plot of all timing posteriors
+# Plot of Delta timing posteriors
 p_t_delta <- ggplot() + 
   geom_density(data = dt_t_plot[VOC == "Delta" & 
                                   variable != "Symptom onset"],
@@ -91,6 +83,7 @@ p_t_delta <- ggplot() +
        y = "Density",
        title = "Delta timing posterior distributions") 
 
+# Plot of BA.1 timing posteriors
 p_t_ba1 <- ggplot() + 
   geom_density(data = dt_t_plot[VOC == "BA.1" & 
                                   variable != "Symptom onset"],
@@ -108,6 +101,7 @@ p_t_ba1 <- ggplot() +
        y = "Density",
        title = "Omicron (BA.1) timing posterior distributions") 
 
+# Plot of BA.2 timing posteriors
 p_t_ba2 <- ggplot() + 
   geom_density(data = dt_t_plot[VOC == "BA.2" & 
                                   variable != "Symptom onset"],
@@ -125,43 +119,44 @@ p_t_ba2 <- ggplot() +
        y = "Density",
        title = "Omicron (BA.2) timing posterior distributions") 
 
-ggsave("outputs/figures/pdfs/supplement/delta_t_posteriors.pdf",
+# Saving timing posterior plots
+ggsave("outputs/figures/pdfs/supplement/figure_S6.pdf",
        p_t_delta,
        width = 10,
        height = 10,
        bg = "white")
 
-ggsave("outputs/figures/pdfs/supplement/ba1_t_posteriors.pdf",
-       p_t_ba1,
-       width = 10,
-       height = 10,
-       bg = "white")
-
-ggsave("outputs/figures/pdfs/supplement/ba2_t_posteriors.pdf",
-       p_t_ba2,
-       width = 10,
-       height = 10,
-       bg = "white")
-
-ggsave("outputs/figures/pngs/supplement/delta_t_posteriors.png",
+ggsave("outputs/figures/pngs/supplement/figure_S6.png",
        p_t_delta,
        width = 10,
        height = 10,
        bg = "white")
 
-ggsave("outputs/figures/pngs/supplement/ba1_t_posteriors.png",
+ggsave("outputs/figures/pdfs/supplement/figure_S7.pdf",
        p_t_ba1,
        width = 10,
        height = 10,
        bg = "white")
 
-ggsave("outputs/figures/pngs/supplement/ba2_t_posteriors.png",
+ggsave("outputs/figures/pngs/supplement/figure_S7.png",
+       p_t_ba1,
+       width = 10,
+       height = 10,
+       bg = "white")
+
+ggsave("outputs/figures/pdfs/supplement/figure_S8.pdf",
        p_t_ba2,
        width = 10,
        height = 10,
        bg = "white")
 
-# Ct value posteriors plot
+ggsave("outputs/figures/pngs/supplement/figure_S8.png",
+       p_t_ba2,
+       width = 10,
+       height = 10,
+       bg = "white")
+
+#--- Ct value posteriors plot
 dt_ct_plot <- dt_ind_long_adj[
   variable %in% c("c_p")
   ][, VOC := factor(
@@ -191,39 +186,40 @@ p_ct <- dt_ct_plot %>%
        title = "Ct value posterior distributions by VOC") + 
   scale_fill_brewer(palette = "Set1", aesthetics = "fill")
 
-ggsave("outputs/figures/pdfs/supplement/ct_posteriors.pdf",
+ggsave("outputs/figures/pdfs/supplement/figure_S9.pdf",
        p_ct,
        width = 8,
        height = 12,
        bg = "white")
 
-ggsave("outputs/figures/pdfs/supplement/ct_posteriors.pdf",
+ggsave("outputs/figures/pngs/supplement/figure_S9.png",
        p_ct,
        width = 8,
        height = 12,
        bg = "white")
 
-# simulating Ct trajectories from individual-level posteriors
+#--- Individual-level fits
+# Simulating Ct trajectories from individual-level posteriors
 dt_sims <- simulate_cts(
   params = dt_ind_wide,
   time_range = seq(0, 30, 1),
   obs_noise = FALSE)
 
-# summarising simulated trajectories
+# Summarising simulated trajectories
 dt_sims_sum <- summarise_ct_traj(dt_sims, pop_flag = FALSE)
 dt_sims_sum_all <- merge(dt_sims_sum, voc_data, by = "id")
 
-# calculating maximum infection time for adjustment
+# Calculating maximum infection time for adjustment
 dt_t_inf <- dt_ind_wide[, .(t_inf_med = quantile(t_inf, 0.5)), by = id]
 
-# merging with median infection time
+# Merging with median infection time
 obs_adj <- merge(obs, dt_t_inf, by = "id")
 
-# adjusting raw data so its on the same scale as inferred trajectories
+# Adjusting raw data so its on the same scale as inferred trajectories
 obs_adj[, t_first_test_since_inf := t_first_test + t_inf_med, by = "id"]
 obs_adj[, onset_time_adj := onset_time + t_inf_med, by = "id"]
 
-# relabelling factors for plot
+# Relabelling factors for plot
 obs_plot <- obs_adj[
   , ct_type := factor(ct_type, labels = c("ORF1ab", "N gene", "S gene"))
   ][, VOC := factor(
@@ -231,6 +227,7 @@ obs_plot <- obs_adj[
     labels = c("Delta", "BA.1", "BA.2"))
   ][,VOC := fct_relevel(VOC, c("Delta", "BA.1", "BA.2"))]
 
+# Relabelling factors for plot
 dt_sims_sum_all[
   , VOC := factor(
     VOC, 
@@ -238,9 +235,10 @@ dt_sims_sum_all[
     labels = c("Delta", "BA.1", "BA.2"))
   ][, VOC := fct_relevel(VOC, c("Delta", "BA.1", "BA.2"))]
 
-# adding posterior predictions
+# Adding posterior predictions
 pp_summary <- summarise_pp(fit, obs_adj)
 
+# Plotting the Delta-infected fits
 p_delta_fits <- 
   ggplot() + 
   geom_line(data = dt_sims_sum_all[VOC == "Delta"], 
@@ -273,6 +271,7 @@ p_delta_fits <-
   theme_minimal() + 
   theme(legend.position = "bottom")
 
+# Plotting the BA.1-infected fits
 p_ba1_fits <- 
   ggplot() + 
   geom_line(data = dt_sims_sum_all[VOC == "BA.1"], 
@@ -305,7 +304,7 @@ p_ba1_fits <-
   theme_minimal() + 
   theme(legend.position = "bottom")
 
-
+# Plotting the BA.2-infected fits
 p_ba2_fits <- 
   ggplot() + 
   geom_line(data = dt_sims_sum_all[VOC == "BA.2"], 
@@ -338,40 +337,38 @@ p_ba2_fits <-
   theme_minimal() + 
   theme(legend.position = "bottom")
 
+# Saving the three data.tables required to make these plots
+saveRDS(dt_ind_long_adj, "outputs/plot_data/supplement/figure_S6-8.rds")
+saveRDS(dt_ct_plot, "outputs/plot_data/supplement/figure_S9.rds")
+saveRDS(dt_sims_sum_all, "outputs/plot_data/supplement/figure_S10-12.rds")
 
-# saving PDF plot
-ggsave("outputs/figures/pdfs/supplement/delta_fits.pdf",
+#--- Saving the plots of the fits
+ggsave("outputs/figures/pdfs/supplement/figure_S10.pdf",
        p_delta_fits,
        width = 8,
        height = 8)
 
-# saving PNG plot
-ggsave("outputs/figures/pngs/supplement/delta_fits.png",
+ggsave("outputs/figures/pngs/supplement/figure_S10.png",
        p_delta_fits,
        width = 8,
        height = 8)
 
-# saving PDF plot
-ggsave("outputs/figures/pdfs/supplement/ba1_fits.pdf",
+ggsave("outputs/figures/pdfs/supplement/figure_S11.pdf",
        p_ba1_fits,
        width = 8,
        height = 10)
 
-# saving PNG plot
-ggsave("outputs/figures/pngs/supplement/ba1_fits.png",
+ggsave("outputs/figures/pngs/supplement/figure_S11.png",
        p_ba1_fits,
        width = 8,
        height = 10)
 
-# saving PDF plot
-ggsave("outputs/figures/pdfs/supplement/ba2_fits.pdf",
+ggsave("outputs/figures/pdfs/supplement/figure_S12.pdf",
        p_ba2_fits,
        width = 8,
        height = 10)
 
-# saving PNG plot
-ggsave("outputs/figures/pngs/supplement/ba2_fits.png",
+ggsave("outputs/figures/pngs/supplement/figure_S12.png",
        p_ba2_fits,
        width = 8,
        height = 10)
-

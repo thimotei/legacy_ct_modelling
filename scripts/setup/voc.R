@@ -24,7 +24,7 @@ obs <- readRDS("data_inference/processed-data.rds")
 adj_params <- c("t_p", "t_s", "t_lod", "c_p", "c_s", "inc_mean", "inc_sd")
 
 # Specify the CT summary parameter design matrix
-ct_model_voc <- subject_design(
+ct_model <- subject_design(
   ~ 1 + VOC,
   data = obs,
   params = adj_params,

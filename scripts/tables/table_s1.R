@@ -1,7 +1,7 @@
 # isolating all individuals with no infection episodes before joining the study
 # remember this does not necessarily mean they have not been infected. this
 # just means they hadn't had a detected infection before the start of the study
-load("~/lshtm/legacy_correlates/data/Legacy_DataAnnotatedDateSeries_2023-05-04.RData")
+load("data/Legacy_DataAnnotatedDateSeries_2023-11-09.RData")
 
 # checking everyone in the Ct study is in the full dataset 
 ct_study_ids <- obs[, unique(data_id)]

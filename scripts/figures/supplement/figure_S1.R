@@ -1,15 +1,21 @@
-library(lemon)
-library(forcats)
-library(cowplot)
+# Script for making Figure S1
+# Numbers of tests and gene targets detected for each individual
 
-# figure 2, panel A
-dt_plot <- obs[no_pos_results >= 2]
+# Loading data
+source("scripts/setup/main.R")
 
+# Subsetting the data for the plot
+dt_plot <- obs[, .(
+  id, infection_id, t_since_first_pos, VOC, 
+  no_vaccines, total_infections, no_exposures, ct_value,
+  ct_type, result)]
+
+# Renaming the gene targets for plotting
 dt_plot[ct_type == "ct_value", ct_type := "ORF1ab"]
 dt_plot[ct_type == "ct_n_gene", ct_type := "S gene"]
 dt_plot[ct_type == "ct_s_gene", ct_type := "N gene"]
 
-# figure 2, panel B
+# Plotting the data
 p2_gene_targets <- figure_gene_targets(
   dt_plot[, VOC := fct_relevel(VOC, "Delta")],
   voc_arg = c("Delta",
@@ -21,13 +27,17 @@ p2_gene_targets <- figure_gene_targets(
   labs(colour = "Gene target") + 
   scale_colour_brewer(palette = "Set1")
 
-ggsave("outputs/figures/pngs/supplement/gene_targets_frequency.png",
+# Saving the plotted data
+saveRDS(dt_plot, "outputs/plot_data/supplement/figure_S1.rds")
+
+# Saving the plot
+ggsave("outputs/figures/pngs/supplement/figure_S1.png",
        p2_gene_targets,
        width = 8,
        height = 8,
        bg = "white")
 
-ggsave("outputs/figures/pdfs/supplement/gene_targets_frequency.pdf",
+ggsave("outputs/figures/pdfs/supplement/figure_S1.pdf",
        p2_gene_targets,
        width = 8,
        height = 8,

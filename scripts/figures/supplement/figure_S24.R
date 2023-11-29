@@ -1,30 +1,29 @@
 library(ggh4x)
 
+# Loading data, model structure, etc.
 source("scripts/setup/main.R")
 
-# load object with all fitted draws
-fit_main <- readRDS("outputs/fits/fit_main.rds")
+# Load object with all fitted draws
+fit_main <- readRDS("outputs/fits/main.rds")
 
-# extracting draws
+# Extracting draws
 draws <- extract_draws(fit_main)
 
-tidybayes::spread_draws(fit_main, t_lod_mean)
-
-# adjusting draws with the estimated covariate posteriors
+# Adjusting draws with the estimated covariate posteriors
 adj_draws <- adjust_params(
   draws, 
   design = ct_model$design, 
   onsets_flag = FALSE) 
 
-# updating predictor labels so they are more readable
+# Updating predictor labels so they are more readable
 adj_draws <- adj_draws %>% update_predictor_labels()
 
-# adding the baseline predictor values and names to the draws data.table
+# Adding the baseline predictor values and names to the draws data.table
 adj_draws <- add_baseline_to_draws(
   adj_draws, "baseline", onsets_flag = FALSE) |> 
   transform_to_model()
 
-# moving to long format and adding a column to distinguish between prior and
+# Moving to long format and adding a column to distinguish between prior and
 # posterior draws
 adj_draws_long <- melt(
   adj_draws[, c("c_0", "c_p", "t_p", "t_lod", "predictor")], 
@@ -32,28 +31,27 @@ adj_draws_long <- melt(
                    "t_p", "t_lod"),
   variable.name = "parameter")[, type := "Posterior"][!is.na(predictor)]
 
-# extracting the names of the predictors, for ease with mapping the prior
+# Extracting the names of the predictors, for ease with mapping the prior
 # samples over each predictor
 predictors <- adj_draws_long[
   !is.na(predictor), predictor] |> 
   unique()
 
-# sampling from the population-level priors
+# Sampling from the population-level priors
 n_samp <- 100000
-
 dt_pop_priors_long <- sample_pop_priors(
   n_samples = n_samp,
   c_lod = 40,
   data_format = "long",
   scale_type = "natural")
 
-# removing parameters for model with switch, which we don't use for the main
+# Removing parameters for model with switch, which we don't use for the main
 # set of models
 dt_pop_priors_long[, t_s := NULL]
 dt_pop_priors_long[, c_s := NULL]
 dt_pop_priors_long[, type := "Prior"]
 
-# adding the set of predictors as a column for ease with plotting and comparing
+# Adding the set of predictors as a column for ease with plotting and comparing
 # with posterior samples
 n_params <- dt_pop_priors_long[, length(unique(parameter))]
 dt_pop_priors_long[
@@ -61,7 +59,7 @@ dt_pop_priors_long[
     predictors, n_samp*n_params/length(predictors))
   ][order(predictor, parameter)][, type := "Prior"]
 
-# merging prior samples with posteriors
+# Merging prior samples with posteriors
 dt_pop_prior_comparison <- rbind(
   dt_pop_priors_long, adj_draws_long)
 
@@ -75,7 +73,7 @@ dt_pop_prior_comparison[
 dt_pop_prior_comparison[
   parameter == "t_lod", parameter := "Timing LOD reached"]
 
-# plotting priors and posteriors in the same panel for comparison, stratified
+# Plotting priors and posteriors in the same panel for comparison, stratified
 # by predictor and parameter
 p_prior_vs_post <- dt_pop_prior_comparison[
   parameter %in% c("Ct value at peak",
@@ -90,13 +88,18 @@ p_prior_vs_post <- dt_pop_prior_comparison[
   theme_minimal() +
   theme(legend.position = "bottom") 
 
-# saving plots
-ggsave("outputs/figures/pdfs/supplement/pop_prior_vs_posterior.pdf",
-       p_prior_vs_post,
-       width = 9,
-       height = 6)
+# Saving data required to remake plot
+saveRDS(dt_pop_prior_comparison, "outputs/plot_data/supplement/figure_S24.rds")
 
-ggsave("outputs/figures/pngs/supplement/pop_prior_vs_posterior.png",
+# Saving plots
+ggsave("outputs/figures/pdfs/supplement/figure_S24.pdf",
        p_prior_vs_post,
        width = 9,
-       height = 6)
+       height = 6,
+       bg = "white")
+
+ggsave("outputs/figures/pngs/supplement/figure_S24.png",
+       p_prior_vs_post,
+       width = 9,
+       height = 6,
+       bg = "white")

@@ -1,27 +1,24 @@
-# script for making figure 3
-library(cowplot)
-library(ggridges)
-library(lemon)
-library(scico)
-library(ggsci)
-library(data.table)
+#--- Figure S20
 
-# sourcing the setup file, to load in the data, the model structure, etc
+# Sourcing the setup file, to load in the data, the model structure, etc
 source("scripts/setup/main.R")
 
-# either run inference script, which saves a fit object, or load a saved fit
-# object from a previous inference
+# Run the script found at /scripts/inference/supplement/high_ind_var.R if you do 
+# not have a saved .rds object containing the cmdstanr fit object after fitting the 
+# model to the dataset
+
+# However, if you have the fit object already, just load in the data
 fit_uninformative <- readRDS("outputs/fits/uninformative.rds")
 
+# Extracting posterior samples
 draws <- extract_draws(fit_uninformative)
 
-# the next command takes a long time. A high number of draws was used 
+# The next command takes a long time. A high number of draws was used 
 # (no_draws) for the figures
-dt_pop_ct_draws <- extract_pop_ct_trajectories(fit_uninformative,
-                                               no_draws = 2000,
-                                               onsets = TRUE)
+dt_pop_ct_draws <- extract_pop_ct_trajectories(
+  fit_uninformative, no_draws = 2000, onsets = TRUE)
 
-# summarising Ct trajectories
+# Summarising Ct trajectories
 pop_ct_draws_sum <- summarise_ct_traj(dt_pop_ct_draws, pop_flag = TRUE)
 
 #--- summarising the population-level posteriors and representing them
@@ -31,7 +28,6 @@ pop_ct_draws_sum <- summarise_ct_traj(dt_pop_ct_draws, pop_flag = TRUE)
 # LOD, which is what the parameter that comes directly out of the inference
 # represents) 
 dt_t_lod_sum <- figure_3_t_lod_sum(dt_pop_ct_draws, ct_threshold = 37)
-
 dt_t_lod_raw <- figure_3_t_lod(dt_pop_ct_draws, ct_threshold = 37)
 
 # adding the baseline category to the new t_lod data.table
@@ -50,9 +46,8 @@ effect_size_summary_natural_tmp <- effect_size_summary_natural_tmp[
   variable != "Time until PCR-"]
 
 # combining the lab and latent time of LODs
-effect_size_summary_natural <- rbind(effect_size_summary_natural_tmp,
-                                     dt_t_lod_sum,
-                                     dt_t_lod_baseline)
+effect_size_summary_natural <- rbind(
+  effect_size_summary_natural_tmp, dt_t_lod_sum, dt_t_lod_baseline)
 
 #--- Plotting the trajectories and effect sizes together, one panel at a time
 
@@ -138,13 +133,19 @@ p3_4 <- figure_3_subpanel(p3_41, p3_42, rel_widths_arg = c(2, 1))
 
 p31 <- plot_grid(p3_1, p3_2, p3_3, p3_4, nrow = 2)
 
-ggsave("outputs/figures/pngs/figure_3_uninformative.png",
+# Saving all three required data.tables to build the overall plot
+saveRDS(dt_pop_ct_draws, "outputs/plot_data/supplement/figure_S20_traj.rds")
+saveRDS(pop_ct_draws_sum, "outputs/plot_data/supplement/figure_S20_sum.rds")
+saveRDS(effect_size_summary_natural, "outputs/plot_data/supplement/figure_S20_eff.rds")
+
+# Saving final figure
+ggsave("outputs/figures/pngs/supplement/figure_S20.png",
        p31,
        width = 12,
        height = 10,
        bg = "white")
 
-ggsave("outputs/figures/pdfs/figure_3_uninformative.pdf",
+ggsave("outputs/figures/pdfs/supplement/figure_S20.pdf",
        p31,
        width = 12,
        height = 10,
