@@ -1,26 +1,27 @@
-library(lemon)
-library(forcats)
-library(cowplot)
-library(ggsci)
-
+# Loading data, model structure etc.
 source("scripts/setup/main.R")
 
-# changing factor levels
+# Changing factor levels
 obs[, VOC := fct_relevel(VOC, "Delta")]
 obs[, `Symptoms` := fct_relevel(symptoms, "symptomatic")]
 obs[, `Number of exposures` := fct_relevel(no_exposures, "3")]
 obs[, `Age group` := fct_relevel(age_group, "20-34")]
 
-# figure 2, panel A
+#--- Figure 2
+# Filtering for at least 2 positive results
 dt_obs <- obs[no_pos_results >= 2]
+
+# Munging data into correct format for plotting
 dt_plot <- reshape_figure_2_panel_a(dt_obs)
 
+# Making panel A
 p_fig_2_a <- figure_2_panel_a(dt_plot) + 
   theme(legend.position = "bottom",
         legend.box = "vertical",
         legend.margin = margin()) +
   labs(tag = "A")
 
+# Making panel B
 p_fig_2_b <- obs[, VOC := fct_relevel(VOC, "Delta")] |> 
   ggplot() +
   geom_point(aes(x = t_since_first_pos, y = ct_value, colour = VOC), alpha = 0.35) +
@@ -37,52 +38,76 @@ p_fig_2_b <- obs[, VOC := fct_relevel(VOC, "Delta")] |>
        y = "Ct value", 
        title = "Observed Ct values by VOC")
 
-p_fig_2_a_b <- plot_grid(p_fig_2_a, p_fig_2_b,
-                         ncol = 1,
-                         rel_heights = c(1, 1))
+# Putting panels A and B together
+p_fig_2_a_b <- plot_grid(
+  p_fig_2_a, p_fig_2_b,
+  ncol = 1, rel_heights = c(1, 1))
 
-dt_obs_long <- melt(obs[, .(`id`, `ct_value`, `result`, `VOC`, 
-                            `symptoms`, `no_exposures`, `age_group`)],
-                    measure.vars = c("VOC", "symptoms", "no_exposures", "age_group"),
-                    variable.name = "Regressor category",
-                    value.name = "Regressor")
+# Melting data into long format for the next panels
+dt_obs_long <- melt(
+  obs[, .(
+    `id`, `ct_value`, `result`, `VOC`, 
+    `symptoms`, `no_exposures`, `age_group`)],
+  measure.vars = c(
+    "VOC", "symptoms", "no_exposures", "age_group"),
+  variable.name = "Regressor category",
+  value.name = "Regressor")
 
+# Only keeping positive test results
 dt_obs_plot <- dt_obs_long[result == "Positive"]
 
-p_fig_2_c_1 <- figure_2_ct_box_plot(dt_obs_plot, "VOC", "Delta") +
+# Plotting the four boxplots, stratified by covariate category
+# VOC
+p_fig_2_c_1 <- figure_2_ct_box_plot(
+  dt_obs_plot, "VOC", "Delta") +
   labs(x = "") +
   scale_colour_nejm() +
   scale_fill_nejm() + 
   labs(title = "VOC")
 
-p_fig_2_c_2 <- figure_2_ct_box_plot(dt_obs_plot, "symptoms", "symptomatic") +
+# Symptom status
+p_fig_2_c_2 <- figure_2_ct_box_plot(
+  dt_obs_plot, "symptoms", "symptomatic") +
   labs(x = "") +
   scale_colour_npg() +
   scale_fill_npg() +
   labs(title = "Symptom status")
 
-p_fig_2_c_3 <- figure_2_ct_box_plot(dt_obs_plot, "age_group", "20-34") +
+# Age
+p_fig_2_c_3 <- figure_2_ct_box_plot(
+  dt_obs_plot, "age_group", "20-34") +
   labs(x = "") +
   scale_colour_brewer(palette = "Set2") + 
   scale_fill_brewer(palette = "Set2") +
   labs(title = "Age group")
 
-p_fig_2_c_4 <- figure_2_ct_box_plot(dt_obs_plot, "no_exposures", "3") +
+# Number of exposures
+p_fig_2_c_4 <- figure_2_ct_box_plot(
+  dt_obs_plot, "no_exposures", "3") +
   labs(x = "") +
   scale_colour_aaas() +
   scale_fill_aaas() + 
   labs(title = "No. exposures")
 
-p_fig_2_c <- plot_grid(p_fig_2_c_1, p_fig_2_c_2,
-                       p_fig_2_c_3, p_fig_2_c_4)
+# Putting together the boxplots
+p_fig_2_c <- plot_grid(
+  p_fig_2_c_1, p_fig_2_c_2, 
+  p_fig_2_c_3, p_fig_2_c_4)
 
+# Putting together panels B and X
+p_fig_2_b_c <- plot_grid(
+  p_fig_2_b, p_fig_2_c, ncol = 1, 
+  rel_heights = c(0.66, 1))
 
-p_fig_2_b_c <- plot_grid(p_fig_2_b, p_fig_2_c, ncol = 1,
-                         rel_heights = c(0.66, 1))
+# Now putting all of the panels together
+p_fig_2 <- plot_grid(
+  p_fig_2_a, p_fig_2_b_c, 
+  ncol = 2)
 
-p_fig_2 <- plot_grid(p_fig_2_a, p_fig_2_b_c, 
-                     ncol = 2)
+# Saving plot data
+saveRDS(obs, "outputs/plot_data/figure_2.rds")
 
+# Saving plots
 ggsave("outputs/figures/pngs/main/figure_2.png",
        p_fig_2,
        width = 14,
